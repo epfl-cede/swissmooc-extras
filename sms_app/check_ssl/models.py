@@ -9,7 +9,11 @@ class Site(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     def __str__(self):
-        return self.hostname
+        return self.domain
     @property
     def expires_days(self):
-        return self.expires - datetime.datetime.utcnow()
+        if self.expires:
+            return self.expires - datetime.datetime.utcnow()
+        else:
+            return '-'
+        
