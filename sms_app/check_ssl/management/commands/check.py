@@ -21,6 +21,8 @@ class Command(BaseCommand):
                 site.error = 'cert error {}'.format(e)
             except socket.timeout as e:
                 site.error = 'could not connect'
+            except socket.gaierror as e:
+                site.error = 'not accessable'
             else:
                 site.expires = expires
                 site.error = ''
