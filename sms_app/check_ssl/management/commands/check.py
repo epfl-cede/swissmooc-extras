@@ -16,11 +16,11 @@ class Command(BaseCommand):
             try:
                 expires = self._ssl_expiry_datetime(site.hostname)
             except ssl.CertificateError as e:
-                site.error = f'{hostname} cert error {e}'
+                site.error = '{} cert error {}'.format(hostname, e)
             except ssl.SSLError as e:
-                site.error = f'{hostname} cert error {e}'
+                site.error = '{hostname} cert error {e}'.format(hostname, e)
             except socket.timeout as e:
-                site.error = f'{hostname} could not connect'
+                site.error = '{hostname} could not connect'.format(hostname, e)
             else:
                 site.expires = expires
                 site.error = ''
