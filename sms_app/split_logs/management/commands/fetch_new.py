@@ -9,4 +9,10 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         if settings.TRACKING_LOGS_ORIGINAL_SRC and settings.TRACKING_LOGS_ORIGINAL_DST:
-            subprocess.call(["rsync", "-av", settings.TRACKING_LOGS_ORIGINAL_SRC, settings.TRACKING_LOGS_ORIGINAL_DST])
+            subprocess.call([
+                "rsync",
+                "-av",
+                "--include='*.gz'",
+                settings.TRACKING_LOGS_ORIGINAL_SRC,
+                settings.TRACKING_LOGS_ORIGINAL_DST
+            ])
