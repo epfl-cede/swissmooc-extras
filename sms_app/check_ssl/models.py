@@ -13,7 +13,7 @@ class Site(models.Model):
     @property
     def expires_days(self):
         if self.expires:
-            return self.expires - datetime.datetime.utcnow()
+            return (self.expires - datetime.datetime.utcnow()).days
         else:
             return '-'
 
