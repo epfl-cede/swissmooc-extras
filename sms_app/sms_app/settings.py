@@ -31,6 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'split_logs.apps.SplitLogsConfig',
     'check_ssl.apps.CheckSslConfig',
     'django.contrib.admin',
     'django.contrib.auth',
