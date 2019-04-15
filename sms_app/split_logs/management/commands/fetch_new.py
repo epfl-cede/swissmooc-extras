@@ -15,8 +15,7 @@ class Command(BaseCommand):
             cmd = [
                 "rsync",
                 "-av",
-                "--include='*.gz'",
-                "--exclude='*'",
+                "--exclude=*.log",
                 settings.TRACKING_LOGS_ORIGINAL_SRC,
                 settings.TRACKING_LOGS_ORIGINAL_DST
             ]

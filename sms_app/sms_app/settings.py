@@ -119,7 +119,7 @@ USE_TZ = False
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
 
-STATIC_URL = '/sms_app/static/'
+STATIC_URL = '/utils/static/'
 
 LOGGING = {
     'version': 1,
