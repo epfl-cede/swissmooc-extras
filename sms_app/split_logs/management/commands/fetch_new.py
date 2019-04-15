@@ -20,5 +20,5 @@ class Command(BaseCommand):
                 settings.TRACKING_LOGS_ORIGINAL_SRC,
                 settings.TRACKING_LOGS_ORIGINAL_DST
             ]
-            logger.info("run command: ".format(" ".join(cmd)))
-            subprocess.call(cmd)
+            logger.info("run command: {}".format(" ".join(cmd)))
+            subprocess.call(cmd, shell=False, check=True)
