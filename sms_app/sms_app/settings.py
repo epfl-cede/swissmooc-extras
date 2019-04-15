@@ -121,6 +121,25 @@ USE_TZ = False
 
 STATIC_URL = '/sms_app/static/'
 
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        # Redefining the logger for the `django` module
+        # prevents invoking the `AdminEmailHandler`
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+        },
+    }
+}
+
 TRACKING_LOGS_ORIGINAL_SRC=os.environ.get("TRACKING_LOGS_ORIGINAL_SRC", False)
 TRACKING_LOGS_ORIGINAL_DST=os.environ.get("TRACKING_LOGS_ORIGINAL_DST", False)
 TRACKING_LOGS_SPLITTED=os.environ.get("TRACKING_LOGS_SPLITTED", False)
