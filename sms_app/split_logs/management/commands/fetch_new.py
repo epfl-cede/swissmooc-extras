@@ -13,6 +13,7 @@ class Command(BaseCommand):
                 "rsync",
                 "-av",
                 "--include='*.gz'",
+                "--exclude='*'",
                 settings.TRACKING_LOGS_ORIGINAL_SRC,
                 settings.TRACKING_LOGS_ORIGINAL_DST
             ])
