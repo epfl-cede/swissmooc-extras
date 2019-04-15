@@ -118,4 +118,10 @@ USE_TZ = False
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
 
-STATIC_URL = '/utils/static/'
+STATIC_URL = '/sms_app/static/'
+
+TRACKING_LOGS_ORIGINAL_SRC=os.environ.get("TRACKING_LOGS_ORIGINAL_SRC", False)
+TRACKING_LOGS_ORIGINAL_DST=os.environ.get("TRACKING_LOGS_ORIGINAL_DST", False)
+TRACKING_LOGS_SPLITTED=os.environ.get("TRACKING_LOGS_SPLITTED", False)
+TRACKING_LOGS_ENCRYPTED=os.environ.get("TRACKING_LOGS_ENCRYPTED", False)
+
