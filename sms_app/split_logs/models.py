@@ -13,6 +13,8 @@ class DirOriginal(models.Model):
 class FileOriginal(models.Model):
     name = models.CharField(max_length=1024)
     dir_original = models.ForeignKey(DirOriginal, on_delete=models.CASCADE)
+    lines_total = models.PositiveIntegerField(default=0)
+    lines_error = models.PositiveIntegerField(default=0)
     @property
     def fullname(self):
         return "{}/{}".format(self.dir_original, self.name)
