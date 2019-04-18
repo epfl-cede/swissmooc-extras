@@ -58,7 +58,7 @@ class Command(BaseCommand):
             for line in f:
                 lines_total += 1
                 try:
-                    data = json.loads(line)
+                    data = json.loads(line.decode('utf-8'))
                 except json.decoder.JSONDecodeError as e:
                     lines_error += 1
                 except UnicodeDecodeError as e:
@@ -91,14 +91,14 @@ class Command(BaseCommand):
                     if date not in lines_for_add[organization]:
                         lines_for_add[organization][date] = []
 
-                    lines_for_add[organization][date].append(line.decode("utf-8"))
+                    lines_for_add[organization][date].append(line)
 
         # bunch adding lines, to prevent posibility for duplicates
         for organization in lines_for_add:
             for date in lines_for_add[organization]:
-                splited_filename = '{}/{}/{}.log'.format(settings.TRACKING_LOGS_SPLITTED, organization, date)
-                splited_file = open(splited_filename, 'a+')
-                splited_file.write(''.join(lines_for_add[organization][date]))
+                splited_filename = '{}/{}/{}.log.gz'.format(settings.TRACKING_LOGS_SPLITTED, organization, date)
+                splited_file = gzip.open(splited_filename, 'ab+')
+                splited_file.write(b''.join(lines_for_add[organization][date]))
 
         logger.info("info: error lines {} of {}".format(lines_error, lines_total))
         return lines_total, lines_error
