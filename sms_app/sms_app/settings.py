@@ -126,7 +126,7 @@ LOGGING = {
     'disable_existing_loggers': False,
     'handlers': {
         'console': {
-            'level': 'INFO',
+            'level': 'DEBUG',
             'class': 'logging.StreamHandler',
         },
     },
@@ -136,6 +136,10 @@ LOGGING = {
         'django': {
             'handlers': ['console'],
             'level': 'INFO',
+        },
+        '': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
         },
     }
 }

@@ -11,13 +11,12 @@ class Command(BaseCommand):
     help = 'Fetch new tracking logs files'
 
     def handle(self, *args, **options):
-        if settings.TRACKING_LOGS_ORIGINAL_SRC and settings.TRACKING_LOGS_ORIGINAL_DST:
-            cmd = [
-                "rsync",
-                "-av",
-                "--exclude=*.log",
-                settings.TRACKING_LOGS_ORIGINAL_SRC,
-                settings.TRACKING_LOGS_ORIGINAL_DST
-            ]
-            logger.info("run command: {}".format(" ".join(cmd)))
-            subprocess.run(cmd, shell=False, check=True)
+        cmd = [
+            "rsync",
+            "-av",
+            "--exclude=*.log",
+            settings.TRACKING_LOGS_ORIGINAL_SRC,
+            settings.TRACKING_LOGS_ORIGINAL_DST
+        ]
+        logger.info("run command: {}".format(" ".join(cmd)))
+        subprocess.run(cmd, shell=False, check=True)
