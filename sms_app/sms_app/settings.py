@@ -139,7 +139,7 @@ LOGGING = {
         },
         '': {
             'handlers': ['console'],
-            'level': 'DEBUG',
+            'level': 'INFO',
         },
     }
 }
