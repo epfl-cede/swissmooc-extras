@@ -26,6 +26,7 @@ class Command(BaseCommand):
         for o in organisations:
             aliases = o.aliases.split(',')
             gpg = gnupg.GPG()
+            gpg.encoding = 'utf-8'
             importres = gpg.import_keys(o.public_key.value)
             print(importres)
             for a in aliases:
@@ -41,7 +42,7 @@ class Command(BaseCommand):
                         if not os.path.isfile("{}.gpg".format(encrypted_file_full_path)):
                             status = gpg.encrypt_file(
                                 encrypted_file_full_path,
-                                recipients=[o.recipient],
+                                recipients=[o.public_key.recipient],
                                 output="{}.gpg".format(encrypted_file_full_path)
                             )
                             print(status)
@@ -54,7 +55,7 @@ class Command(BaseCommand):
             path = "{}/{}".format(settings.TRACKING_LOGS_SPLITTED, org)
             files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
         except FileNotFoundError:
-            logger.warning("organisation '%s' folder doent exists", org)
+            logger.warning("organisation '%s' folder does not exist", org)
             pass
         return files
             
