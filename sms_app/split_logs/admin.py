@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import FileOriginal, DirOriginal
+from .models import FileOriginal, DirOriginal, PublicKey, Organisation
 
 class DirOriginalAdmin(admin.ModelAdmin):
     list_display = ('name', 'created', 'updated')
@@ -11,3 +11,5 @@ class FileOriginalAdmin(admin.ModelAdmin):
 
 admin.site.register(DirOriginal, DirOriginalAdmin)
 admin.site.register(FileOriginal, FileOriginalAdmin)
+admin.site.register(PublicKey)
+admin.site.register(Organisation)
