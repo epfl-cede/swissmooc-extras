@@ -2,7 +2,9 @@ import datetime
 import subprocess
 import logging
 import os
+import gzip
 import gnupg
+import pathlib
 from shutil import copyfile
 from dateutil import parser
 
@@ -28,25 +30,34 @@ class Command(BaseCommand):
             gpg = gnupg.GPG()
             gpg.encoding = 'utf-8'
             importres = gpg.import_keys(o.public_key.value)
-            print(importres)
             for a in aliases:
                 org = a.strip()
-                logger.debug("process organisation alias '{}'".format(org))
+                logger.info("process organisation alias '{}'".format(org))
                 filelist = self._get_list(org)
                 for orig_file in filelist:
                     orig_file_full_path = "{}/{}/{}".format(settings.TRACKING_LOGS_SPLITTED, org, orig_file)
                     two_days_ago = datetime.datetime.now() - datetime.timedelta(days=2)
                     # skipp files created less then 2 days ago
                     if os.path.getmtime(orig_file_full_path) < two_days_ago.timestamp():
-                        encrypted_file_full_path = "{}/{}/{}".format(settings.TRACKING_LOGS_ENCRYPTED, org, orig_file)
-                        if not os.path.isfile("{}.gpg".format(encrypted_file_full_path)):
-                            status = gpg.encrypt_file(
-                                encrypted_file_full_path,
-                                recipients=[o.public_key.recipient],
-                                output="{}.gpg".format(encrypted_file_full_path)
-                            )
-                            print(status)
-                            break
+                        _fname, _fextension = os.path.splitext(orig_file)
+                        encrypted_file_full_path = "{}/{}/{}.gpg".format(settings.TRACKING_LOGS_ENCRYPTED, org, _fname)
+                        pathlib.Path("{}/{}".format(settings.TRACKING_LOGS_ENCRYPTED, org)).mkdir(parents=True, exist_ok=True)
+                        if not os.path.isfile(encrypted_file_full_path):
+                            with gzip.open(orig_file_full_path, 'rb') as f:
+                                cnt += 1
+                                status = gpg.encrypt_file(f,
+                                    armor=False,
+                                    recipients=[o.public_key.recipient],
+                                    output=encrypted_file_full_path
+                                )
+                                if status.ok:
+                                    logger.info("success encrypt file %s", encrypted_file_full_path)
+                                else:
+                                    logger.error("error: {}", status.status)
+                                if cnt >= limit:
+                                    break
+                if cnt >= limit:
+                    break
                     
                 
     def _get_list(self, org):
