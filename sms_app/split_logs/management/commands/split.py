@@ -10,6 +10,8 @@ from dateutil import parser
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
+from django.db.models.functions import Concat
+from django.db.models import Q, F, Value
 
 from split_logs.models import DirOriginal, FileOriginal
 
@@ -25,21 +27,32 @@ class Command(BaseCommand):
         limit = options['limit']
         cnt = 0
 
-        # list gz files
+        # get list of processed files
+        processed = list(
+            FileOriginal.objects
+                .annotate(_name=Concat('dir_original__name', Value('/'), 'name'))
+                .values_list('_name', flat=True)
+                .order_by('_name')
+        )
+
+        # get list of original files
         originals = self._get_list()
+
+        # loop through files
         for dirname, files in originals.items():
             for filename in files:
                 # create dir row if not exists
                 dir_original, created = DirOriginal.objects.update_or_create(name=dirname)
 
-                # skip already splitted files
-                if FileOriginal.objects.filter(dir_original=dir_original, name=filename).count():
+                filename_full = "{}/{}".format(dirname, filename)
+                if filename_full in processed:
                     logger.debug("debug: file already processed")
                 else:
                     total, error = self._process_file(dirname, filename)
                     file_original = FileOriginal(dir_original=dir_original, name=filename, lines_total=total, lines_error=error)
                     file_original.save()
                     cnt += 1
+                    processed.append(filename_full)
                 if cnt >= limit: break
             if cnt >= limit: break
 
