@@ -54,12 +54,10 @@ class Command(BaseCommand):
                                     logger.info("success encrypt file %s", encrypted_file_full_path)
                                 else:
                                     logger.error("error: {}", status.status)
-                                if cnt >= limit:
-                                    break
-                if cnt >= limit:
-                    break
-                    
-                
+                                if cnt >= limit: break
+                if cnt >= limit: break
+            if cnt >= limit: break
+
     def _get_list(self, org):
         files = list()
         try:
