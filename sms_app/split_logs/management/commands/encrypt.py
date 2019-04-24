@@ -30,6 +30,7 @@ class Command(BaseCommand):
             gpg = gnupg.GPG()
             gpg.encoding = 'utf-8'
             importres = gpg.import_keys(o.public_key.value)
+            gpg.trust_keys(importres.fingerprints, 'TRUST_ULTIMATE')
             for a in aliases:
                 org = a.strip()
                 logger.info("process organisation alias '{}'".format(org))
@@ -53,7 +54,7 @@ class Command(BaseCommand):
                                 if status.ok:
                                     logger.info("success encrypt file %s", encrypted_file_full_path)
                                 else:
-                                    logger.error("error: {}", status.status)
+                                    logger.error("error: %s", status.status)
                                 if cnt >= limit: break
                 if cnt >= limit: break
             if cnt >= limit: break
@@ -67,4 +68,4 @@ class Command(BaseCommand):
             logger.warning("organisation '%s' folder does not exist", org)
             pass
         return files
-            
+
