@@ -1,6 +1,5 @@
 #!/bin/bash
-
-echo script started at `date`
+set -ex
 
 logger run /home/ubuntu/sms-exrtas/sms_app.sh
 source /home/ubuntu/sms-exrtas/sms_app/sms_app.env
