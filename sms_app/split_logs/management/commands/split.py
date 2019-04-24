@@ -41,13 +41,13 @@ class Command(BaseCommand):
         # loop through files
         for dirname, files in originals.items():
             for filename in files:
-                # create dir row if not exists
-                dir_original, created = DirOriginal.objects.update_or_create(name=dirname)
-
                 filename_full = "{}/{}".format(dirname, filename)
                 if filename_full in processed:
                     logger.debug("debug: file already processed")
                 else:
+                    # create dir row if not exists
+                    dir_original, created = DirOriginal.objects.update_or_create(name=dirname)
+
                     total, error = self._process_file(dirname, filename)
                     file_original = FileOriginal(dir_original=dir_original, name=filename, lines_total=total, lines_error=error)
                     file_original.save()
