@@ -14,7 +14,7 @@ class Command(BaseCommand):
     help = 'Encrypt files with organization keys and put it on SWITCH Drive'
 
     def add_arguments(self, parser):
-        parser.add_argument('--limit', type=int, default=3)
+        parser.add_argument('--limit', type=int, default=100)
 
     def handle(self, *args, **options):
         limit = options['limit']
@@ -48,12 +48,17 @@ class Command(BaseCommand):
                     except botocore.exceptions.ClientError as e:
                         if e.response['Error']['Code'] == "404":
                             try:
-                                logger.info("Uploda file %s", encripted_file)
+                                logger.info("Upload file %s", encripted_file)
                                 response = s3.upload_file(encripted_file_full_path, settings.AWS_STORAGE_BUCKET_NAME, encripted_file)
+                                cnt += 1
                             except Exception as e:
                                 raise CommandError("Can not upload file %s: %s", encripted_file, e)
                         else:
                             logger.info("File exists")
+
+                    if cnt >= limit: break
+                if cnt >= limit: break
+            if cnt >= limit: break
                             
                     
     def _get_list(self, org):
