@@ -1,17 +1,15 @@
 import datetime
-import subprocess
 import logging
 import os
 import gzip
 import gnupg
 import pathlib
-from shutil import copyfile
 from dateutil import parser
 
 from django.conf import settings
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 
-from split_logs.models import DirOriginal, FileOriginal, Organisation
+from split_logs.models import Organisation
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +64,5 @@ class Command(BaseCommand):
             files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
         except FileNotFoundError:
             logger.warning("organisation '%s' folder does not exist", org)
-            pass
         return files
 

@@ -1,15 +1,11 @@
-import datetime
-import subprocess
 import logging
 import gzip
 import json
 import os
-
-from os import walk
 from dateutil import parser
 
 from django.conf import settings
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from django.db.models.functions import Concat
 from django.db.models import Q, F, Value
 
@@ -119,7 +115,7 @@ class Command(BaseCommand):
         
     def _get_list(self):
         dirs = {}
-        for (dirpath, dirnames, filenames) in walk(settings.TRACKING_LOGS_ORIGINAL_DST):
+        for (dirpath, dirnames, filenames) in os.walk(settings.TRACKING_LOGS_ORIGINAL_DST):
             files = [ fi for fi in filenames if fi.endswith(".gz") ]
             if len(files):
                 files.sort()
