@@ -79,6 +79,14 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(BASE_DIR, '..', 'db.sqlite3'),
+    },
+    'edxapp_readonly': {
+        'NAME': 'edxapp',
+        'ENGINE': 'django.db.backends.mysql',
+        'USER': 'read_only',
+        'PASSWORD': os.environ.get('EDXAPP_READ_ONLY_PASSWORD', ''),
+        'HOST': '192.168.123.110',
+        'PORT': '3306',
     }
 }
 

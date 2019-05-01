@@ -3,6 +3,13 @@ from django.db import models
 # Create your models here.
 from django.db import models
 
+ACTIVE = '1'
+NOT_ACTIVE = '0'
+ACTIVE_CHOICES = (
+    (NOT_ACTIVE, 'not active'),
+    (ACTIVE, 'active'),
+)
+
 class DirOriginal(models.Model):
     name = models.CharField(max_length=1024, unique=True)
     created = models.DateTimeField(auto_now_add=True)
@@ -42,3 +49,18 @@ class Organisation(models.Model):
     updated = models.DateTimeField(auto_now=True)
     def __str__(self):
         return self.name
+
+class Course(models.Model):
+    name = models.CharField(max_length=256)
+    organisation = models.ForeignKey(Organisation, on_delete=models.CASCADE)
+    active = models.CharField(
+        choices=ACTIVE_CHOICES,
+        max_length=1,
+        default=NOT_ACTIVE
+    )
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+    def __str__(self):
+        return self.name
+    class Meta:
+        unique_together = (('name', 'organisation'),)
