@@ -4,8 +4,6 @@ import os
 import gzip
 import gnupg
 import pathlib
-import tempfile
-import shutil
 from dateutil import parser
 
 from django.conf import settings

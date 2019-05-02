@@ -83,9 +83,9 @@ DATABASES = {
     'edxapp_readonly': {
         'NAME': 'edxapp',
         'ENGINE': 'django.db.backends.mysql',
-        'USER': 'read_only',
-        'PASSWORD': os.environ.get('EDXAPP_READ_ONLY_PASSWORD', ''),
-        'HOST': '192.168.123.110',
+        'USER': os.environ.get('EDXAPP_MYSQL_USER', ''),
+        'PASSWORD': os.environ.get('EDXAPP_MYSQL_PASSWORD', ''),
+        'HOST': os.environ.get('EDXAPP_MYSQL_HOST', ''),
         'PORT': '3306',
     }
 }
@@ -164,4 +164,11 @@ TRACKING_LOGS_ORIGINAL_DST=os.environ.get("TRACKING_LOGS_ORIGINAL_DST", False)
 TRACKING_LOGS_SPLITTED=os.environ.get("TRACKING_LOGS_SPLITTED", False)
 TRACKING_LOGS_ENCRYPTED=os.environ.get("TRACKING_LOGS_ENCRYPTED", False)
 
+DUMP_DB_RAW=os.environ.get("DUMP_DB_RAW")
+DUMP_DB_ENCRYPTED=os.environ.get("DUMP_DB_ENCRYPTED")
+
 AWS_STORAGE_BUCKET_NAME=os.environ.get("AWS_STORAGE_BUCKET_NAME")
+
+EDXAPP_MYSQL_HOST=os.environ.get("EDXAPP_MYSQL_HOST")
+EDXAPP_MYSQL_USER=os.environ.get("EDXAPP_MYSQL_USER")
+EDXAPP_MYSQL_PASSWORD=os.environ.get("EDXAPP_MYSQL_PASSWORD")

@@ -60,6 +60,9 @@ class Course(models.Model):
     )
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
+    @property
+    def folder(self):
+        return self.name.replace('+', '-').replace('course-v1:', '')
     def __str__(self):
         return self.name
     class Meta:
