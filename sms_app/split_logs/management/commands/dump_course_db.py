@@ -8,7 +8,8 @@ from django.db import connections
 from django.core.management.base import BaseCommand
 from django.core.exceptions import ObjectDoesNotExist
 
-from split_logs.models import Course, Organisation, ACTIVE, NOT_ACTIVE
+from split_logs.models import Course, CourseDump, Organisation
+from split_logs.models import ACTIVE, NOT_ACTIVE, YES, NO
 
 logger = logging.getLogger(__name__)
 
@@ -34,59 +35,62 @@ class Command(BaseCommand):
     help = 'Dump course tables'
 
     def handle(self, *args, **options):
+        self._fill_tables_columns()
         organisations = Organisation.objects.all()
         for o in organisations:
             logger.info("process organization %s", o.name)
             for course in o.course_set.filter(active=ACTIVE):
-                users = self._get_users(course)
-                for table in TABLES:
-                    data = self._dump_table(course, table, users)
-                    file_name = self._get_dump_file_full_path(o, course, table)
-                    pathlib.Path(os.path.dirname(file_name)).mkdir(parents=True, exist_ok=True)
-                    logger.info("dump %s table into %s", table['name'], file_name)
-                    with open(file_name, 'w') as f:
-                        for d in data:
-                            f.write("{}\n".format("\t".join(map(lambda a: str(a).strip(), d))))
-                    f.close()
-                break
-            break
+                # check it we have processed it already
+                processed = CourseDump.objects.filter(course=course, date=datetime.datetime.now(), is_dumped=YES).count()
+                if processed == 0:
+                    users = self._get_users(course)
+                    for table in TABLES:
+                        data = self._dump_table(course, table, users)
+                        try:
+                            cd = CourseDump.objects.get(course=course, date=datetime.datetime.now())
+                        except CourseDump.DoesNotExist:
+                            cd = CourseDump(course=course, date=datetime.datetime.now())
 
-    def _get_dump_file_full_path(self, organisation, course, table):
-        #epflx-2019-04-21/EPFLx-Algebre2X-1T2017-auth_user-prod-analytics.sql.gpg
-        return "{path}/{org_name}/{date}/{org_name_lower}x-{date}/{course_folder}-{table_name}-prod-analytics.sql".format(
-            path=settings.DUMP_DB_RAW,
-            org_name=organisation.name,
-            date=datetime.datetime.now().strftime('%Y-%m-%d'),
-            course_folder=course.folder,
-            org_name_lower=organisation.name.lower(),
-            table_name=table['name'],
-        )
+                        dump_file_name = cd.dump_file_name(table['name'])
+                        pathlib.Path(os.path.dirname(dump_file_name)).mkdir(parents=True, exist_ok=True)
+                        logger.info("dump %s table into %s", table['name'], dump_file_name)
+                        with open(dump_file_name, 'w') as f:
+                            for d in data:
+                                f.write("{}\n".format("\t".join(map(lambda a: str(a).strip(), d))))
+                            f.close()
+
+                        cd.is_dumped = YES
+                        cd.save()
+
+    def _fill_tables_columns(self):
+        with connections['edxapp_readonly'].cursor() as cursor:
+            for i in range(len(TABLES)):
+                sql = "SHOW COLUMNS FROM edxapp.{table_name}".format(
+                    table_name=TABLES[i]['name'],
+                )
+                cursor.execute(sql)
+                TABLES[i]['columns'] = [str(row[0]) for row in cursor.fetchall()]
 
     def _dump_table(self, course, table, users):
         logger.info("dump course %s table %s", course, table['name'])
         with connections['edxapp_readonly'].cursor() as cursor:
-            sql = "SHOW COLUMNS FROM edxapp.{table_name}".format(
-                table_name=table['name'],
-            )
-            cursor.execute(sql)
-            columns = [row[0] for row in cursor.fetchall()]
-
+            format_strings = ','.join(['%s'] * len(users))
             sql = "SELECT `{columns}` FROM edxapp.{table_name} WHERE {pk} IN(%s)".format(
-                columns="`,`".join(columns),
+                columns="`,`".join(table['columns']),
                 table_name=table['name'],
                 pk=table['pk']
             )
-            cursor.execute(sql, [users])
+            cursor.execute(sql % format_strings, tuple(users))
             result = [list(row) for row in cursor.fetchall()]
 
             # remove passwords
-            if 'password' in columns:
-                index = columns.index('password')
+            if 'password' in table['columns']:
+                index = table['columns'].index('password')
                 for i in range(len(result)):
                     result[i][index] = 'NULL'
 
             # table header
-            result.insert(0, columns)
+            result.insert(0, table['columns'])
 
             return result
         
