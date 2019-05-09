@@ -20,14 +20,14 @@ YES_NO_CHOICES = (
 )
 
 class DirOriginal(models.Model):
-    name = models.CharField(max_length=1024, unique=True)
+    name = models.CharField(max_length=255, unique=True)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     def __str__(self):
         return self.name
     
 class FileOriginal(models.Model):
-    name = models.CharField(max_length=1024)
+    name = models.CharField(max_length=255)
     dir_original = models.ForeignKey(DirOriginal, on_delete=models.CASCADE)
     lines_total = models.PositiveIntegerField(default=0)
     lines_error = models.PositiveIntegerField(default=0)
@@ -51,7 +51,7 @@ class PublicKey(models.Model):
         return self.name
 
 class Organisation(models.Model):
-    name = models.CharField(max_length=256)
+    name = models.CharField(max_length=255)
     aliases = models.CharField(max_length=1024)
     public_key = models.ForeignKey(PublicKey, on_delete=models.CASCADE)
     created = models.DateTimeField(auto_now_add=True)
@@ -60,7 +60,7 @@ class Organisation(models.Model):
         return self.name
 
 class Course(models.Model):
-    name = models.CharField(max_length=256)
+    name = models.CharField(max_length=255)
     organisation = models.ForeignKey(Organisation, on_delete=models.CASCADE)
     active = models.CharField(
         choices=ACTIVE_CHOICES,
