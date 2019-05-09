@@ -18,6 +18,12 @@ YES_NO_CHOICES = (
     (NO, 'no'),
     (YES, 'yes'),
 )
+DB_TYPE_MYSQL = 'mysql'
+DB_TYPE_MONGO = 'mongo'
+DB_TYPE_CHOICES = (
+    (DB_TYPE_MYSQL, DB_TYPE_MYSQL),
+    (DB_TYPE_MONGO, DB_TYPE_MONGO),
+)
 
 class DirOriginal(models.Model):
     name = models.CharField(max_length=255, unique=True)
@@ -79,6 +85,11 @@ class Course(models.Model):
 
 class CourseDumpTable(models.Model):
     name = models.CharField(max_length=255)
+    db_type = models.CharField(
+        choices=DB_TYPE_CHOICES,
+        max_length=128,
+        default=DB_TYPE_MYSQL
+    )
     primary_key = models.CharField(max_length=255)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
@@ -118,6 +129,8 @@ class CourseDump(models.Model):
             org_name_lower=self.course.organisation.name.lower(),
             table_name=self.table.name,
         )
+    def encrypred_file_name(self):
+        return '{}.gpg'.format(self.dump_file_name())
 
     class Meta:
         unique_together = (('course', 'table', 'date'),)

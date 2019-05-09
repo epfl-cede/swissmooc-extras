@@ -14,6 +14,8 @@ class CourseAdmin(admin.ModelAdmin):
 class CourseDumpAdmin(admin.ModelAdmin):
     list_display = ('course', 'table', 'date', 'is_dumped', 'is_encypted', 'id_uploaded', 'created', 'updated')
     list_filter = ['date', 'is_dumped', 'is_encypted', 'id_uploaded']
+class CourseDumpTableAdmin(admin.ModelAdmin):
+    list_display = ('name', 'db_type', 'primary_key', 'created', 'updated')
 
 admin.site.register(DirOriginal, DirOriginalAdmin)
 admin.site.register(FileOriginal, FileOriginalAdmin)
@@ -21,4 +23,4 @@ admin.site.register(PublicKey)
 admin.site.register(Organisation)
 admin.site.register(Course, CourseAdmin)
 admin.site.register(CourseDump, CourseDumpAdmin)
-admin.site.register(CourseDumpTable)
+admin.site.register(CourseDumpTable, CourseDumpTableAdmin)

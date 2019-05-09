@@ -2,6 +2,9 @@ import os
 import datetime
 import logging
 import pathlib
+import pymongo
+import subprocess
+import tempfile
 
 from django.conf import settings
 from django.db import connections
@@ -9,7 +12,7 @@ from django.core.management.base import BaseCommand
 from django.core.exceptions import ObjectDoesNotExist
 
 from split_logs.models import Course, CourseDump, CourseDumpTable, Organisation
-from split_logs.models import ACTIVE, NOT_ACTIVE, YES, NO
+from split_logs.models import ACTIVE, NOT_ACTIVE, YES, NO, DB_TYPE_MYSQL, DB_TYPE_MONGO
 
 logger = logging.getLogger(__name__)
 
@@ -19,44 +22,88 @@ class Command(BaseCommand):
     help = 'Course DB dump tables'
 
     def handle(self, *args, **options):
-        self._fill_tables_columns()
+        self._fill_mysql_tables_columns()
         organisations = Organisation.objects.all()
         tables = CourseDumpTable.objects.all()
         for o in organisations:
             logger.info("process organization %s", o.name)
             for course in o.course_set.filter(active=ACTIVE):
-                users = self._get_users(course)
                 for table in tables:
                     # check it we have processed it already
                     processed = CourseDump.objects.filter(course=course, table=table, date=datetime.datetime.now(), is_dumped=YES).count()
                     if processed == 0:
-                        data = self._dump_table(course, table, users)
-                        try:
-                            cd = CourseDump.objects.get(course=course, table=table, date=datetime.datetime.now())
-                        except CourseDump.DoesNotExist:
-                            cd = CourseDump(course=course, table=table, date=datetime.datetime.now())
+                        if table.db_type == DB_TYPE_MYSQL:
+                            self._process_mysql_table(course, table)
+                        elif table.db_type == DB_TYPE_MONGO:
+                            self._process_mongo_table(course, table)
 
-                        dump_file_name = cd.dump_file_name()
-                        pathlib.Path(os.path.dirname(dump_file_name)).mkdir(parents=True, exist_ok=True)
-                        logger.info("dump %s table into %s", table.name, dump_file_name)
-                        with open(dump_file_name, 'w') as f:
-                            for d in data:
-                                f.write("{}\n".format("\t".join(map(lambda a: str(a).strip(), d))))
-                            f.close()
+    def _process_mongo_table(self, course, table):
+        pass
 
-                        cd.is_dumped = YES
-                        cd.save()
+    def _process_mysql_table(self, course, table):
+        users = self._get_mysql_users(course)
+        data = self._dump_mysql_table(course, table, users)
+        try:
+            cd = CourseDump.objects.get(course=course, table=table, date=datetime.datetime.now())
+        except CourseDump.DoesNotExist:
+            cd = CourseDump(course=course, table=table, date=datetime.datetime.now())
 
-    def _fill_tables_columns(self):
+        dump_file_name = cd.dump_file_name()
+        pathlib.Path(os.path.dirname(dump_file_name)).mkdir(parents=True, exist_ok=True)
+        logger.info("dump %s table into %s", table.name, dump_file_name)
+        with open(dump_file_name, 'w') as f:
+            for d in data:
+                f.write("{}\n".format("\t".join(map(lambda a: str(a).strip(), d))))
+            f.close()
+
+        cd.is_dumped = YES
+        cd.save()
+        
+    def _fill_mysql_tables_columns(self):
         with connections['edxapp_readonly'].cursor() as cursor:
             for table in CourseDumpTable.objects.all():
-                sql = "SHOW COLUMNS FROM edxapp.{table_name}".format(
-                    table_name=table.name
-                )
-                cursor.execute(sql)
-                TABLE_COLUMNS[table.id] = [str(row[0]) for row in cursor.fetchall()]
+                if table.db_type == DB_TYPE_MYSQL:
+                    sql = "SHOW COLUMNS FROM edxapp.{table_name}".format(
+                        table_name=table.name
+                    )
+                    cursor.execute(sql)
+                    TABLE_COLUMNS[table.id] = [str(row[0]) for row in cursor.fetchall()]
 
-    def _dump_table(self, course, table, users):
+    def _dump_tables(self):
+        # dump all data to temporary files
+        for table in CourseDumpTable.objects.all():
+            tf = tempfile.NamedTemporaryFile(delete=False)
+            if table.db_type == DB_TYPE_MYSQL:
+                cmd = [
+                    'mysqldump',
+                    '-h', '192.168.123.110',
+                    '-u{}'.format(settings.EDXAPP_MYSQL_USER),
+                    '-p{}'.format(settings.EDXAPP_MYSQL_PASSWORD),
+                    '--lock-tables=false',
+                    '--fields-terminated-by=,',
+                    'edxapp', table.name
+                ]
+                try:
+                    subprocess.run(cmd, shell=False, check=True, stdout=tf)
+                except subprocess.CalledProcessError as e:
+                    pass
+            elif table.db_type == DB_TYPE_MONGO:
+                cmd = [
+                    'mongoexport',
+                    '--host', '192.168.123.110',
+                    '--username', 'admin',
+                    '--password', 'GtTD6ajkaSdzyHH8',
+                    '--authenticationDatabase', 'admin',
+                    '--db', 'cs_comments_service',
+                    '--collection', table.name
+                ]
+                subprocess.run(cmd, shell=False, check=True, stdout=tf)
+
+            tf.close()
+            self.data_files[table.name] = tf.name
+        print(self.data_files)
+
+    def _dump_mysql_table(self, course, table, users):
         logger.info("dump course %s table %s", course, table)
         with connections['edxapp_readonly'].cursor() as cursor:
             format_strings = ','.join(['%s'] * len(users))
@@ -78,7 +125,7 @@ class Command(BaseCommand):
             result.insert(0, TABLE_COLUMNS[table.id])
             return result
         
-    def _get_users(self, course):
+    def _get_mysql_users(self, course):
         with connections['edxapp_readonly'].cursor() as cursor:
             cursor.execute("SELECT user_id FROM edxapp.student_courseenrollment WHERE course_id = %s", [course.name])
             return [row[0] for row in cursor.fetchall()]
