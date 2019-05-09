@@ -108,7 +108,7 @@ class CourseDump(models.Model):
     updated = models.DateTimeField(auto_now=True)
     def __str__(self):
         return self.course.name
-    def dump_file_name(self, table_name):
+    def dump_file_name(self):
         #epflx-2019-04-21/EPFLx-Algebre2X-1T2017-auth_user-prod-analytics.sql.gpg
         return "{path}/{org_name}/{date}/{org_name_lower}x-{date}/{course_folder}-{table_name}-prod-analytics.sql".format(
             path=settings.DUMP_DB_RAW,
@@ -116,7 +116,7 @@ class CourseDump(models.Model):
             date=datetime.datetime.now().strftime('%Y-%m-%d'),
             course_folder=self.course.folder,
             org_name_lower=self.course.organisation.name.lower(),
-            table_name=table_name,
+            table_name=self.table.name,
         )
 
     class Meta:

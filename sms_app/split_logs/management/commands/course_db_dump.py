@@ -25,18 +25,18 @@ class Command(BaseCommand):
         for o in organisations:
             logger.info("process organization %s", o.name)
             for course in o.course_set.filter(active=ACTIVE):
-                # check it we have processed it already
-                processed = CourseDump.objects.filter(course=course, date=datetime.datetime.now(), is_dumped=YES).count()
-                if processed == 0:
-                    users = self._get_users(course)
-                    for table in tables:
+                users = self._get_users(course)
+                for table in tables:
+                    # check it we have processed it already
+                    processed = CourseDump.objects.filter(course=course, table=table, date=datetime.datetime.now(), is_dumped=YES).count()
+                    if processed == 0:
                         data = self._dump_table(course, table, users)
                         try:
                             cd = CourseDump.objects.get(course=course, table=table, date=datetime.datetime.now())
                         except CourseDump.DoesNotExist:
                             cd = CourseDump(course=course, table=table, date=datetime.datetime.now())
 
-                        dump_file_name = cd.dump_file_name(table.name)
+                        dump_file_name = cd.dump_file_name()
                         pathlib.Path(os.path.dirname(dump_file_name)).mkdir(parents=True, exist_ok=True)
                         logger.info("dump %s table into %s", table.name, dump_file_name)
                         with open(dump_file_name, 'w') as f:
