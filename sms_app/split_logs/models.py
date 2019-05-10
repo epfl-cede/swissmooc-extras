@@ -84,33 +84,24 @@ class Course(models.Model):
         unique_together = (('name', 'organisation'),)
 
 class CourseDumpTable(models.Model):
-    name = models.CharField(max_length=255)
     db_type = models.CharField(
         choices=DB_TYPE_CHOICES,
         max_length=128,
         default=DB_TYPE_MYSQL
     )
+    name = models.CharField(max_length=255)
+    db_name = models.CharField(max_length=255)
     primary_key = models.CharField(max_length=255)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     def __str__(self):
-        return self.name
+        return '{}/{}.{}'.format(self.db_type, self.db_name, self.name)
     
 class CourseDump(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     table = models.ForeignKey(CourseDumpTable, on_delete=models.CASCADE)
     date = models.DateField()
-    is_dumped = models.CharField(
-        choices=YES_NO_CHOICES,
-        max_length=1,
-        default=NO
-    )
     is_encypted = models.CharField(
-        choices=YES_NO_CHOICES,
-        max_length=1,
-        default=NO
-    )
-    id_uploaded = models.CharField(
         choices=YES_NO_CHOICES,
         max_length=1,
         default=NO
@@ -120,14 +111,22 @@ class CourseDump(models.Model):
     def __str__(self):
         return self.course.name
     def dump_file_name(self):
+        if self.table.db_type == DB_TYPE_MYSQL:
+            suffix = 'prod-analytics.sql'
+        elif self.table.db_type == DB_TYPE_MONGO:
+            suffix = 'prod.mongo'
+        else:
+            raise Exception("Unsupported db_type table")
+
         #epflx-2019-04-21/EPFLx-Algebre2X-1T2017-auth_user-prod-analytics.sql.gpg
-        return "{path}/{org_name}/{date}/{org_name_lower}x-{date}/{course_folder}-{table_name}-prod-analytics.sql".format(
-            path=settings.DUMP_DB_RAW,
-            org_name=self.course.organisation.name,
-            date=datetime.datetime.now().strftime('%Y-%m-%d'),
-            course_folder=self.course.folder,
-            org_name_lower=self.course.organisation.name.lower(),
-            table_name=self.table.name,
+        return "{path}/{org_name}/{date}/{org_name_lower}x-{date}/{course_folder}-{table_name}-{suffix}".format(
+            path = settings.DUMP_DB_RAW,
+            org_name = self.course.organisation.name,
+            date = datetime.datetime.now().strftime('%Y-%m-%d'),
+            course_folder = self.course.folder,
+            org_name_lower = self.course.organisation.name.lower(),
+            table_name = self.table.name,
+            suffix = suffix
         )
     def encrypred_file_name(self):
         return '{}.gpg'.format(self.dump_file_name())

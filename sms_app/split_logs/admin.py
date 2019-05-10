@@ -12,10 +12,10 @@ class CourseAdmin(admin.ModelAdmin):
     list_display = ('name', 'organisation', 'active', 'created', 'updated')
     list_filter = ['organisation']
 class CourseDumpAdmin(admin.ModelAdmin):
-    list_display = ('course', 'table', 'date', 'is_dumped', 'is_encypted', 'id_uploaded', 'created', 'updated')
-    list_filter = ['date', 'is_dumped', 'is_encypted', 'id_uploaded']
+    list_display = ('course', 'table', 'date', 'is_encypted', 'created', 'updated')
+    list_filter = ['date', 'is_encypted']
 class CourseDumpTableAdmin(admin.ModelAdmin):
-    list_display = ('name', 'db_type', 'primary_key', 'created', 'updated')
+    list_display = ('db_type', 'db_name', 'name', 'primary_key', 'created', 'updated')
 
 admin.site.register(DirOriginal, DirOriginalAdmin)
 admin.site.register(FileOriginal, FileOriginalAdmin)
