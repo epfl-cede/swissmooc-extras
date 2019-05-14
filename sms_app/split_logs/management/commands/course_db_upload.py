@@ -39,7 +39,7 @@ class Command(BaseCommand):
                 courses = org.course_set.filter(active=ACTIVE)
                 if len(cd) == len(courses) * len(tables):
                     folder_name = cd[0].dump_folder_name()
-                    zip_name = shutil.make_archive(folder_name, 'zip', folder_name)
+                    zip_name = shutil.make_archive(folder_name, 'zip', os.path.dirname(folder_name), os.path.basename(folder_name))
                     upload_file_name = '{org}/dump-db/{name}'.format(org=org.name, name=os.path.basename(zip_name))
                     fileinfo = os.stat(zip_name)
                     try:
