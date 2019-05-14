@@ -1,14 +1,17 @@
 import logging
-import boto3, botocore
 import os
 from dateutil import parser
 
-from split_logs.models import Organisation
+import boto3, botocore
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
+from split_logs.models import Organisation
+
 logger = logging.getLogger(__name__)
+
+BUCKET = settings.AWS_STORAGE_BUCKET_NAME_ANALYTICS
 
 class Command(BaseCommand):
     help = 'Encrypt files with organization keys and put it on SWITCH Drive'
@@ -24,8 +27,8 @@ class Command(BaseCommand):
             response = s3.list_buckets()
         except Exception as e:
             raise CommandError("SWICH Containers error: '%s'", e)
-        if settings.AWS_STORAGE_BUCKET_NAME not in map(lambda i: i['Name'], response['Buckets']):
-            raise CommandError("Can not fine bucket %s", settings.AWS_STORAGE_BUCKET_NAME)
+        if BUCKET not in map(lambda i: i['Name'], response['Buckets']):
+            raise CommandError("Can not fine bucket %s", BUCKET)
 
         organisations = Organisation.objects.all()
         for o in organisations:
@@ -35,24 +38,24 @@ class Command(BaseCommand):
                 logger.info("process organisation alias '{}'".format(org))
                 filelist = self._get_list(org)
                 for encripted_file in filelist:
-                    encripted_file = '{}/{}'.format(org, encripted_file)
-                    encripted_file_full_path = "{}/{}".format(settings.TRACKING_LOGS_ENCRYPTED, encripted_file)
+                    upload_file_path = '{}/tracking-logs/{}'.format(org, encripted_file)
+                    encripted_file_full_path = "{}/{}/{}".format(settings.TRACKING_LOGS_ENCRYPTED, org, encripted_file)
                     fileinfo = os.stat(encripted_file_full_path)
                     try:
-                        head = s3.head_object(Bucket=settings.AWS_STORAGE_BUCKET_NAME, Key=encripted_file)
+                        head = s3.head_object(Bucket=BUCKET, Key=upload_file_path)
                         # remove file if it has different size, it
                         # will be uploaded next time script starts
                         if  fileinfo.st_size != head['ContentLength']:
-                            logger.info("File %s has different size, remove it", encripted_file)
-                            s3.delete_object(Bucket=settings.AWS_STORAGE_BUCKET_NAME, Key=encripted_file)
+                            logger.info("File %s has different size, remove it", upload_file_path)
+                            s3.delete_object(Bucket=BUCKET, Key=upload_file_path)
                     except botocore.exceptions.ClientError as e:
                         if e.response['Error']['Code'] == "404":
                             try:
-                                logger.info("Upload file %s", encripted_file)
-                                response = s3.upload_file(encripted_file_full_path, settings.AWS_STORAGE_BUCKET_NAME, encripted_file)
+                                logger.info("Upload file %s/%s", org, encripted_file)
+                                response = s3.upload_file(encripted_file_full_path, BUCKET, upload_file_path)
                                 cnt += 1
                             except Exception as e:
-                                raise CommandError("Can not upload file %s: %s", encripted_file, e)
+                                raise CommandError("Can not upload file %s: %s", upload_file_path, e)
                         else:
                             logger.info("File exists")
 

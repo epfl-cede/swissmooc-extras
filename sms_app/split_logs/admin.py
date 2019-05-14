@@ -13,7 +13,7 @@ class CourseAdmin(admin.ModelAdmin):
     list_filter = ['organisation']
 class CourseDumpAdmin(admin.ModelAdmin):
     list_display = ('course', 'table', 'date', 'is_encypted', 'created', 'updated')
-    list_filter = ['date', 'is_encypted']
+    list_filter = ['course__organisation', 'date', 'is_encypted']
 class CourseDumpTableAdmin(admin.ModelAdmin):
     list_display = ('db_type', 'db_name', 'name', 'primary_key', 'created', 'updated')
 

@@ -110,6 +110,12 @@ class CourseDump(models.Model):
     updated = models.DateTimeField(auto_now=True)
     def __str__(self):
         return self.course.name
+    def dump_folder_name(self):
+        return '{path}/{org_name_lower}-{date}'.format(
+            path = settings.DUMP_DB_PATH,
+            org_name_lower = self.course.organisation.name.lower(),
+            date = datetime.datetime.now().strftime('%Y-%m-%d'),
+        )
     def dump_file_name(self):
         if self.table.db_type == DB_TYPE_MYSQL:
             suffix = 'prod-analytics.sql'
@@ -119,14 +125,11 @@ class CourseDump(models.Model):
             raise Exception("Unsupported db_type table")
 
         #epflx-2019-04-21/EPFLx-Algebre2X-1T2017-auth_user-prod-analytics.sql.gpg
-        return "{path}/{org_name}/{date}/{org_name_lower}x-{date}/{course_folder}-{table_name}-{suffix}".format(
-            path = settings.DUMP_DB_RAW,
-            org_name = self.course.organisation.name,
-            date = datetime.datetime.now().strftime('%Y-%m-%d'),
+        return "{folder_name}/{course_folder}-{table_name}-{suffix}".format(
+            folder_name = self.dump_folder_name(),
             course_folder = self.course.folder,
-            org_name_lower = self.course.organisation.name.lower(),
             table_name = self.table.name,
-            suffix = suffix
+            suffix = suffix,
         )
     def encrypred_file_name(self):
         return '{}.gpg'.format(self.dump_file_name())

@@ -60,7 +60,12 @@ class Command(BaseCommand):
                 if cnt >= limit: break
 
     def _get_encrypted_file_full_path(self, organisation, fname):
-        return "{}/{}/{}x-courseware-events-{}.gpg".format(settings.TRACKING_LOGS_ENCRYPTED, organisation.name, organisation.name.lower(), fname)
+        return "{}/{}/{}-courseware-events-{}.gpg".format(
+            settings.TRACKING_LOGS_ENCRYPTED,
+            organisation.name,
+            organisation.name.lower(),
+            fname
+        )
 
     def _get_files_for_process(self, organisation):
         aliases = organisation.aliases.split(',')
