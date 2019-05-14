@@ -14,6 +14,7 @@ class CourseAdmin(admin.ModelAdmin):
 class CourseDumpAdmin(admin.ModelAdmin):
     list_display = ('course', 'table', 'date', 'is_encypted', 'created', 'updated')
     list_filter = ['course__organisation', 'date', 'is_encypted']
+    search_fields = ['course__name']
 class CourseDumpTableAdmin(admin.ModelAdmin):
     list_display = ('db_type', 'db_name', 'name', 'primary_key', 'created', 'updated')
 
