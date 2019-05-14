@@ -11,7 +11,7 @@ from django.core.management.base import BaseCommand
 from django.core.exceptions import ObjectDoesNotExist
 
 from split_logs.models import Course, CourseDump, CourseDumpTable, Organisation
-from split_logs.models import ACTIVE, NOT_ACTIVE, YES, NO, DB_TYPE_MYSQL, DB_TYPE_MONGO
+from split_logs.models import ACTIVE, NOT_ACTIVE, YES, NO, DB_TYPE_MYSQL
 
 logger = logging.getLogger(__name__)
 
@@ -62,40 +62,6 @@ class Command(BaseCommand):
                     )
                     cursor.execute(sql)
                     TABLE_COLUMNS[table.id] = [str(row[0]) for row in cursor.fetchall()]
-
-    def _dump_tables(self):
-        # dump all data to temporary files
-        for table in CourseDumpTable.objects.all():
-            tf = tempfile.NamedTemporaryFile(delete=False)
-            if table.db_type == DB_TYPE_MYSQL:
-                cmd = [
-                    'mysqldump',
-                    '-h', settings.EDXAPP_MYSQL_HOST,
-                    '-u{}'.format(settings.EDXAPP_MYSQL_USER),
-                    '-p{}'.format(settings.EDXAPP_MYSQL_PASSWORD),
-                    '--lock-tables=false',
-                    '--fields-terminated-by=,',
-                    'edxapp', table.name
-                ]
-                try:
-                    subprocess.run(cmd, shell=False, check=True, stdout=tf)
-                except subprocess.CalledProcessError as e:
-                    pass
-            elif table.db_type == DB_TYPE_MONGO:
-                cmd = [
-                    'mongoexport',
-                    '--host', settings.EDXAPP_MYSQL_HOST,
-                    '--username', 'admin',
-                    '--password', 'GtTD6ajkaSdzyHH8',
-                    '--authenticationDatabase', 'admin',
-                    '--db', 'cs_comments_service',
-                    '--collection', table.name
-                ]
-                subprocess.run(cmd, shell=False, check=True, stdout=tf)
-
-            tf.close()
-            self.data_files[table.name] = tf.name
-        print(self.data_files)
 
     def _dump_mysql_table(self, course, table, users):
         logger.info("dump course %s table %s", course, table)
