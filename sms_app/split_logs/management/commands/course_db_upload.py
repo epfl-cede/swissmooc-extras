@@ -33,30 +33,33 @@ class Command(BaseCommand):
         for org in organisations:
             logger.info("Process organisation %s", org.name)
             cd = CourseDump.objects.filter(course__organisation=org, is_encypted=YES, date=now)
-            courses = org.course_set.filter(active=ACTIVE)
-            if len(cd) == len(courses) * len(tables):
-                folder_name = cd[0].dump_folder_name()
-                zip_name = shutil.make_archive(folder_name, 'zip', folder_name)
-                upload_file_name = '{org}/dump-db/{name}'.format(org=org.name, name=os.path.basename(zip_name))
-                fileinfo = os.stat(zip_name)
-                try:
-                    head = s3.head_object(Bucket=BUCKET, Key=upload_file_name)
-                    # remove file if it has different size, it
-                    # will be uploaded next time script starts
-                    if  fileinfo.st_size != head['ContentLength']:
-                        logger.info("File %s has different size, remove it", zip_name)
-                        s3.delete_object(Bucket=BUCKET, Key=upload_file_name)
-                except botocore.exceptions.ClientError as e:
-                    if e.response['Error']['Code'] == "404":
-                        try:
-                            logger.info("Upload file %s", upload_file_name)
-                            response = s3.upload_file(zip_name, BUCKET, upload_file_name)
-                            cnt += 1
-                        except Exception as e:
-                            raise CommandError("Can not upload file %s: %s", upload_file_name, e)
-                    else:
-                        logger.info("File exists")
+            if len(cd) == 0:
+                logger.warning("No course dumps")
             else:
-                logger.warning("Not all tables were dumped/encrypted, please check: organization=%s, date=%s", org.name, now)
+                courses = org.course_set.filter(active=ACTIVE)
+                if len(cd) == len(courses) * len(tables):
+                    folder_name = cd[0].dump_folder_name()
+                    zip_name = shutil.make_archive(folder_name, 'zip', folder_name)
+                    upload_file_name = '{org}/dump-db/{name}'.format(org=org.name, name=os.path.basename(zip_name))
+                    fileinfo = os.stat(zip_name)
+                    try:
+                        head = s3.head_object(Bucket=BUCKET, Key=upload_file_name)
+                        # remove file if it has different size, it
+                        # will be uploaded next time script starts
+                        if  fileinfo.st_size != head['ContentLength']:
+                            logger.info("File %s has different size, remove it", zip_name)
+                            s3.delete_object(Bucket=BUCKET, Key=upload_file_name)
+                    except botocore.exceptions.ClientError as e:
+                        if e.response['Error']['Code'] == "404":
+                            try:
+                                logger.info("Upload file %s", upload_file_name)
+                                response = s3.upload_file(zip_name, BUCKET, upload_file_name)
+                                cnt += 1
+                            except Exception as e:
+                                raise CommandError("Can not upload file %s: %s", upload_file_name, e)
+                        else:
+                            logger.info("File exists")
+                else:
+                    logger.warning("Not all tables were dumped/encrypted, please check: organization=%s, date=%s", org.name, now)
             
             
