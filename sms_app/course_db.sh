@@ -11,3 +11,4 @@ python manage.py course_db_renew_course_table
 python manage.py course_db_dump_mongo
 python manage.py course_db_dump_mysql
 python manage.py course_db_encrypt
+python manage.py course_db_upload
