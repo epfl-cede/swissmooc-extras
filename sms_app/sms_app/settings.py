@@ -150,7 +150,7 @@ LOGGING = {
         # prevents invoking the `AdminEmailHandler`
         'django': {
             'handlers': ['console'],
-            'level': 'INFO',
+            'level': 'WARNING',
         },
         '': {
             'handlers': ['console'],
