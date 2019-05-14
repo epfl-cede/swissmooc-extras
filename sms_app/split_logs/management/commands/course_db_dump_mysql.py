@@ -70,7 +70,7 @@ class Command(BaseCommand):
             if table.db_type == DB_TYPE_MYSQL:
                 cmd = [
                     'mysqldump',
-                    '-h', '192.168.123.110',
+                    '-h', settings.EDXAPP_MYSQL_HOST,
                     '-u{}'.format(settings.EDXAPP_MYSQL_USER),
                     '-p{}'.format(settings.EDXAPP_MYSQL_PASSWORD),
                     '--lock-tables=false',
@@ -84,7 +84,7 @@ class Command(BaseCommand):
             elif table.db_type == DB_TYPE_MONGO:
                 cmd = [
                     'mongoexport',
-                    '--host', '192.168.123.110',
+                    '--host', settings.EDXAPP_MYSQL_HOST,
                     '--username', 'admin',
                     '--password', 'GtTD6ajkaSdzyHH8',
                     '--authenticationDatabase', 'admin',
