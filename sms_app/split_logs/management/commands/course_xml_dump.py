@@ -25,7 +25,6 @@ class Command(BaseCommand):
             pass
 
         # create directory
-        os.mkdir(settings.DUMP_XML_PATH)
         os.mkdir(cdir)
         os.chmod(cdir, 0o777);
 
