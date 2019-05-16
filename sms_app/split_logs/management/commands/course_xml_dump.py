@@ -16,15 +16,15 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         now = datetime.datetime.now().date()
+        cdir = '{}/{}/'.format(settings.DUMP_XML_PATH, now)
 
         # remove dir and all contents
         try:
-            shutil.rmtree(settings.DUMP_XML_PATH)
+            shutil.rmtree(cdir)
         except FileNotFoundError:
             pass
 
         # create directory
-        cdir = '{}/{}/'.format(settings.DUMP_XML_PATH, now)
         os.mkdir(settings.DUMP_XML_PATH)
         os.mkdir(cdir)
         os.chmod(cdir, 0o777);
