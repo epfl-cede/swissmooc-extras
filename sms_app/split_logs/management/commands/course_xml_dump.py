@@ -5,6 +5,7 @@ import logging
 import subprocess
 
 from django.conf import settings
+from django.core.mail import send_mail
 from django.core.management.base import BaseCommand
 
 logger = logging.getLogger(__name__)
@@ -28,18 +29,44 @@ class Command(BaseCommand):
 
         # get list of courses
         courses = self._get_courses()
+        course_data_for_email = ()
         for course_id in courses:
             logger.info('process course_id %s', course_id)
             course_dir = '{}{}/'.format(cdir, course_id[10:].replace('+', '-'))
             os.mkdir(course_dir)
             os.chmod(course_dir, 0o777);
 
-            self._course_dump(course_id, course_dir)
+            result = self._course_dump(course_id, course_dir)
+            course_data_for_email.append([course_id, result])
+
             zip_name = self._course_zip(course_id, course_dir)
             self._course_copy(course_id, zip_name)
             
             # remove course
             os.remove(zip_name)
+
+        self._send_email(course_data_for_email, now)
+
+    def _send_email(self, r, now):
+        list_failed = []
+        list_success = []
+        for c in r:
+            if c[1] == True:
+                list_success.append(c[0])
+            else:
+                list_failed.append(c[0])
+
+        send_mail(
+            'SMS-extras course_xml_dump result {}'.format(now),
+            'Course XML dump results for {}:\n\nDUMP WITH ERROR COURSES:\n{}\n\nCOURSES WITHOUT PROBLEMS:\n{}'.format(
+                now,
+                '\n'.join(list_failed),
+                '\n'.join(list_success),
+            ),
+            'noreply@epfl.ch',
+            ['oleg.demakov@epfl.ch'],
+            fail_silently=False,
+        )
 
     def _course_copy(self, course_id, zip_name):
         cmd  = [
@@ -74,13 +101,16 @@ class Command(BaseCommand):
             course_id,
             course_dir,
         ]
+        result = True
         try:
             with open(os.devnull, 'w') as devnull:
                 subprocess.run(cmd, shell=False, check=True, stderr=devnull, stdout=devnull)
         except Exception as e:
             logger.error('dump course %s error: %s', course_id, e)
+            result = False
 
         subprocess.run(['sudo', 'chown', '-R', 'ubuntu:ubuntu', course_dir])
+        return result
             
     def _get_courses(self):
         cmd = [
