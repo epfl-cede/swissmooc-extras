@@ -1,5 +1,4 @@
-import os, stat
-import json
+import os
 import shutil
 import datetime
 import logging
@@ -7,7 +6,6 @@ import subprocess
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
-from django.core.exceptions import ObjectDoesNotExist
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +27,62 @@ class Command(BaseCommand):
         os.chmod(cdir, 0o777);
 
         # get list of courses
+        courses = self._get_courses()
+        for course_id in courses:
+            logger.info('process course_id %s', course_id)
+            course_dir = '{}{}/'.format(cdir, course_id[10:].replace('+', '-'))
+            os.mkdir(course_dir)
+            os.chmod(course_dir, 0o777);
+
+            self._course_dump(course_id, course_dir)
+            zip_name = self._course_zip(course_id, course_dir)
+            self._course_copy(course_id, zip_name)
+            
+            # remove course
+            os.remove(zip_name)
+
+    def _course_copy(self, course_id, zip_name):
+        cmd  = [
+            'rsync',
+            '-az',
+            os.path.dirname(zip_name),
+            'ubuntu@192.168.{}.191:{}/'.format(settings.EDXAPP_MYSQL_HOST.split('.')[2], settings.DUMP_XML_PATH)
+        ]
+        try:
+            with open(os.devnull, 'w') as devnull:
+                subprocess.run(cmd, shell=False, check=True, stderr=devnull, stdout=devnull)
+        except Exception as e:
+            logger.error('rsync course %s error: %s', course_id, e)
+            exit(1)
+        
+    def _course_zip(self, course_id, course_dir):
+        zip_name = shutil.make_archive(course_dir, 'zip', os.path.dirname(os.path.dirname(course_dir)), os.path.basename(course_dir[:-1]))
+        shutil.rmtree(course_dir)
+        return zip_name
+        
+    def _course_dump(self, course_id, course_dir):
+        cmd = [
+            'sudo',
+            '-u',
+            'www-data',
+            '/edx/bin/python.edxapp',
+            '/edx/bin/manage.edxapp',
+            'cms',
+            'export',
+            '--settings',
+            'openstack',
+            course_id,
+            course_dir,
+        ]
+        try:
+            with open(os.devnull, 'w') as devnull:
+                subprocess.run(cmd, shell=False, check=True, stderr=devnull, stdout=devnull)
+        except Exception as e:
+            logger.error('dump course %s error: %s', course_id, e)
+
+        subprocess.run(['sudo', 'chown', '-R', 'ubuntu:ubuntu', course_dir])
+            
+    def _get_courses(self):
         cmd = [
             'sudo',
             '-u',
@@ -40,42 +94,11 @@ class Command(BaseCommand):
             '--settings',
             'openstack',
         ]
-        subprocess.run(cmd, shell=False, check=True, stdout=subprocess.PIPE)
-        output = proc.stdout.read()
-        #output = ['course-v1:BFH+MATLAB+2018', 'course-v1:CSM+0.5+2018']
-        for course_id in output:
-            course_dir = '{}/{}/'.format(cdir, course_id[10:].replace('+', '-'))
-            os.mkdir(course_dir)
-            os.chmod(course_dir, 0o777);
+        try:
+            with open(os.devnull, 'w') as devnull:
+                output = subprocess.check_output(cmd, stderr=devnull)
+        except Exception as e:
+            logger.error('get course list error: %s', e)
+            exit(1)
 
-            # dump course
-            cmd = [
-                'sudo',
-                '-u',
-                'www-data',
-                '/edx/bin/python.edxapp',
-                '/edx/bin/manage.edxapp',
-                'cms',
-                'export',
-                '--settings',
-                'openstack',
-                course_id,
-            ]
-            subprocess.run(cmd, shell=False, check=True)
-
-            # zip course
-            zip_name = shutil.make_archive(course_dir, 'zip', os.path.dirname(course_dir), os.path.basename(course_dir))
-            
-            # sync course
-            cmd  = [
-                'rsync',
-                '-avz',
-                '--delete',
-                os.path.dirname(zip_name),
-                'ubuntu@192.168.{}.191:{}/'.format(settings.EDXAPP_MYSQL_HOST.split('.')[2], settings.DUMP_XML_PATH)
-            ]
-            subprocess.run(cmd, shell=False, check=True)
-            
-            # remove course
-            shutil.rmtree(course_folder)
-            shutil.rmtree('{}.zip'.format(course_folder))
+        return output.decode().strip('\n').split('\n')
