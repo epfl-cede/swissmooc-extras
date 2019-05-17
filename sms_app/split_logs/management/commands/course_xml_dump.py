@@ -58,8 +58,8 @@ class Command(BaseCommand):
                 '\n'.join(ko),
                 '\n'.join(ok),
             ),
-            'noreply@epfl.ch',
-            ['oleg.demakov@epfl.ch'],
+            settings.EMAIL_FROM_ADDRESS,
+            settings.EMAIL_TO_ADDRESSES,
             fail_silently=False,
         )
 

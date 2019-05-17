@@ -173,3 +173,6 @@ AWS_STORAGE_BUCKET_NAME_ANALYTICS='{env}-analytics'.format(env=SMS_APP_ENV)
 EDXAPP_MYSQL_HOST=os.environ.get("EDXAPP_MYSQL_HOST")
 EDXAPP_MYSQL_USER=os.environ.get("EDXAPP_MYSQL_USER")
 EDXAPP_MYSQL_PASSWORD=os.environ.get("EDXAPP_MYSQL_PASSWORD")
+
+EMAIL_FROM_ADDRESS = 'noreply@epfl.ch'
+EMAIL_TO_ADDRESSES = ['oleg.demakov@epfl.ch']
