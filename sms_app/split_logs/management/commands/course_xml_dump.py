@@ -37,7 +37,7 @@ class Command(BaseCommand):
             os.chmod(course_dir, 0o777);
 
             result = self._course_dump(course_id, course_dir)
-            course_data_for_email.append([course_id, result])
+            course_data_for_email += (course_id, result)
 
             zip_name = self._course_zip(course_id, course_dir)
             self._course_copy(course_id, zip_name)
