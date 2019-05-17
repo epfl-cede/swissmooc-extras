@@ -29,15 +29,18 @@ class Command(BaseCommand):
 
         # get list of courses
         courses = self._get_courses()
-        course_data_for_email = ()
+        course_data_for_email_ok = ()
+        course_data_for_email_ko = ()
         for course_id in courses:
             logger.info('process course_id %s', course_id)
             course_dir = '{}{}/'.format(cdir, course_id[10:].replace('+', '-'))
             os.mkdir(course_dir)
             os.chmod(course_dir, 0o777);
 
-            result = self._course_dump(course_id, course_dir)
-            course_data_for_email += (course_id, result)
+            if self._course_dump(course_id, course_dir):
+                course_data_for_email_ok += (course_id,)
+            else:
+                course_data_for_email_ko += (course_id,)
 
             zip_name = self._course_zip(course_id, course_dir)
             self._course_copy(course_id, zip_name)
@@ -45,23 +48,15 @@ class Command(BaseCommand):
             # remove course
             os.remove(zip_name)
 
-        self._send_email(course_data_for_email, now)
+        self._send_email(now, course_data_for_email_ok, course_data_for_email_ko)
 
-    def _send_email(self, r, now):
-        list_failed = []
-        list_success = []
-        for c in r:
-            if c[1] == True:
-                list_success.append(c[0])
-            else:
-                list_failed.append(c[0])
-
+    def _send_email(self, now, ok, ko):
         send_mail(
-            'SMS-extras course_xml_dump result {}'.format(now),
-            'Course XML dump results for {}:\n\nDUMP WITH ERROR COURSES:\n{}\n\nCOURSES WITHOUT PROBLEMS:\n{}'.format(
+            '[SMS-extras] Course XML dump result - {}'.format(now),
+            'Course XML dump results - {}:\n\nDUMP WITH ERROR COURSES:\n{}\n\nCOURSES WITHOUT PROBLEMS:\n{}'.format(
                 now,
-                '\n'.join(list_failed),
-                '\n'.join(list_success),
+                '\n'.join(ko),
+                '\n'.join(ok),
             ),
             'noreply@epfl.ch',
             ['oleg.demakov@epfl.ch'],
