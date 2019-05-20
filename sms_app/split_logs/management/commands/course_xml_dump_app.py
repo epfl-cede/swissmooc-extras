@@ -53,8 +53,10 @@ class Command(BaseCommand):
     def _send_email(self, now, ok, ko):
         send_mail(
             '[SMS-extras] Course XML dump result - {}'.format(now),
-            'Course XML dump results - {}:\n\nDUMP WITH ERROR COURSES:\n{}\n\nCOURSES WITHOUT PROBLEMS:\n{}'.format(
+            'Course XML dump results - {}:\n\nDumped {} courses\nDumped with error {} courses\n\nDUMP WITH ERROR COURSES:\n{}\n\nCOURSES WITHOUT PROBLEMS:\n{}'.format(
                 now,
+                len(ok),
+                len(ko),
                 '\n'.join(ko),
                 '\n'.join(ok),
             ),
