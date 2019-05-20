@@ -8,6 +8,17 @@ LOGGER = logging.getLogger(__name__)
 
 def upload_file(organisation, original_name, upload_name):
     s3 = boto3.client('s3', endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL"))
+    LOGGER.debug('Upload file %s to %s', original_name, upload_name)
+
+    # don't need to check it before copy each file
+    #
+    #try:
+    #    response = s3.list_buckets()
+    #except Exception as e:
+    #    raise Exception("SWICH Containers error: '%s'", e)
+    #if settings.AWS_STORAGE_BUCKET_NAME_ANALYTICS not in map(lambda i: i['Name'], response['Buckets']):
+    #    raise Exception("Can not fine bucket %s", settings.AWS_STORAGE_BUCKET_NAME_ANALYTICS)
+
     fileinfo = os.stat(original_name)
     try:
         head = s3.head_object(Bucket=settings.AWS_STORAGE_BUCKET_NAME_ANALYTICS, Key=upload_name)
@@ -24,7 +35,6 @@ def upload_file(organisation, original_name, upload_name):
                 s3.upload_file(original_name, settings.AWS_STORAGE_BUCKET_NAME_ANALYTICS, upload_name)
                 os.remove(original_name)
             except Exception as e:
-                raise CommandError("Can not upload file %s: %s", upload_name, e)
+                raise Exception("Can not upload file %s: %s", upload_name, e)
         else:
             LOGGER.error("File exists? (%s)", e)
-        

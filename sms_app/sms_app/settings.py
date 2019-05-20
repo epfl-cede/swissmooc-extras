@@ -156,6 +156,10 @@ LOGGING = {
             'handlers': ['console'],
             'level': 'INFO',
         },
+        #'split_logs.utils': {
+        #    'handlers': ['console'],
+        #    'level': 'DEBUG',
+        #},
     }
 }
 
