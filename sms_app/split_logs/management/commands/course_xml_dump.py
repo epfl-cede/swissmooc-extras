@@ -27,8 +27,8 @@ class Command(BaseCommand):
             for cfile in files:
                 LOGGER.info('Encrypt file %s', cfile)
                 org = self._find_org_by_name(os.path.basename(cfile).split('-')[0])
-
-                self._encrypt(org, cfile)
+                if org:
+                    self._encrypt(org, cfile)
 
             LOGGER.info('Process dir for upload %s', cdir)
             files = [os.path.join(cdir, o) for o in os.listdir(cdir) if not os.path.isdir(os.path.join(cdir, o)) and o.endswith('.gpg')]
@@ -36,13 +36,12 @@ class Command(BaseCommand):
             for efile in files:
                 LOGGER.info('Upload file %s', efile)
                 org = self._find_org_by_name(os.path.basename(efile).split('-')[0])
-
-                upload_file(org, efile, '{org}/dump-xml/{date}/{name}'.format(
-                    org=org.name,
-                    date=efile.split('/')[-2],
-                    name=os.path.basename(efile)
-                ))
-                
+                if org:
+                    upload_file(org, efile, '{org}/dump-xml/{date}/{name}'.format(
+                        org=org.name,
+                        date=efile.split('/')[-2],
+                        name=os.path.basename(efile)
+                    ))
 
     def _encrypt(self, org, fname):
         gpg = gnupg.GPG()
@@ -66,5 +65,5 @@ class Command(BaseCommand):
         try:
             org = Organisation.objects.get(name=name);
         except Exception as e:
-            print(e)
+            return False
         return org
