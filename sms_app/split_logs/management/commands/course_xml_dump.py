@@ -25,18 +25,18 @@ class Command(BaseCommand):
             files = [os.path.join(cdir, o) for o in os.listdir(cdir) if not os.path.isdir(os.path.join(cdir, o)) and o.endswith('.zip')]
 
             for cfile in files:
-                LOGGER.info('Encrypt file %s', cfile)
                 org = self._find_org_by_name(os.path.basename(cfile).split('-')[0])
                 if org:
+                    LOGGER.info('Encrypt file %s', cfile)
                     self._encrypt(org, cfile)
 
             LOGGER.info('Process dir for upload %s', cdir)
             files = [os.path.join(cdir, o) for o in os.listdir(cdir) if not os.path.isdir(os.path.join(cdir, o)) and o.endswith('.gpg')]
 
             for efile in files:
-                LOGGER.info('Upload file %s', efile)
                 org = self._find_org_by_name(os.path.basename(efile).split('-')[0])
                 if org:
+                    LOGGER.info('Upload file %s', efile)
                     upload_file(org, efile, '{org}/dump-xml/{date}/{name}'.format(
                         org=org.name,
                         date=efile.split('/')[-2],
