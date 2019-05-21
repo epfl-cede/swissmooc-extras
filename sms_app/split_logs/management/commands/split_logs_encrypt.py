@@ -13,7 +13,7 @@ from split_logs.models import Organisation
 
 logger = logging.getLogger(__name__)
 
-MTIME_LESS_DAYS_AGO = 0
+MTIME_LESS_DAYS_AGO = 2
 MTIME_GREATER_DAYS_AGO = 365
 
 class Command(BaseCommand):
