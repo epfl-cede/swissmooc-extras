@@ -52,7 +52,10 @@ class Command(BaseCommand):
 
     def _send_email(self, now, ok, ko):
         send_mail(
-            '[SMS-extras] Course XML dump result - {}'.format(now),
+            '[SMS-extras:{env}] Course XML dump result - {date}'.format(
+                env=settings.SMS_APP_ENV,
+                date=now
+            ),
             'Course XML dump results - {}:\n\nDumped {} courses\nDumped with error {} courses\n\nDUMP WITH ERROR COURSES:\n{}\n\nCOURSES WITHOUT PROBLEMS:\n{}'.format(
                 now,
                 len(ok),
