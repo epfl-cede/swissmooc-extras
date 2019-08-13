@@ -1,3 +1,4 @@
+import sys
 import datetime
 import ssl
 import socket
@@ -7,12 +8,15 @@ from django.core.management.base import BaseCommand, CommandError
 
 from check_ssl.models import Site
 
+WARNING_DELTA = datetime.timedelta(days=7)
+
 class Command(BaseCommand):
     help = 'Check SSL expiration dates and set it to the database'
 
     def handle(self, *args, **options):
         sites = Site.objects.all()
-        result = False
+        now = datetime.datetime.now()
+        result = 0
         for site in sites:
             try:
                 expires = self._ssl_expiry_datetime(site.hostname)
@@ -27,10 +31,12 @@ class Command(BaseCommand):
             else:
                 site.expires = expires
                 site.error = ''
+                if expires - now < WARNING_DELTA:
+                    self.stdout.write(self.style.ERROR('Site SSL cert will expire at %s, have to update cert' % expires))
+                    result = 1
             site.save()
-            result = result or site.error is not ''
 
-        return int(result)
+        sys.exit(result)
 
     def _ssl_expiry_datetime(self, hostname: str) -> datetime.datetime:
         ssl_date_fmt = r'%b %d %H:%M:%S %Y %Z'
