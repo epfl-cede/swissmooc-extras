@@ -12,6 +12,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         sites = Site.objects.all()
+        result = False
         for site in sites:
             try:
                 expires = self._ssl_expiry_datetime(site.hostname)
@@ -27,6 +28,9 @@ class Command(BaseCommand):
                 site.expires = expires
                 site.error = ''
             site.save()
+            result = result or site.error is not ''
+
+        return int(result)
 
     def _ssl_expiry_datetime(self, hostname: str) -> datetime.datetime:
         ssl_date_fmt = r'%b %d %H:%M:%S %Y %Z'
