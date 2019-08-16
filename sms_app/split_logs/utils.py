@@ -22,11 +22,15 @@ def upload_file(organisation, original_name, upload_name):
     fileinfo = os.stat(original_name)
     try:
         head = s3.head_object(Bucket=settings.AWS_STORAGE_BUCKET_NAME_ANALYTICS, Key=upload_name)
-        # remove file if it has different size, it
-        # will be uploaded next time script starts
-        if  fileinfo.st_size != head['ContentLength']:
+        # remove file if it has different size(more than 10 bytes)
+        # this is real example local = 237996, remote = 238000
+        # s3.head_object sometime returns slightly different filesize,
+        # though downloaded file has exactly the same as local file size.
+        if  max(fileinfo.st_size, head['ContentLength']) - min(fileinfo.st_size, head['ContentLength']) > 10:
             LOGGER.error("File %s has different size(local = %d against remote = %d), remove it", original_name, fileinfo.st_size, head['ContentLength'])
             s3.delete_object(Bucket=settings.AWS_STORAGE_BUCKET_NAME_ANALYTICS, Key=upload_name)
+            # re-upload it
+            upload_file(organisation, original_name, upload_name)
         else:
             LOGGER.info("file '%s' uploaded", original_name)
             os.remove(original_name)
