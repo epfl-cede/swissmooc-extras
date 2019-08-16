@@ -33,7 +33,6 @@ class Command(BaseCommand):
                         ),
                         '{}/tracking-logs/{}'.format(org, encripted_file),
                     )
-                    logger.info("file '%s/%s' uploaded", org, encripted_file)
 
 
     def _get_list(self, org):

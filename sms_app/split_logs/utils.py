@@ -25,9 +25,10 @@ def upload_file(organisation, original_name, upload_name):
         # remove file if it has different size, it
         # will be uploaded next time script starts
         if  fileinfo.st_size != head['ContentLength']:
-            LOGGER.error("File %s has different size, remove it", original_name)
+            LOGGER.error("File %s has different size(local = %d against remote = %d), remove it", original_name, fileinfo.st_size, head['ContentLength'])
             s3.delete_object(Bucket=settings.AWS_STORAGE_BUCKET_NAME_ANALYTICS, Key=upload_name)
         else:
+            logger.info("file '%s' uploaded", original_name)
             os.remove(original_name)
     except botocore.exceptions.ClientError as e:
         if e.response['Error']['Code'] == "404":
