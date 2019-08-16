@@ -32,13 +32,13 @@ def upload_file(organisation, original_name, upload_name):
             # re-upload it
             upload_file(organisation, original_name, upload_name)
         else:
-            LOGGER.info("file '%s' uploaded", original_name)
             os.remove(original_name)
     except botocore.exceptions.ClientError as e:
         if e.response['Error']['Code'] == "404":
             try:
                 s3.upload_file(original_name, settings.AWS_STORAGE_BUCKET_NAME_ANALYTICS, upload_name)
                 os.remove(original_name)
+                LOGGER.info("file '%s' uploaded", original_name)
             except Exception as e:
                 raise Exception("Can not upload file %s: %s", upload_name, e)
         else:
