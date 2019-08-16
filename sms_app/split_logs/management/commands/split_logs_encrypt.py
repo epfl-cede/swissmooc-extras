@@ -14,7 +14,7 @@ from split_logs.models import Organisation
 logger = logging.getLogger(__name__)
 
 MTIME_LESS_DAYS_AGO = 2
-MTIME_GREATER_DAYS_AGO = 365
+MTIME_GREATER_DAYS_AGO = 30
 
 class Command(BaseCommand):
     help = 'Encrypt files with organization keys and put it on SWITCH Drive'
