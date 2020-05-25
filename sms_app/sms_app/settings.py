@@ -179,4 +179,4 @@ EDXAPP_MYSQL_USER=os.environ.get("EDXAPP_MYSQL_USER")
 EDXAPP_MYSQL_PASSWORD=os.environ.get("EDXAPP_MYSQL_PASSWORD")
 
 EMAIL_FROM_ADDRESS = 'noreply@epfl.ch'
-EMAIL_TO_ADDRESSES = ['oleg.demakov@epfl.ch']
+EMAIL_TO_ADDRESSES = ['edx-monitor@groupes.epfl.ch']
