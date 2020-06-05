@@ -50,7 +50,7 @@ class Command(BaseCommand):
         self._send_mail(mail_log)
         sys.exit(result)
 
-    def _send_mail(mail_log):
+    def _send_mail(self, mail_log):
         now = datetime.datetime.now().date()
         send_mail(
             '[SMS-extras:{env}] Check SSL result - {date}'.format(
