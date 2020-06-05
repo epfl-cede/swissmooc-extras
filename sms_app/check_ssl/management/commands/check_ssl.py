@@ -28,23 +28,23 @@ class Command(BaseCommand):
                 expires = self._ssl_expiry_datetime(site.hostname)
             except ssl.CertificateError as e:
                 site.error = 'cert error {}'.format(e)
-                mail_log['with_error'].append("{}\t{}".format(site.hostname, site.error))
+                mail_log['with_error'].append("{}\t'{}'".format(site.hostname, site.error))
             except ssl.SSLError as e:
                 site.error = 'cert error {}'.format(e)
-                mail_log['with_error'].append("{}\t{}".format(site.hostname, site.error))
+                mail_log['with_error'].append("{}\t'{}'".format(site.hostname, site.error))
             except socket.timeout as e:
                 site.error = 'could not connect'
-                mail_log['with_error'].append("{}\t{}".format(site.hostname, site.error))
+                mail_log['with_error'].append("{}\t'{}'".format(site.hostname, site.error))
             except socket.gaierror as e:
                 site.error = 'not accessable'
-                mail_log['with_error'].append("{}\t{}".format(site.hostname, site.error))
+                mail_log['with_error'].append("{}\t'{}'".format(site.hostname, site.error))
             else:
                 site.expires = expires
                 site.error = ''
                 if expires - now < WARNING_DELTA:
                     self.stdout.write(self.style.ERROR('Site SSL cert will expire at %s, have to update cert' % expires))
                     result = 1
-                    mail_log['for_update'].append("{}\t{}".format(site.hostname, site.expires))
+                    mail_log['for_update'].append("{}\t'{}'".format(site.hostname, site.expires))
 
             site.save()
 
@@ -63,10 +63,10 @@ Need your attention!
 
 Expired soon hostnames:
 {}
+
 With errors hostnames:
 {}
             '''.format(
-                now,
                 '\n'.join(mail_log['for_update']),
                 '\n'.join(mail_log['with_error']),
             ),
