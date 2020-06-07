@@ -48,8 +48,8 @@ class Command(BaseCommand):
 
             site.save()
 
-        if len(mail_log['with_error']) > 0 or len(mail_log['for_update']) > 0:
-            self._send_mail(mail_log)
+        #if len(mail_log['with_error']) > 0 or len(mail_log['for_update']) > 0:
+        #    self._send_mail(mail_log)
 
         sys.exit(result)
 
