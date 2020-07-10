@@ -1,11 +1,11 @@
 #!/bin/bash
 set -ex
 
-logger run /home/ubuntu/sms-exrtas/sms_app.sh
+logger run /home/ubuntu/sms-extras/sms_app.sh
 source /home/ubuntu/sms_app.env >> /dev/null 2>&1
-source /home/ubuntu/sms-exrtas/venv/bin/activate
+source /home/ubuntu/sms-extras/venv/bin/activate
 
-cd /home/ubuntu/sms-exrtas/sms_app
+cd /home/ubuntu/sms-extras/sms_app
 
 python manage.py split_logs_fetch_new
 python manage.py split_logs_split --limit 100
