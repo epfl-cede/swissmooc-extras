@@ -206,7 +206,7 @@ class AssessmentPeerworkflowitem(models.Model):
     started_at = models.DateTimeField()
     scored = models.IntegerField()
     assessment = models.ForeignKey(AssessmentAssessment, models.DO_NOTHING, blank=True, null=True)
-    author = models.ForeignKey(AssessmentPeerworkflow, models.DO_NOTHING)
+    author = models.ForeignKey(AssessmentPeerworkflow, models.DO_NOTHING, related_name='AssessmentPeerworkflowitem_AssessmentPeerworkflow_author')
     scorer = models.ForeignKey(AssessmentPeerworkflow, models.DO_NOTHING)
 
     class Meta:
@@ -368,7 +368,7 @@ class AuthUserUserPermissions(models.Model):
         unique_together = (('user', 'permission'),)
 
 
-class AuthUserprofile(models.Model):
+class AuthUserProfile(models.Model):
     name = models.CharField(max_length=255)
     meta = models.TextField()
     courseware = models.CharField(max_length=255)
@@ -1017,7 +1017,7 @@ class CourseActionStateCoursererunstate(models.Model):
     message = models.CharField(max_length=1000)
     source_course_key = models.CharField(max_length=255)
     display_name = models.CharField(max_length=255)
-    created_user = models.ForeignKey(AuthUser, models.DO_NOTHING, blank=True, null=True)
+    created_user = models.ForeignKey(AuthUser, models.DO_NOTHING, blank=True, null=True, related_name='CourseActionStateCoursererunstate_AuthUser_created_user')
     updated_user = models.ForeignKey(AuthUser, models.DO_NOTHING, blank=True, null=True)
 
     class Meta:
@@ -3211,7 +3211,7 @@ class ProctoringProctoredexamsoftwaresecurereview(models.Model):
     raw_data = models.TextField()
     video_url = models.TextField()
     exam = models.ForeignKey(ProctoringProctoredexam, models.DO_NOTHING, blank=True, null=True)
-    reviewed_by = models.ForeignKey(AuthUser, models.DO_NOTHING, blank=True, null=True)
+    reviewed_by = models.ForeignKey(AuthUser, models.DO_NOTHING, blank=True, null=True, related_name='ProctoringProctoredexamsoftwaresecurereview_AuthUser_reviewed_by')
     student = models.ForeignKey(AuthUser, models.DO_NOTHING, blank=True, null=True)
 
     class Meta:
@@ -3227,7 +3227,7 @@ class ProctoringProctoredexamsoftwaresecurereviewhistory(models.Model):
     raw_data = models.TextField()
     video_url = models.TextField()
     exam = models.ForeignKey(ProctoringProctoredexam, models.DO_NOTHING, blank=True, null=True)
-    reviewed_by = models.ForeignKey(AuthUser, models.DO_NOTHING, blank=True, null=True)
+    reviewed_by = models.ForeignKey(AuthUser, models.DO_NOTHING, blank=True, null=True,  related_name='ProctoringProctoredexamsoftwaresecurereviewhistory_AuthUser_reviewed_by')
     student = models.ForeignKey(AuthUser, models.DO_NOTHING, blank=True, null=True)
 
     class Meta:
@@ -3634,7 +3634,7 @@ class ShoppingcartInvoicetransaction(models.Model):
     currency = models.CharField(max_length=8)
     comments = models.TextField(blank=True, null=True)
     status = models.CharField(max_length=32)
-    created_by = models.ForeignKey(AuthUser, models.DO_NOTHING)
+    created_by = models.ForeignKey(AuthUser, models.DO_NOTHING, related_name='ShoppingcartInvoicetransaction_AuthUser_created_by')
     invoice = models.ForeignKey(ShoppingcartInvoice, models.DO_NOTHING)
     last_modified_by = models.ForeignKey(AuthUser, models.DO_NOTHING)
 
@@ -3963,7 +3963,7 @@ class StudentEntranceexamconfiguration(models.Model):
 
 class StudentLanguageproficiency(models.Model):
     code = models.CharField(max_length=16)
-    user_profile = models.ForeignKey(AuthUserprofile, models.DO_NOTHING)
+    user_profile = models.ForeignKey(AuthUserProfile, models.DO_NOTHING)
 
     class Meta:
         managed = False
@@ -4063,7 +4063,7 @@ class StudentRegistrationcookieconfiguration(models.Model):
 class StudentSociallink(models.Model):
     platform = models.CharField(max_length=30)
     social_link = models.CharField(max_length=100)
-    user_profile = models.ForeignKey(AuthUserprofile, models.DO_NOTHING)
+    user_profile = models.ForeignKey(AuthUserProfile, models.DO_NOTHING)
 
     class Meta:
         managed = False
@@ -4095,7 +4095,7 @@ class StudentUsersignupsource(models.Model):
 class StudentUserstanding(models.Model):
     account_status = models.CharField(max_length=31)
     standing_last_changed_at = models.DateTimeField()
-    changed_by = models.ForeignKey(AuthUser, models.DO_NOTHING)
+    changed_by = models.ForeignKey(AuthUser, models.DO_NOTHING, related_name='StudentUserstanding_AuthUser_changed_by')
     user = models.OneToOneField(AuthUser, models.DO_NOTHING)
 
     class Meta:
@@ -4147,7 +4147,7 @@ class SubmissionsScoreannotation(models.Model):
 
 
 class SubmissionsScoresummary(models.Model):
-    highest = models.ForeignKey(SubmissionsScore, models.DO_NOTHING)
+    highest = models.ForeignKey(SubmissionsScore, models.DO_NOTHING, related_name='SubmissionsScoresummary_SubmissionsScore_highest')
     latest = models.ForeignKey(SubmissionsScore, models.DO_NOTHING)
     student_item = models.OneToOneField('SubmissionsStudentitem', models.DO_NOTHING)
 
@@ -4509,7 +4509,7 @@ class UserApiUserretirementstatus(models.Model):
     retired_username = models.CharField(max_length=150)
     retired_email = models.CharField(max_length=254)
     responses = models.TextField()
-    current_state = models.ForeignKey(UserApiRetirementstate, models.DO_NOTHING)
+    current_state = models.ForeignKey(UserApiRetirementstate, models.DO_NOTHING, related_name='UserApiUserretirementstatus_UserApiRetirementstate_current_state')
     last_state = models.ForeignKey(UserApiRetirementstate, models.DO_NOTHING)
     user = models.OneToOneField(AuthUser, models.DO_NOTHING)
 
@@ -4616,7 +4616,7 @@ class VerifyStudentSoftwaresecurephotoverification(models.Model):
     error_code = models.CharField(max_length=50)
     photo_id_key = models.TextField()
     copy_id_photo_from = models.ForeignKey('self', models.DO_NOTHING, blank=True, null=True)
-    reviewing_user = models.ForeignKey(AuthUser, models.DO_NOTHING, blank=True, null=True)
+    reviewing_user = models.ForeignKey(AuthUser, models.DO_NOTHING, blank=True, null=True, related_name='VerifyStudentSoftwaresecurephotoverification_AuthUser_reviewing_user')
     user = models.ForeignKey(AuthUser, models.DO_NOTHING)
     expiry_date = models.DateTimeField(blank=True, null=True)
     expiry_email_date = models.DateTimeField(blank=True, null=True)

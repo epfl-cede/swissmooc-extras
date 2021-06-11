@@ -88,6 +88,22 @@ DATABASES = {
         'PASSWORD': os.environ.get('EDXAPP_MYSQL_PASSWORD', ''),
         'HOST': os.environ.get('EDXAPP_MYSQL_HOST', ''),
         'PORT': '3306',
+    },
+    'edxapp_university': {
+        'NAME': 'docker_university_edxapp',
+        'ENGINE': 'django.db.backends.mysql',
+        'USER': os.environ.get('UNIVERISTY_EDXAPP_MYSQL_USER', ''),
+        'PASSWORD': os.environ.get('UNIVERISTY_EDXAPP_MYSQL_PASSWORD', ''),
+        'HOST': os.environ.get('EDXAPP_MYSQL_HOST', ''),
+        'PORT': '3306',
+    },
+    'edxapp_id': {
+        'NAME': 'docker_id_edxapp',
+        'ENGINE': 'django.db.backends.mysql',
+        'USER': os.environ.get('ID_EDXAPP_MYSQL_USER', ''),
+        'PASSWORD': os.environ.get('ID_EDXAPP_MYSQL_PASSWORD', ''),
+        'HOST': os.environ.get('EDXAPP_MYSQL_HOST', ''),
+        'PORT': '3306',
     }
 }
 
