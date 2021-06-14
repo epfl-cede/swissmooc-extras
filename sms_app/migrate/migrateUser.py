@@ -78,19 +78,25 @@ class MigrateUser:
 
     def writeDataId(self, data):
         # check user exists
-        use = 'edxapp_id'
-        User = self._getUser(data['User'], use)
+        connection_id = 'edxapp_id'
+        User = self._getUser(data['User'], connection_id)
         if User:
             if self.overwrite:
                 print('User {} <{}> exists in destination DB, overwrite'.format(data['User']['username'], data['User']['email']))
-                pk = self._insertOrUpdateUser(data['User'], use)
-                self._insertOrUpdateUserProfile(pk, data['UserProfile'], use)
+                pk = self._insertOrUpdateUser(data['User'], connection_id)
+                self._insertOrUpdateUserProfile(pk, data['UserProfile'], connection_id)
+                self._insertOrUpdateRegistration(pk, data['Registration'], connection_id)
+                self._insertOrUpdateUserattribute(pk, data['Userattribute'], connection_id)
+                self._insertOrUpdateApiUserpreference(pk, data['ApiUserpreference'], connection_id)
             else:
                 print('User {} <{}> exists in destination DB, skip update, specify --overwrite to force update'.format(data['User']['username'], data['User']['email']))
         else:
             print('Add new user'.format(data['User']['username'], data['User']['email']))
-            pk = self._insertOrUpdateUser(data['User'], use)
-            self._insertOrUpdateUserProfile(pk, data['UserProfile'], use)
+            pk = self._insertOrUpdateUser(data['User'], connection_id)
+            self._insertOrUpdateUserProfile(pk, data['UserProfile'], connection_id)
+            self._insertOrUpdateRegistration(pk, data['Registration'], connection_id)
+            self._insertOrUpdateUserattribute(pk, data['Userattribute'], connection_id)
+            self._insertOrUpdateApiUserpreference(pk, data['ApiUserpreference'], connection_id)
 
 
     def writeDataInstance(self, data):
@@ -98,8 +104,8 @@ class MigrateUser:
         #User = self._getUser(data['User'], 'edxapp_university')
         pass
 
-    def _getUser(self, User, use):
-        with connections[use].cursor() as cursor:
+    def _getUser(self, User, connection):
+        with connections[connection].cursor() as cursor:
             cursor.execute(
                 "SELECT * FROM auth_user WHERE username = %s AND email = %s",
                 [User['username'], User['email']]
@@ -108,12 +114,12 @@ class MigrateUser:
             if UserReturn:
                 return UserReturn
             else:
-                self._exitIfUserHasOneUniqueKey(User, use, 'username')
-                self._exitIfUserHasOneUniqueKey(User, use, 'email')
+                self._exitIfUserHasOneUniqueKey(User, connection, 'username')
+                self._exitIfUserHasOneUniqueKey(User, connection, 'email')
 
 
-    def _exitIfUserHasOneUniqueKey(self, User, use, key):
-        with connections[use].cursor() as cursor:
+    def _exitIfUserHasOneUniqueKey(self, User, connection, key):
+        with connections[connection].cursor() as cursor:
             cursor.execute(
                 "SELECT * FROM auth_user WHERE {} = %s".format(key),
                 [User[key]]
@@ -124,7 +130,7 @@ class MigrateUser:
                 exit(1)
 
 
-    def _insertOrUpdateUser(self, User, use):
+    def _insertOrUpdateUser(self, User, connection):
         '''
          CREATE TABLE `auth_user` (
           `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -148,10 +154,10 @@ class MigrateUser:
             'auth_user',
             ['last_login', 'is_superuser', 'username', 'first_name', 'last_name', 'email', 'is_staff', 'is_active', 'date_joined'],
             ['username', 'email'],
-            use
+            connection
         )
 
-    def _insertOrUpdateUserProfile(self, pk, UserProfile, use):
+    def _insertOrUpdateUserProfile(self, pk, UserProfile, connection):
         '''
         CREATE TABLE `auth_userprofile` (
          `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -185,16 +191,85 @@ class MigrateUser:
         ) ENGINE=InnoDB DEFAULT CHARSET=latin1
         '''
         UserProfile['user_id'] = pk
-        return self._insertOrUpdate(
+        self._insertOrUpdate(
             UserProfile,
             'auth_userprofile',
             ['name', 'meta', 'courseware', 'language', 'location', 'year_of_birth', 'gender', 'level_of_education', 'mailing_address', 'city', 'country', 'goals', 'allow_certificate', 'bio', 'profile_image_uploaded_at', 'user_id'],
             ['user_id'],
-            use
+            connection
         )
 
-    def _insertOrUpdate(self, Object, table_name, fields, unique_keys, use):
-        with connections[use].cursor() as cursor:
+    def _insertOrUpdateRegistration(self, pk, Registration, connection):
+        '''
+        CREATE TABLE `auth_registration` (
+         `id` int(11) NOT NULL AUTO_INCREMENT,
+         `activation_key` varchar(32) NOT NULL,
+         `user_id` int(11) NOT NULL,
+         PRIMARY KEY (`id`),
+         UNIQUE KEY `activation_key` (`activation_key`),
+         UNIQUE KEY `user_id` (`user_id`),
+         CONSTRAINT `auth_registration_user_id_f99bc297_fk_auth_user_id` FOREIGN KEY (`user_id`) REFERENCES `auth_user` (`id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=latin1
+        '''
+        Registration['user_id'] = pk
+        self._insertOrUpdate(
+            Registration,
+            'auth_registration',
+            ['activation_key', 'user_id'],
+            ['user_id'],
+            connection
+        )
+
+    def _insertOrUpdateUserattribute(self, pk, Userattribute, connection):
+        '''
+        CREATE TABLE `student_userattribute` (
+         `id` int(11) NOT NULL AUTO_INCREMENT,
+         `created` datetime(6) NOT NULL,
+         `modified` datetime(6) NOT NULL,
+         `name` varchar(255) NOT NULL,
+         `value` varchar(255) NOT NULL,
+         `user_id` int(11) NOT NULL,
+         PRIMARY KEY (`id`),
+         UNIQUE KEY `student_userattribute_user_id_name_70e18f46_uniq` (`user_id`,`name`),
+         KEY `student_userattribute_name_a55155e3` (`name`),
+         CONSTRAINT `student_userattribute_user_id_19c01f5e_fk_auth_user_id` FOREIGN KEY (`user_id`) REFERENCES `auth_user` (`id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=latin1
+        '''
+        for ua in Userattribute:
+            ua['user_id'] = pk
+            self._insertOrUpdate(
+                ua,
+                'student_userattribute',
+                ['created', 'modified', 'name', 'value', 'user_id'],
+                ['user_id'],
+                connection
+            )
+
+    def _insertOrUpdateApiUserpreference(self, pk, ApiUserpreference, connection):
+        '''
+        CREATE TABLE `user_api_userpreference` (
+         `id` int(11) NOT NULL AUTO_INCREMENT,
+         `key` varchar(255) NOT NULL,
+         `value` longtext NOT NULL,
+         `user_id` int(11) NOT NULL,
+         PRIMARY KEY (`id`),
+         UNIQUE KEY `user_api_userpreference_user_id_key_17924c0d_uniq` (`user_id`,`key`),
+         KEY `user_api_userpreference_key_9c8a8f6b` (`key`),
+         CONSTRAINT `user_api_userpreference_user_id_68f8a34b_fk_auth_user_id` FOREIGN KEY (`user_id`) REFERENCES `auth_user` (`id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=latin1
+        '''
+        for ua in ApiUserpreference:
+            ua['user_id'] = pk
+            self._insertOrUpdate(
+                ua,
+                'user_api_userpreference',
+                ['key', 'value', 'user_id'],
+                ['user_id'],
+                connection
+            )
+
+    def _insertOrUpdate(self, Object, table_name, fields, unique_keys, connection):
+        with connections[connection].cursor() as cursor:
             fields_for_update = fields.copy()
             for f in unique_keys:
                 fields_for_update.remove(f)
@@ -205,11 +280,11 @@ class MigrateUser:
             for f in fields_for_update:
                 values_for_update.append(Object[f])
 
-            sql = "INSERT INTO {} ".format(table_name) + \
-                "({}) VALUES ".format(",".join(fields)) + \
-                "({}) ".format(", ".join(["%s"]*len(fields))) + \
-                "ON DUPLICATE KEY UPDATE " + \
-                (",".join(["{}=%s"]*len(fields_for_update))).format(*fields_for_update)
+            sql = "INSERT INTO {} \n".format(table_name) + \
+                "({}) VALUES \n".format(",".join(["`{}`".format(f) for f in fields])) + \
+                "({}) \n".format(", ".join(["%s"]*len(fields))) + \
+                "ON DUPLICATE KEY UPDATE \n" + \
+                (",".join(["`{}`=%s"]*len(fields_for_update))).format(*fields_for_update)
 
             if self.debug:
                 logger.info("SQL={}".format(sql))
@@ -217,14 +292,10 @@ class MigrateUser:
 
             cursor.execute(sql, values_for_update)
 
-            sql = "SELECT id FROM {} WHERE {}".format(
-                table_name, " AND ".join(["{}=%s"]*len(unique_keys)).format(*unique_keys)
-            )
-            if self.debug:
-                logger.info("SQL={}".format(sql))
-                logger.info("values={}".format([Object[f] for f in unique_keys]))
             cursor.execute(
-                sql,
+                "SELECT id FROM {} WHERE {}".format(
+                    table_name, " AND ".join(["{}=%s"]*len(unique_keys)).format(*unique_keys)
+                ),
                 [Object[f] for f in unique_keys]
             )
             return cursor.fetchone()[0]
