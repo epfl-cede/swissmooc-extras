@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 
 from django.db import connections
 from django.db.models import Q
@@ -39,6 +40,7 @@ class MigrateUser:
         if not User:
             logger.info("User with id={} not find".format(self.user_id))
             exit(0)
+
         result['User'] = User[0]
 
         # relation: OneToOneField
@@ -57,6 +59,9 @@ class MigrateUser:
         ApiUserpreference = self._fetchDataFromDB('user_api_userpreference', {'user_id': self.user_id}, 'edxapp_readonly')
         result['ApiUserpreference'] = ApiUserpreference
 
+        Usersocialauth = self._fetchDataFromDB('social_auth_usersocialauth', {'user_id': self.user_id}, 'edxapp_readonly')
+        result['Usersocialauth'] = Usersocialauth
+
         return result
 
     def _fetchDataFromDB(self, table_name, params, use):
@@ -73,12 +78,14 @@ class MigrateUser:
     def writeData(self, data):
         #print(data)
         if data['User']:
-            self.writeDataId(data)
-            #self.writeDataInstance(data)
+            self.writeAuthData(data, 'edxapp_id')
+            self.writeAuthData(data, 'edxapp_university')
 
-    def writeDataId(self, data):
+    def writeAuthData(self, data, connection_id):
         # check user exists
-        connection_id = 'edxapp_id'
+        # replace 966186222692@eduid.ch to 735531216246_eduid_ch
+        # replace 240575@epfl.ch to 253705_epfl_ch
+        data['User']['username'].replace('@', '_').replace('.', '_')
         User = self._getUser(data['User'], connection_id)
         if User:
             if self.overwrite:
@@ -88,6 +95,7 @@ class MigrateUser:
                 self._insertOrUpdateRegistration(pk, data['Registration'], connection_id)
                 self._insertOrUpdateUserattribute(pk, data['Userattribute'], connection_id)
                 self._insertOrUpdateApiUserpreference(pk, data['ApiUserpreference'], connection_id)
+                self._insertOrUpdateUsersocialauth(pk, data['Usersocialauth'], connection_id)
             else:
                 print('User {} <{}> exists in destination DB, skip update, specify --overwrite to force update'.format(data['User']['username'], data['User']['email']))
         else:
@@ -97,12 +105,7 @@ class MigrateUser:
             self._insertOrUpdateRegistration(pk, data['Registration'], connection_id)
             self._insertOrUpdateUserattribute(pk, data['Userattribute'], connection_id)
             self._insertOrUpdateApiUserpreference(pk, data['ApiUserpreference'], connection_id)
-
-
-    def writeDataInstance(self, data):
-        # check user exists
-        #User = self._getUser(data['User'], 'edxapp_university')
-        pass
+            self._insertOrUpdateUsersocialauth(pk, data['Usersocialauth'], connection_id)
 
     def _getUser(self, User, connection):
         with connections[connection].cursor() as cursor:
@@ -121,12 +124,12 @@ class MigrateUser:
     def _exitIfUserHasOneUniqueKey(self, User, connection, key):
         with connections[connection].cursor() as cursor:
             cursor.execute(
-                "SELECT * FROM auth_user WHERE {} = %s".format(key),
+                "SELECT 1 FROM auth_user WHERE {} = %s".format(key),
                 [User[key]]
             )
-            User = cursor.fetchone()
-            if User:
-                logger.error("User {} <{}> exists only with {}".format(key))
+            UserCheck = cursor.fetchone()
+            if UserCheck:
+                logger.error("User {} <{}> exists only with '{}' on '{}'".format(User['email'], User['username'], key, connection))
                 exit(1)
 
 
@@ -267,6 +270,76 @@ class MigrateUser:
                 ['user_id'],
                 connection
             )
+
+    def _insertOrUpdateUsersocialauth(self, pk, Usersocialauth, connection):
+        '''
+        CREATE TABLE `social_auth_usersocialauth` (
+         `id` int(11) NOT NULL AUTO_INCREMENT,
+         `provider` varchar(32) NOT NULL,
+         `uid` varchar(255) NOT NULL,
+         `extra_data` longtext NOT NULL,
+         `user_id` int(11) NOT NULL,
+         `created` datetime(6) NOT NULL,
+         `modified` datetime(6) NOT NULL,
+         PRIMARY KEY (`id`),
+         UNIQUE KEY `social_auth_usersocialauth_provider_uid_e6b5e668_uniq` (`provider`,`uid`),
+         KEY `social_auth_usersocialauth_user_id_17d28448_fk_auth_user_id` (`user_id`),
+         KEY `social_auth_usersocialauth_uid_796e51dc` (`uid`),
+         CONSTRAINT `social_auth_usersocialauth_user_id_17d28448_fk_auth_user_id` FOREIGN KEY (`user_id`) REFERENCES `auth_user` (`id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=latin
+        '''
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        for ua in Usersocialauth:
+            ua['user_id'] = pk
+            uid = self._translateUid(ua['uid'])
+            if uid:
+                ua['uid'] = uid
+                ua['created'] = now
+                ua['modified'] = now
+                self._insertOrUpdate(
+                    ua,
+                    'social_auth_usersocialauth',
+                    ['provider', 'uid', 'extra_data', 'user_id', 'created', 'modified'],
+                    ['user_id'],
+                    connection
+                )
+
+    def _translateUid(self, uid):
+        # translate 5e5ca030c983ab469dc3f6249ae239:258585@epfl.ch to epfl:258585@epfl.ch
+        # translate e555442cd67c9e3ae0436f5b506d6c:714597953495@eduid.ch to switch-edu-id:735531216246@eduid.ch
+        # get this values from https://courses.swissmooc.ch/admin/third_party_auth/samlproviderconfig/?q=idp.epfl.ch
+        providers_map = {
+            'switch-edu-id': [
+                # staging
+                'e555442cd67c9e3ae0436f5b506d6c',
+                # campus
+                '0afa10bd0b43cc80f209d31e6b2ce2',
+                '2e89408363c69f1b2393ff0d75ffd0',
+                '6f354848093935d0d00e3735319ee2',
+                '7975f3db9039ea5266e44ed4569907',
+                'a0ddec20e7fe8ee2d6a82d4041b9b3',
+                'b1150456ac6d78d77f2d7bc3b0ae5a',
+                'b3850434bb2f87e9e7277c0fa87ce9',
+                'bcd434f32188265c353c0b3a2d2af7',
+                'c788487ec165538e07bf0cc846f7c4',
+                'c94c3dce582c816a4f8ce482f5b11f',
+                'd1b7c62067ae0d324af91f417bb982',
+                'db9ccf5b1390af0bd62b843099befb',
+            ],
+            'epfl': [
+                # staging
+                '5e5ca030c983ab469dc3f6249ae239',
+                # campus
+                'eff426fd0f4172d33a7073de4501f0',
+                '3c89411445a104c9a973b8a088cb83',
+                '5e5ca030c983ab469dc3f6249ae239',
+            ],
+        }
+        for provider_map in providers_map:
+            for provider_uid in providers_map[provider_map]:
+                uid = uid.replace(provider_uid, provider_map)
+        return uid
+        
 
     def _insertOrUpdate(self, Object, table_name, fields, unique_keys, connection):
         with connections[connection].cursor() as cursor:
