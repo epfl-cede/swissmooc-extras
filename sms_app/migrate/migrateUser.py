@@ -1,9 +1,10 @@
+import json
 import logging
 from datetime import datetime
 
-from django.db import connections
 from django.db.models import Q
 from django.core.exceptions import ObjectDoesNotExist
+from django.db import connections
 
 from migrate.models_hawthorn import (
     AuthUser,
@@ -12,20 +13,12 @@ from migrate.models_hawthorn import (
     StudentUserattribute,
     UserApiUserpreference,
 )
+from migrate.helpers import insertOrUpdateRow, selectRows
 
 logger = logging.getLogger(__name__)
 
 CONNECTION_ID = 'edxapp_id'
 CONNECTION_UNIVERSITY = 'edxapp_university'
-
-def dictfetchall(cursor):
-    "Return all rows from a cursor as a dict"
-    columns = [col[0] for col in cursor.description]
-    return [
-        dict(zip(columns, row))
-        for row in cursor.fetchall()
-    ]
-
 
 class MigrateUser:
     def __init__(self, user_id, overwrite, debug):
@@ -39,7 +32,7 @@ class MigrateUser:
 
     def getData(self):
         result = {}
-        User = self._fetchDataFromDB('auth_user', {'id': self.user_id}, 'edxapp_readonly')
+        User = selectRows('auth_user', {'id': self.user_id}, 'edxapp_readonly')
         if not User:
             logger.info("User with id={} not find".format(self.user_id))
             exit(0)
@@ -47,22 +40,22 @@ class MigrateUser:
         result['User'] = User[0]
 
         # relation: OneToOneField
-        UserProfile =  self._fetchDataFromDB('auth_userprofile', {'user_id': self.user_id}, 'edxapp_readonly')
+        UserProfile =  selectRows('auth_userprofile', {'user_id': self.user_id}, 'edxapp_readonly')
         result['UserProfile'] = UserProfile[0]
 
         # relation: OneToOneField
-        Registration = self._fetchDataFromDB('auth_registration', {'user_id': self.user_id}, 'edxapp_readonly')
+        Registration = selectRows('auth_registration', {'user_id': self.user_id}, 'edxapp_readonly')
         result['Registration'] = Registration[0]
 
         # relation: ForeignKey
-        Userattribute = self._fetchDataFromDB('student_userattribute', {'user_id': self.user_id}, 'edxapp_readonly')
+        Userattribute = selectRows('student_userattribute', {'user_id': self.user_id}, 'edxapp_readonly')
         result['Userattribute'] = Userattribute
 
         # relation: ForeignKey
-        ApiUserpreference = self._fetchDataFromDB('user_api_userpreference', {'user_id': self.user_id}, 'edxapp_readonly')
+        ApiUserpreference = selectRows('user_api_userpreference', {'user_id': self.user_id}, 'edxapp_readonly')
         result['ApiUserpreference'] = ApiUserpreference
 
-        Usersocialauth = self._fetchDataFromDB('social_auth_usersocialauth', {'user_id': self.user_id}, 'edxapp_readonly')
+        Usersocialauth = selectRows('social_auth_usersocialauth', {'user_id': self.user_id}, 'edxapp_readonly')
         if not Usersocialauth:
             logger.error("User {} <{}> doesn't have any social auth, exit'".format(User[0]['email'], User[0]['username']))
             exit(1)
@@ -70,17 +63,6 @@ class MigrateUser:
 
         return result
 
-    def _fetchDataFromDB(self, table_name, params, use):
-        #User = AuthUser.objects.using('edxapp_readonly').get(pk=self.user_id)
-        with connections[use].cursor() as cursor:
-            cursor.execute(
-                "SELECT * FROM {} WHERE {}".format(
-                    table_name, " AND ".join(["{}=%s"]*len(params)).format(*params.keys())
-                ),
-                params.values()
-            )
-            return dictfetchall(cursor)
-        
     def writeData(self, data):
         if data['User']:
             self.writeAuthData(data, CONNECTION_ID)
@@ -88,13 +70,18 @@ class MigrateUser:
 
     def writeAuthData(self, data, connection):
         # check user exists
+        # TODO: check username
         # replace 966186222692@eduid.ch to 735531216246_eduid_ch
         # replace 240575@epfl.ch to 253705_epfl_ch
         data['User']['username'].replace('@', '_').replace('.', '_')
         User = self._getUser(data['User'], connection)
         if User:
             if self.overwrite:
-                print('User {} <{}> exists in destination DB, overwrite'.format(data['User']['username'], data['User']['email']))
+                print('[{}] User {} <{}> exists in destination DB, overwrite'.format(
+                    connection,
+                    data['User']['username'],
+                    data['User']['email']
+                ))
                 pk = self._insertOrUpdateUser(data['User'], connection)
                 self._insertOrUpdateUserProfile(pk, data['UserProfile'], connection)
                 self._insertOrUpdateRegistration(pk, data['Registration'], connection)
@@ -102,7 +89,11 @@ class MigrateUser:
                 self._insertOrUpdateApiUserpreference(pk, data['ApiUserpreference'], connection)
                 self._insertOrUpdateUsersocialauth(pk, data['User']['username'], data['Usersocialauth'], connection)
             else:
-                print('User {} <{}> exists in destination DB, skip update, specify --overwrite to force update'.format(data['User']['username'], data['User']['email']))
+                print('[{}] User {} <{}> exists in destination DB, skip update, specify --overwrite to force update'.format(
+                    connection,
+                    data['User']['username'],
+                    data['User']['email']
+                ))
         else:
             print('Add new user'.format(data['User']['username'], data['User']['email']))
             pk = self._insertOrUpdateUser(data['User'], connection)
@@ -157,12 +148,13 @@ class MigrateUser:
           UNIQUE KEY `email` (`email`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8
         '''
-        return self._insertOrUpdate(
+        return insertOrUpdateRow(
             User,
             'auth_user',
             ['last_login', 'is_superuser', 'username', 'first_name', 'last_name', 'email', 'is_staff', 'is_active', 'date_joined'],
             ['username', 'email'],
-            connection
+            connection,
+            self.debug
         )
 
     def _insertOrUpdateUserProfile(self, pk, UserProfile, connection):
@@ -199,12 +191,13 @@ class MigrateUser:
         ) ENGINE=InnoDB DEFAULT CHARSET=latin1
         '''
         UserProfile['user_id'] = pk
-        self._insertOrUpdate(
+        insertOrUpdateRow(
             UserProfile,
             'auth_userprofile',
             ['name', 'meta', 'courseware', 'language', 'location', 'year_of_birth', 'gender', 'level_of_education', 'mailing_address', 'city', 'country', 'goals', 'allow_certificate', 'bio', 'profile_image_uploaded_at', 'user_id'],
             ['user_id'],
-            connection
+            connection,
+            self.debug
         )
 
     def _insertOrUpdateRegistration(self, pk, Registration, connection):
@@ -220,12 +213,13 @@ class MigrateUser:
         ) ENGINE=InnoDB DEFAULT CHARSET=latin1
         '''
         Registration['user_id'] = pk
-        self._insertOrUpdate(
+        insertOrUpdateRow(
             Registration,
             'auth_registration',
             ['activation_key', 'user_id'],
             ['user_id'],
-            connection
+            connection,
+            self.debug
         )
 
     def _insertOrUpdateUserattribute(self, pk, Userattribute, connection):
@@ -245,12 +239,13 @@ class MigrateUser:
         '''
         for ua in Userattribute:
             ua['user_id'] = pk
-            self._insertOrUpdate(
+            insertOrUpdateRow(
                 ua,
                 'student_userattribute',
                 ['created', 'modified', 'name', 'value', 'user_id'],
                 ['user_id'],
-                connection
+                connection,
+                self.debug
             )
 
     def _insertOrUpdateApiUserpreference(self, pk, ApiUserpreference, connection):
@@ -268,12 +263,13 @@ class MigrateUser:
         '''
         for ua in ApiUserpreference:
             ua['user_id'] = pk
-            self._insertOrUpdate(
+            insertOrUpdateRow(
                 ua,
                 'user_api_userpreference',
                 ['key', 'value', 'user_id'],
                 ['user_id'],
-                connection
+                connection,
+                self.debug
             )
 
     def _insertOrUpdateUsersocialauth(self, pk, username, Usersocialauth, connection):
@@ -295,10 +291,13 @@ class MigrateUser:
         '''
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         for ua in Usersocialauth:
+            extra_data = json.loads(ua['extra_data'])
+            # skip links created by us
+            if '_parent_id' in extra_data: continue
             uid = self._translateUid(ua['uid'])
             if uid:
                 if connection == CONNECTION_ID:
-                    self._insertOrUpdate(
+                    insertOrUpdateRow(
                         {
                             'provider': ua['provider'],
                             'uid': uid,
@@ -310,10 +309,11 @@ class MigrateUser:
                         'social_auth_usersocialauth',
                         ['provider', 'uid', 'extra_data', 'user_id', 'created', 'modified'],
                         ['user_id'],
-                        connection
+                        connection,
+                        self.debug
                     )
                 else:
-                    self._insertOrUpdate(
+                    insertOrUpdateRow(
                         {
                             'provider': 'edx-oauth2',
                             # remove first part from string like 'switch-edu-id:735531216246_eduid_ch'
@@ -326,7 +326,8 @@ class MigrateUser:
                         'social_auth_usersocialauth',
                         ['provider', 'uid', 'extra_data', 'user_id', 'created', 'modified'],
                         ['user_id'],
-                        connection
+                        connection,
+                        self.debug
                     )
                     # only one connection is needed
                     break
@@ -370,35 +371,3 @@ class MigrateUser:
                     return uid
         return False
         
-
-    def _insertOrUpdate(self, Object, table_name, fields, unique_keys, connection):
-        with connections[connection].cursor() as cursor:
-            fields_for_update = fields.copy()
-            for f in unique_keys:
-                fields_for_update.remove(f)
-
-            values_for_update = []
-            for f in fields:
-                values_for_update.append(Object[f])
-            for f in fields_for_update:
-                values_for_update.append(Object[f])
-
-            sql = "INSERT INTO {} \n".format(table_name) + \
-                "({}) VALUES \n".format(",".join(["`{}`".format(f) for f in fields])) + \
-                "({}) \n".format(", ".join(["%s"]*len(fields))) + \
-                "ON DUPLICATE KEY UPDATE \n" + \
-                (",".join(["`{}`=%s"]*len(fields_for_update))).format(*fields_for_update)
-
-            if self.debug:
-                logger.info("{}: SQL={}".format(connection, sql))
-                logger.info("{}: values={}".format(connection, values_for_update))
-
-            cursor.execute(sql, values_for_update)
-
-            cursor.execute(
-                "SELECT id FROM {} WHERE {}".format(
-                    table_name, " AND ".join(["{}=%s"]*len(unique_keys)).format(*unique_keys)
-                ),
-                [Object[f] for f in unique_keys]
-            )
-            return cursor.fetchone()[0]
