@@ -53,9 +53,12 @@ class MigrateCourse:
 
         try:
             self.migrateUsers(users)
-            #self.migrateCourse()
-            #self.migrateCourseActivityStudent()
+            self.migrateCourse()
+            self.migrateCourseActivityStudent()
+            self.migrateCourseActivityCourseware()
             self.migrateCourseActivityAssessment()
+            self.migrateCourseActivityWorkflow()
+            self.migrateCourseActivitySubmission()
         except Exception as e:
             logger.error(e)
             raise e
@@ -96,6 +99,7 @@ class MigrateCourse:
                 ['id', 'user_id', 'experiment_id', 'key']
             )
 
+    def migrateCourseActivityCourseware(self):
         # courseware_studentmodule
         courseware_studentmodule_ids = self.copyData(
             'courseware_studentmodule',
@@ -104,22 +108,49 @@ class MigrateCourse:
             ['id', 'student_id', 'module_id', 'course_id']
         )
         # courseware_studentmodulehistory
-        for courseware_studentmodule_id in courseware_studentmodule_ids:
-            self.copyData(
-                'courseware_studentmodulehistory',
-                {'student_module_id': courseware_studentmodule_id},
-                ['id', 'version', 'created', 'state', 'grade', 'max_grade', 'student_module_id'],
-                ['id', 'student_module_id']
-            )
+        self.copyDataIn(
+            'courseware_studentmodulehistory',
+            'student_module_id',
+            courseware_studentmodule_ids,
+            ['id', 'version', 'created', 'state', 'grade', 'max_grade', 'student_module_id'],
+            ['id', 'student_module_id']
+        )
 
-        migrateCourseActivityAssessment()
-        
+
+    def migrateCourseActivitySubmission(self):
         # submissions_studentitem
         # submissions_submission
         # submissions_scoresummary
-        # workflow_assessmentworkflow
-        # workflow_assessmentworkflowstep
+        pass
 
+    def migrateCourseActivityWorkflow(self):
+        # workflow_assessmentworkflow
+        workflow_assessmentworkflow_ids = self.copyData(
+            'workflow_assessmentworkflow',
+            {'course_id': self.course_id},
+            ['id', 'created', 'modified', 'status', 'status_changed', 'submission_uuid', 'uuid', 'course_id', 'item_id'],
+            ['id']
+        )
+
+        # workflow_assessmentworkflowcancellation
+        self.copyDataIn(
+            'workflow_assessmentworkflowcancellation',
+            'workflow_id',
+            workflow_assessmentworkflow_ids,
+            ['id', 'comments', 'cancelled_by_id', 'created_at', 'workflow_id'],
+            ['id']
+        )
+        
+        # workflow_assessmentworkflowstep
+        self.copyDataIn(
+            'workflow_assessmentworkflowstep',
+            'workflow_id',
+            workflow_assessmentworkflow_ids,
+            ['id', 'name', 'submitter_completed_at', 'assessment_completed_at', 'order_num', 'workflow_id'],
+            ['id']
+        )
+
+        
     def migrateCourseActivityAssessment(self):
         # assessment_peerworkflow
         assessment_peerworkflow_ids = self.copyData(
