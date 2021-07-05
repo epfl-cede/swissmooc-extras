@@ -17,63 +17,60 @@ from migrate.helpers import insertOrUpdateRow, selectRows
 
 logger = logging.getLogger(__name__)
 
+CONNECTION_SOURCE = 'edxapp_readonly'
 CONNECTION_ID = 'edxapp_id'
-CONNECTION_UNIVERSITY = 'edxapp_university'
 
 class MigrateUser:
-    def __init__(self, user_id, overwrite, debug):
+    def __init__(self, destination, user_id, overwrite, debug):
+        self.destination = destination
         self.user_id = user_id
         self.overwrite = overwrite
         self.debug = debug
+        self.pk = 0
 
     def run(self):
-        data = self.getData()
-        if data: self.writeData(data)
+        self.migrateUser()
 
-    def getData(self):
-        result = {}
-        User = selectRows('auth_user', {'id': self.user_id}, 'edxapp_readonly')
+    def migrateUser(self):
+        data = {}
+        User = selectRows('auth_user', {'id': self.user_id}, CONNECTION_SOURCE)
         if not User:
             logger.info("User with id={} not find".format(self.user_id))
             exit(0)
 
-        result['User'] = User[0]
+        data['User'] = User[0]
 
         # relation: OneToOneField
-        UserProfile =  selectRows('auth_userprofile', {'user_id': self.user_id}, 'edxapp_readonly')
-        result['UserProfile'] = UserProfile[0]
+        UserProfile =  selectRows('auth_userprofile', {'user_id': self.user_id}, CONNECTION_SOURCE, self.debug)
+        data['UserProfile'] = UserProfile[0]
 
         # relation: OneToOneField
-        Registration = selectRows('auth_registration', {'user_id': self.user_id}, 'edxapp_readonly')
-        result['Registration'] = Registration[0]
+        Registration = selectRows('auth_registration', {'user_id': self.user_id}, CONNECTION_SOURCE, self.debug)
+        data['Registration'] = Registration[0]
 
         # relation: ForeignKey
-        Userattribute = selectRows('student_userattribute', {'user_id': self.user_id}, 'edxapp_readonly')
-        result['Userattribute'] = Userattribute
+        Userattribute = selectRows('student_userattribute', {'user_id': self.user_id}, CONNECTION_SOURCE, self.debug)
+        data['Userattribute'] = Userattribute
 
         # relation: ForeignKey
-        ApiUserpreference = selectRows('user_api_userpreference', {'user_id': self.user_id}, 'edxapp_readonly')
-        result['ApiUserpreference'] = ApiUserpreference
+        ApiUserpreference = selectRows('user_api_userpreference', {'user_id': self.user_id}, CONNECTION_SOURCE, self.debug)
+        data['ApiUserpreference'] = ApiUserpreference
 
-        Usersocialauth = selectRows('social_auth_usersocialauth', {'user_id': self.user_id}, 'edxapp_readonly')
+        Usersocialauth = selectRows('social_auth_usersocialauth', {'user_id': self.user_id}, CONNECTION_SOURCE, self.debug)
         if not Usersocialauth:
             logger.error("User {} <{}> doesn't have any social auth, exit'".format(User[0]['email'], User[0]['username']))
             exit(1)
-        result['Usersocialauth'] = Usersocialauth
+        data['Usersocialauth'] = Usersocialauth
 
-        return result
-
-    def writeData(self, data):
-        if data['User']:
-            self.writeAuthData(data, CONNECTION_ID)
-            self.writeAuthData(data, CONNECTION_UNIVERSITY)
+        self.writeAuthData(data, CONNECTION_ID)
+        self.writeAuthData(data, self.destination)
 
     def writeAuthData(self, data, connection):
         # check user exists
         # TODO: check username
         # replace 966186222692@eduid.ch to 735531216246_eduid_ch
         # replace 240575@epfl.ch to 253705_epfl_ch
-        data['User']['username'].replace('@', '_').replace('.', '_')
+        data['User']['username'] = data['User']['username'].replace('@', '_').replace('.', '_')
         User = self._getUser(data['User'], connection)
         if User:
             if self.overwrite:
@@ -82,47 +79,54 @@ class MigrateUser:
                     data['User']['username'],
                     data['User']['email']
                 ))
-                pk = self._insertOrUpdateUser(data['User'], connection)
-                self._insertOrUpdateUserProfile(pk, data['UserProfile'], connection)
-                self._insertOrUpdateRegistration(pk, data['Registration'], connection)
-                self._insertOrUpdateUserattribute(pk, data['Userattribute'], connection)
-                self._insertOrUpdateApiUserpreference(pk, data['ApiUserpreference'], connection)
-                self._insertOrUpdateUsersocialauth(pk, data['User']['username'], data['Usersocialauth'], connection)
+                self.pk = self._insertOrUpdateUser(data['User'], connection)
+                self._insertOrUpdateUserProfile(data['UserProfile'], connection)
+                self._insertOrUpdateRegistration(data['Registration'], connection)
+                self._insertOrUpdateUserattribute(data['Userattribute'], connection)
+                self._insertOrUpdateApiUserpreference(data['ApiUserpreference'], connection)
+                self._insertOrUpdateUsersocialauth(data['User']['username'], data['Usersocialauth'], connection)
             else:
                 print('[{}] User {} <{}> exists in destination DB, skip update, specify --overwrite to force update'.format(
                     connection,
                     data['User']['username'],
                     data['User']['email']
                 ))
+                self.pk = User['id']
+                
         else:
             print('Add new user'.format(data['User']['username'], data['User']['email']))
-            pk = self._insertOrUpdateUser(data['User'], connection)
-            self._insertOrUpdateUserProfile(pk, data['UserProfile'], connection)
-            self._insertOrUpdateRegistration(pk, data['Registration'], connection)
-            self._insertOrUpdateUserattribute(pk, data['Userattribute'], connection)
-            self._insertOrUpdateApiUserpreference(pk, data['ApiUserpreference'], connection)
-            self._insertOrUpdateUsersocialauth(pk, data['User']['username'], data['Usersocialauth'], connection)
+            self.pk = self._insertOrUpdateUser(data['User'], connection)
+            self._insertOrUpdateUserProfile(data['UserProfile'], connection)
+            self._insertOrUpdateRegistration(data['Registration'], connection)
+            self._insertOrUpdateUserattribute(data['Userattribute'], connection)
+            self._insertOrUpdateApiUserpreference(data['ApiUserpreference'], connection)
+            self._insertOrUpdateUsersocialauth(data['User']['username'], data['Usersocialauth'], connection)
 
     def _getUser(self, User, connection):
-        with connections[connection].cursor() as cursor:
-            cursor.execute(
-                "SELECT * FROM auth_user WHERE username = %s AND email = %s",
-                [User['username'], User['email']]
-            )
-            UserReturn = cursor.fetchone()
-            if UserReturn:
-                return UserReturn
-            else:
-                self._exitIfUserHasOneUniqueKey(User, connection, 'username')
-                self._exitIfUserHasOneUniqueKey(User, connection, 'email')
+        UserReturn = selectRows(
+            'auth_user',
+            {
+                'username': User['username'],
+                'email': User['email'],
+            },
+            connection,
+            self.debug
+        )
+        if len(UserReturn):
+            return UserReturn[0]
+        else:
+            self._exitIfUserHasOneUniqueKey(User, connection, 'username')
+            self._exitIfUserHasOneUniqueKey(User, connection, 'email')
 
 
     def _exitIfUserHasOneUniqueKey(self, User, connection, key):
         with connections[connection].cursor() as cursor:
-            cursor.execute(
-                "SELECT 1 FROM auth_user WHERE {} = %s".format(key),
-                [User[key]]
-            )
+            sql = "SELECT 1 FROM auth_user WHERE {} = %s".format(key)
+            params = [User[key]]
+            if self.debug:
+                logger.info("{}: SQL={}".format(connection, sql))
+                logger.info("{}: params={}".format(connection, params))
+            cursor.execute(sql, params)
             UserCheck = cursor.fetchone()
             if UserCheck:
                 logger.error("User {} <{}> exists only with '{}' on '{}'".format(User['email'], User['username'], key, connection))
@@ -157,7 +161,7 @@ class MigrateUser:
             self.debug
         )
 
-    def _insertOrUpdateUserProfile(self, pk, UserProfile, connection):
+    def _insertOrUpdateUserProfile(self, UserProfile, connection):
         '''
         CREATE TABLE `auth_userprofile` (
          `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -190,7 +194,7 @@ class MigrateUser:
          CONSTRAINT `auth_userprofile_user_id_62634b27_fk_auth_user_id` FOREIGN KEY (`user_id`) REFERENCES `auth_user` (`id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=latin1
         '''
-        UserProfile['user_id'] = pk
+        UserProfile['user_id'] = self.pk
         insertOrUpdateRow(
             UserProfile,
             'auth_userprofile',
@@ -200,7 +204,7 @@ class MigrateUser:
             self.debug
         )
 
-    def _insertOrUpdateRegistration(self, pk, Registration, connection):
+    def _insertOrUpdateRegistration(self, Registration, connection):
         '''
         CREATE TABLE `auth_registration` (
          `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -212,7 +216,7 @@ class MigrateUser:
          CONSTRAINT `auth_registration_user_id_f99bc297_fk_auth_user_id` FOREIGN KEY (`user_id`) REFERENCES `auth_user` (`id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=latin1
         '''
-        Registration['user_id'] = pk
+        Registration['user_id'] = self.pk
         insertOrUpdateRow(
             Registration,
             'auth_registration',
@@ -222,7 +226,7 @@ class MigrateUser:
             self.debug
         )
 
-    def _insertOrUpdateUserattribute(self, pk, Userattribute, connection):
+    def _insertOrUpdateUserattribute(self, Userattribute, connection):
         '''
         CREATE TABLE `student_userattribute` (
          `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -238,7 +242,7 @@ class MigrateUser:
         ) ENGINE=InnoDB DEFAULT CHARSET=latin1
         '''
         for ua in Userattribute:
-            ua['user_id'] = pk
+            ua['user_id'] = self.pk
             insertOrUpdateRow(
                 ua,
                 'student_userattribute',
@@ -248,7 +252,7 @@ class MigrateUser:
                 self.debug
             )
 
-    def _insertOrUpdateApiUserpreference(self, pk, ApiUserpreference, connection):
+    def _insertOrUpdateApiUserpreference(self, ApiUserpreference, connection):
         '''
         CREATE TABLE `user_api_userpreference` (
          `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -262,7 +266,7 @@ class MigrateUser:
         ) ENGINE=InnoDB DEFAULT CHARSET=latin1
         '''
         for ua in ApiUserpreference:
-            ua['user_id'] = pk
+            ua['user_id'] = self.pk
             insertOrUpdateRow(
                 ua,
                 'user_api_userpreference',
@@ -272,7 +276,7 @@ class MigrateUser:
                 self.debug
             )
 
-    def _insertOrUpdateUsersocialauth(self, pk, username, Usersocialauth, connection):
+    def _insertOrUpdateUsersocialauth(self, username, Usersocialauth, connection):
         '''
         CREATE TABLE `social_auth_usersocialauth` (
          `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -302,7 +306,7 @@ class MigrateUser:
                             'provider': ua['provider'],
                             'uid': uid,
                             'extra_data': ua['extra_data'],
-                            'user_id': pk,
+                            'user_id': self.pk,
                             'created': now,
                             'modified': now,
                         },
@@ -319,7 +323,7 @@ class MigrateUser:
                             # remove first part from string like 'switch-edu-id:735531216246_eduid_ch'
                             'uid': username,
                             'extra_data': '{}',
-                            'user_id': pk,
+                            'user_id': self.pk,
                             'created': now,
                             'modified': now,
                         },

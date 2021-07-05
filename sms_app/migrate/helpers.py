@@ -1,8 +1,13 @@
 import logging
+import subprocess
 
 from django.db import connections
 
 logger = logging.getLogger(__name__)
+
+DESTINATIONS = [
+    'edxapp_university'
+]
 
 def dictfetchall(cursor):
     "Return all rows from a cursor as a dict"
@@ -14,14 +19,60 @@ def dictfetchall(cursor):
 
 def selectRows(table_name, params, connection, debug=False):
     with connections[connection].cursor() as cursor:
-        cursor.execute(
-            "SELECT * FROM {} WHERE {}".format(
-                table_name, " AND ".join(["{}=%s"]*len(params)).format(*params.keys())
-            ),
-            params.values()
+        sql = "SELECT * FROM {} WHERE {}".format(
+            table_name, " AND ".join(["{}=%s"]*len(params)).format(*params.keys())
         )
+        if debug:
+            logger.info("{}: SQL={}".format(connection, sql))
+            logger.info("{}: params={}".format(connection, params.values()))
+        cursor.execute(sql, params.values())
         return dictfetchall(cursor)
-        
+
+def selectRowsIn(table_name, param, values, connection, debug=False):
+    with connections[connection].cursor() as cursor:
+        sql = "SELECT * FROM {} WHERE {} IN ({})".format(
+            table_name, param, ", ".join(["%s"]*len(values))
+        )
+        if debug:
+            logger.info("{}: SQL={}".format(connection, sql))
+            logger.info("{}: params={}".format(connection, values))
+        cursor.execute(sql, values)
+        return dictfetchall(cursor)
+
+def selectField(table_name, field, params, connection, debug=False):
+    with connections[connection].cursor() as cursor:
+        sql = "SELECT {} FROM {} WHERE {}".format(
+            field, table_name, " AND ".join(["{}=%s"]*len(params)).format(*params.keys())
+        )
+        if debug:
+            logger.info("{}: SQL={}".format(connection, sql))
+            logger.info("{}: params={}".format(connection, params.values()))
+        cursor.execute(sql, params.values())
+        return set([row[field] for row in dictfetchall(cursor)])
+
+def selectFieldIn(table_name, field, param, values, connection, debug=False):
+    with connections[connection].cursor() as cursor:
+        sql = "SELECT {} FROM {} WHERE {} IN ({})".format(
+            field, table_name, param, ", ".join(["%s"]*len(values))
+        )
+        if debug:
+            logger.info("{}: SQL={}".format(connection, sql))
+            logger.info("{}: params={}".format(connection, values))
+        cursor.execute(sql, values)
+        return set([row[field] for row in dictfetchall(cursor)])
+
+def tableStruct(table_name, connection):
+    with connections[connection].cursor() as cursor:
+        cursor.execute("DESCRIBE {}".format(table_name))
+        return cursor.fetchall();
+
+def copyTable(table_name, src, dst, debug=False):
+    struct = tableStruct(table_name, src)
+    # (('id', 'int(11)', 'NO', 'PRI', None, 'auto_increment'), ('content_hash', 'varchar(40)', 'NO', 'UNI', None, ''), ('structure_hash', 'varchar(40)', 'NO', 'MUL', None, ''))
+    fields = [f[0] for f in struct]
+    for row in selectRows(table_name, {1:1}, src, debug):
+        insertOrUpdateRow(row, table_name, fields, ['id'], dst, debug)
+
 def insertOrUpdateRow(Object, table_name, fields, unique_keys, connection, debug=False):
     with connections[connection].cursor() as cursor:
         fields_for_update = fields.copy()
@@ -54,3 +105,19 @@ def insertOrUpdateRow(Object, table_name, fields, unique_keys, connection, debug
         )
         return cursor.fetchone()[0]
 
+def cmd(cmd, debug=False):
+    if debug:
+        logger.info("RUN CMD={}".format(cmd))
+
+    process = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    )
+    stdout, stderr = process.communicate()
+    return_code = process.returncode
+
+    if debug:
+        logger.info("CMD CODE={}, STDOUT={}, STDERR={}".format(return_code, stdout, stderr))
+
+    return return_code, stdout, stderr
