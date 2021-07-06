@@ -160,6 +160,13 @@ class MigrateCourse:
             ['id']
         )
 
+        # copy S3 files
+        submissions_submission_rows = self.selectRowsIn(
+            'submissions_submission',
+            'id',
+            submissions_submission_ids
+        )
+
     def migrateCourseActivityWorkflow(self):
         # workflow_assessmentworkflow
         workflow_assessmentworkflow_ids = self.copyData(
@@ -197,36 +204,28 @@ class MigrateCourse:
             ['id']
         )
 
-        assessment_peerworkflowitem_author_rows = selectRowsIn(
+        assessment_peerworkflowitem_author_rows = self.selectRowsIn(
             'assessment_peerworkflowitem',
             'author_id',
-            assessment_peerworkflow_ids,
-            CONNECTION_SOURCE,
-            self.debug
+            assessment_peerworkflow_ids
         )
-        assessment_peerworkflowitem_scorer_rows = selectRowsIn(
+        assessment_peerworkflowitem_scorer_rows = self.selectRowsIn(
             'assessment_peerworkflowitem',
             'scorer_id',
-            assessment_peerworkflow_ids,
-            CONNECTION_SOURCE,
-            self.debug
+            assessment_peerworkflow_ids
         )
         assessment_peerworkflowitem_ids = set([row['id'] for row in assessment_peerworkflowitem_author_rows] + [row['id'] for row in assessment_peerworkflowitem_scorer_rows])
         assessment_assessment_ids = set([row['assessment_id'] for row in assessment_peerworkflowitem_author_rows] + [row['assessment_id'] for row in assessment_peerworkflowitem_scorer_rows])
-        assessment_assessment_rows = selectRowsIn(
+        assessment_assessment_rows = self.selectRowsIn(
             'assessment_assessment',
             'id',
-            assessment_assessment_ids,
-            CONNECTION_SOURCE,
-            self.debug
+            assessment_assessment_ids
         )
         assessment_rubric_ids = set([row['rubric_id'] for row in assessment_assessment_rows])
-        assessment_rubric_rows = selectRowsIn(
+        assessment_rubric_rows = self.selectRowsIn(
             'assessment_rubric',
             'id',
-            assessment_rubric_ids,
-            CONNECTION_SOURCE,
-            self.debug
+            assessment_rubric_ids
         )
         # assessment_rubric
         for assessment_rubric_row in assessment_rubric_rows:
@@ -288,30 +287,24 @@ class MigrateCourse:
         # assessment_assessmentpart
         assessment_assessmentpart_ids = set()
         assessment_assessment_ids_parts = set()
-        rows = selectRowsIn(
+        rows = self.selectRowsIn(
             'assessment_assessmentpart',
             'assessment_id',
-            assessment_assessment_ids,
-            CONNECTION_SOURCE,
-            self.debug
+            assessment_assessment_ids
         )
         assessment_assessmentpart_ids.update([row['id'] for row in rows])
         assessment_assessment_ids_parts.update([row['assessment_id'] for row in rows])
-        rows = selectRowsIn(
+        rows = self.selectRowsIn(
             'assessment_assessmentpart',
             'criterion_id',
-            assessment_criterion_ids,
-            CONNECTION_SOURCE,
-            self.debug
+            assessment_criterion_ids
         )
         assessment_assessmentpart_ids.update([row['id'] for row in rows])
         assessment_assessment_ids_parts.update([row['assessment_id'] for row in rows])
-        rows = selectRowsIn(
+        rows = self.selectRowsIn(
             'assessment_assessmentpart',
             'option_id',
-            assessment_criterionoption_ids,
-            CONNECTION_SOURCE,
-            self.debug
+            assessment_criterionoption_ids
         )
         assessment_assessmentpart_ids.update([row['id'] for row in rows])
         assessment_assessment_ids_parts.update([row['assessment_id'] for row in rows])
@@ -442,12 +435,10 @@ class MigrateCourse:
         )
         
     def copyDataIn(self, table_name, select, values, fields, keys):
-        rows = selectRowsIn(
+        rows = self.selectRowsIn(
             table_name,
             select,
-            values,
-            CONNECTION_SOURCE,
-            self.debug
+            values
         )
         pks = []
         for row in rows:
@@ -481,7 +472,16 @@ class MigrateCourse:
                 )
             )
         return pks
-        
+
+    def selectRowsIn(self, table_name, param, values):
+        return selectRowsIn(
+            table_name,
+            param,
+            values,
+            CONNECTION_SOURCE,
+            self.debug
+        )
+
     def substitute(self, table_name, row):
         if 'user_id' in row:
             row['user_id'] = self.user_id_map[row['user_id']]
