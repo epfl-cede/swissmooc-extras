@@ -119,9 +119,46 @@ class MigrateCourse:
 
     def migrateCourseActivitySubmission(self):
         # submissions_studentitem
+        submissions_studentitem_ids = self.copyData(
+            'submissions_studentitem',
+            {'course_id': self.course_id},
+            ['id', 'student_id', 'course_id', 'item_id', 'item_type'],
+            ['course_id', 'student_id', 'item_id']
+        )
+
         # submissions_submission
+        submissions_submission_ids = self.copyDataIn(
+            'submissions_submission',
+            'student_item_id',
+            submissions_studentitem_ids,
+            ['id', 'uuid', 'attempt_number', 'submitted_at', 'created_at', 'raw_answer', 'student_item_id', 'status'],
+            ['id']
+        )
+
+        # submissions_score
+        submissions_score_ids_1 = self.copyDataIn(
+            'submissions_score',
+            'student_item_id',
+            submissions_studentitem_ids,
+            ['id', 'points_earned', 'points_possible', 'created_at', 'reset', 'student_item_id', 'submission_id'],
+            ['id']
+        )
+        submissions_score_ids_2 = self.copyDataIn(
+            'submissions_score',
+            'submission_id',
+            submissions_submission_ids,
+            ['id', 'points_earned', 'points_possible', 'created_at', 'reset', 'student_item_id', 'submission_id'],
+            ['id']
+        )
+
         # submissions_scoresummary
-        pass
+        self.copyDataIn(
+            'submissions_scoresummary',
+            'id',
+            set(submissions_score_ids_1 + submissions_score_ids_2),
+            ['id', 'highest_id', 'latest_id', 'student_item_id'],
+            ['id']
+        )
 
     def migrateCourseActivityWorkflow(self):
         # workflow_assessmentworkflow
@@ -140,7 +177,7 @@ class MigrateCourse:
             ['id', 'comments', 'cancelled_by_id', 'created_at', 'workflow_id'],
             ['id']
         )
-        
+
         # workflow_assessmentworkflowstep
         self.copyDataIn(
             'workflow_assessmentworkflowstep',
