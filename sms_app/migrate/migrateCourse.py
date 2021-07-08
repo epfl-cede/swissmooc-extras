@@ -1,6 +1,10 @@
 import re
+import os
 import logging
+import json
 from datetime import datetime
+
+import boto3, botocore
 
 from django.db import connections
 from django.db.models import Q
@@ -22,6 +26,12 @@ CONNECTION_SOURCE = 'edxapp_readonly'
 CONNECTION_ID = 'edxapp_id'
 CONNECTION_DESTINATION = 'edxapp_university'
 
+S3_SOURCE_BUCKET = 'staging-usercontent'
+S3_SOURCE_PREFIX = 'submissions_attachments'
+S3_DESTINATION_BUCKET = 'file-upload-university'
+S3_DESTINATION_PREFIX = 'submissions-attachments'
+
+
 class migrateCourseException(BaseException):
     pass
 
@@ -38,6 +48,7 @@ class MigrateCourse:
         }
 
         self.user_id_map = {}
+        self.anonymous_user_id_map = {}
         self.course_id_map = {
             self.course_id: self.course_id_substitute()
         }
@@ -46,19 +57,20 @@ class MigrateCourse:
         self.import_dir_docker = '/openedx/data/logs/course_export'
 
     def run(self):
-        users =  selectRows('student_courseenrollment', {'course_id': self.course_id}, CONNECTION_SOURCE)
+        users =  self.selectRows('student_courseenrollment', {'course_id': self.course_id})
         if not users:
             logger.info("There isn't users in the course with id={}, are you sure you want to migrate this course?".format(self.course_id))
             exit(0)
 
         try:
             self.migrateUsers(users)
-            self.migrateCourse()
-            self.migrateCourseActivityStudent()
-            self.migrateCourseActivityCourseware()
-            self.migrateCourseActivityAssessment()
-            self.migrateCourseActivityWorkflow()
-            self.migrateCourseActivitySubmission()
+            #self.migrateCourse()
+            self.migrateCourseActivityStudent() # fillup anonymous_id_map
+            #self.migrateCourseActivityCourseware()
+            #self.migrateCourseActivityAssessment()
+            #self.migrateCourseActivityWorkflow()
+            #self.migrateCourseActivitySubmission()
+            self.migrateCourseActivitySubmissionFiles()
         except Exception as e:
             logger.error(e)
             raise e
@@ -84,12 +96,25 @@ class MigrateCourse:
             ['id', 'course_id', 'created', 'is_active', 'mode', 'user_id'],
             ['id', 'course_id', 'user_id']
         )
-        self.copyData(
+
+        #self.copyData(
+        #    'student_anonymoususerid',
+        #    {'course_id': self.course_id},
+        #    ['id', 'anonymous_user_id', 'course_id', 'user_id'],
+        #    ['id', 'anonymous_user_id']
+        #)
+        # anonymous_user_id will be changed due to the fact that
+        # SECRET_KEY was changed, so we have to generate new one,
+        # remove old one and replace every entry in each tables using
+        # it
+        student_anonymoususerid_rows = self.selectRows(
             'student_anonymoususerid',
             {'course_id': self.course_id},
-            ['id', 'anonymous_user_id', 'course_id', 'user_id'],
-            ['id', 'anonymous_user_id']
         )
+        for student_anonymoususerid_row in student_anonymoususerid_rows:
+            # this will create new row = no need to copy
+            anonymous_user_id = self.generate_anonymous_user_id(student_anonymoususerid_row['user_id'])
+            self.anonymous_user_id_map[student_anonymoususerid_row['anonymous_user_id']] = anonymous_user_id
 
         for user_id in self.user_id_map:
             self.copyData(
@@ -123,7 +148,7 @@ class MigrateCourse:
             'submissions_studentitem',
             {'course_id': self.course_id},
             ['id', 'student_id', 'course_id', 'item_id', 'item_type'],
-            ['course_id', 'student_id', 'item_id']
+            ['id']
         )
 
         # submissions_submission
@@ -160,13 +185,49 @@ class MigrateCourse:
             ['id']
         )
 
-        # copy S3 files
-        submissions_submission_rows = self.selectRowsIn(
-            'submissions_submission',
-            'id',
-            submissions_submission_ids
+    def migrateCourseActivitySubmissionFiles(self):
+        submissions_studentitem_rows = self.selectRows(
+            'submissions_studentitem',
+            {'course_id': self.course_id}
         )
 
+        submissions_submission_rows = self.selectRowsIn(
+            'submissions_submission',
+            'student_item_id',
+            [row['id'] for row in submissions_studentitem_rows]
+        )
+        for submissions_submission_row in submissions_submission_rows:
+            raw_answer = json.loads(submissions_submission_row['raw_answer'])
+            if 'file_keys' in raw_answer:
+                for file_key in raw_answer['file_keys']:
+                    self.copyFile(file_key)
+
+    def copyFile(self, file_key):
+        # "c40305676d6663094c191ef03c083c28/course-v1:CSM+01+2020/block-v1:CSM+01+2020+type@openassessment+block@80273176cb9b4dca9fe5ac0d52d53568"
+        # first hash is the anonymous_user_id, we have to replace it
+        s3 = boto3.resource('s3', endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL"))
+        source_key = "{}/{}".format(S3_SOURCE_PREFIX, file_key)
+        anonymous_id = file_key.split('/')[0]
+        destination_key = "{}/{}".format(
+            S3_DESTINATION_PREFIX,
+            file_key.replace(anonymous_id, self.anonymous_user_id_map[anonymous_id])
+        )
+        copy_source = {
+            'Bucket': S3_SOURCE_BUCKET,
+            'Key': source_key
+        }
+        try:
+            logger.info(
+                "Copy file %s: %s to %s: %s",
+                S3_SOURCE_BUCKET,
+                source_key,
+                S3_DESTINATION_BUCKET,
+                destination_key
+            )
+            s3.meta.client.copy(copy_source, S3_DESTINATION_BUCKET, destination_key)
+        except botocore.exceptions.ClientError as e:
+            logger.error("Boto3 client error: %s", e)
+        
     def migrateCourseActivityWorkflow(self):
         # workflow_assessmentworkflow
         workflow_assessmentworkflow_ids = self.copyData(
@@ -239,6 +300,9 @@ class MigrateCourse:
             )
         # assessment_assessment
         for assessment_assessment_row in assessment_assessment_rows:
+            print(assessment_assessment_row)
+            assessment_assessment_row['scorer_id'] = self.anonymous_user_id_map[assessment_assessment_row['scorer_id']]
+            print(assessment_assessment_row)
             insertOrUpdateRow(
                 assessment_assessment_row,
                 'assessment_assessment',
@@ -443,7 +507,7 @@ class MigrateCourse:
         pks = []
         for row in rows:
             pks.append(insertOrUpdateRow(
-                row,
+                self.substitute(table_name, row.copy()),
                 table_name,
                 fields,
                 keys,
@@ -453,11 +517,9 @@ class MigrateCourse:
         return pks
         
     def copyData(self, table_name, select, fields, keys):
-        rows =  selectRows(
+        rows =  self.selectRows(
             table_name,
-            select,
-            CONNECTION_SOURCE,
-            self.debug
+            select
         )
         pks = []
         for row in rows:
@@ -472,6 +534,14 @@ class MigrateCourse:
                 )
             )
         return pks
+
+    def selectRows(self, table_name, select):
+        return selectRows(
+            table_name,
+            select,
+            CONNECTION_SOURCE,
+            self.debug
+        )
 
     def selectRowsIn(self, table_name, param, values):
         return selectRowsIn(
@@ -496,6 +566,21 @@ class MigrateCourse:
         # courseware_studentmodule has student_id field as user_id
         if table_name == 'courseware_studentmodule' and 'student_id' in row:
             row['student_id'] = self.user_id_map[row['student_id']]
+
+        if table_name == 'assessment_peerworkflow' and 'student_id' in row:
+            row['student_id'] = self.anonymous_user_id_map[row['student_id']]
+
+        if table_name == 'assessment_studenttrainingworkflow' and 'student_id' in row:
+            row['student_id'] = self.anonymous_user_id_map[row['student_id']]
+
+        if table_name == 'submissions_studentitem' and 'student_id' in row:
+            row['student_id'] = self.anonymous_user_id_map[row['student_id']]
+
+        if table_name == 'workflow_assessmentworkflowcancellation' and 'cancelled_by_id' in row:
+            row['cancelled_by_id'] = self.anonymous_user_id_map[row['cancelled_by_id']]
+
+        if table_name == 'assessment_assessment' and 'scorer_id' in row:
+            row['scorer_id'] = self.anonymous_user_id_map[row['scorer_id']]
 
         return row
 
@@ -586,3 +671,21 @@ class MigrateCourse:
             self.debug
         )
 
+    def generate_anonymous_user_id(self, source_user_id):
+        user_id = self.user_id_map[source_user_id]
+        return_code, stdout, stderr = cmd([
+            'ssh', 'ubuntu@zh-staging-swarm-1',
+            '~/.local/bin/docker-run-command',
+            'openedx-university_lms',
+            './manage.py', 'cms',
+            '--settings=tutor.production',
+            'shell', '-c',
+            '"from django.contrib.auth.models import User; from common.djangoapps.student.models import anonymous_id_for_user; a=anonymous_id_for_user(User.objects.get(pk={}), \'course-v1:CSM+01+2020\');print(\'anonymous_user_id=\'+a)"'.format(user_id)
+        ], self.debug)
+        if return_code == 0:
+            for line in stdout.decode('utf-8').split('\n'):
+                if line.find('anonymous_user_id=') == 0:
+                    return line[18:]
+            return None
+        else:
+            raise migrateCourseException("CMD error <{}>".format(stderr))
