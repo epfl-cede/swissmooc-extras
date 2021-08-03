@@ -9,6 +9,10 @@ DESTINATIONS = [
     'edxapp_university'
 ]
 
+CONNECTION_SOURCE = 'edxapp_readonly'
+CONNECTION_ID = 'edxapp_id'
+
+
 def dictfetchall(cursor):
     "Return all rows from a cursor as a dict"
     columns = [col[0] for col in cursor.description]

@@ -18,13 +18,10 @@ from migrate.models_hawthorn import (
     UserApiUserpreference,
 )
 from migrate.helpers import insertOrUpdateRow, selectRows, selectRowsIn, selectField, selectFieldIn, copyTable, cmd
+from migrate.helpers import CONNECTION_SOURCE, CONNECTION_ID
 from migrate.migrateUser import MigrateUser
 
 logger = logging.getLogger(__name__)
-
-CONNECTION_SOURCE = 'edxapp_readonly'
-CONNECTION_ID = 'edxapp_id'
-CONNECTION_DESTINATION = 'edxapp_university'
 
 S3_SOURCE_BUCKET = 'staging-usercontent'
 S3_SOURCE_PREFIX = 'submissions_attachments'

@@ -14,11 +14,9 @@ from migrate.models_hawthorn import (
     UserApiUserpreference,
 )
 from migrate.helpers import insertOrUpdateRow, selectRows
+from migrate.helpers import CONNECTION_SOURCE, CONNECTION_ID
 
 logger = logging.getLogger(__name__)
-
-CONNECTION_SOURCE = 'edxapp_readonly'
-CONNECTION_ID = 'edxapp_id'
 
 class MigrateUser:
     def __init__(self, destination, user_id, overwrite, debug):
