@@ -38,17 +38,8 @@ class MigrateCourse:
         self.course_id = course_id
         self.overwrite = overwrite
         self.debug = debug
-        self.course_map = {
-            'edxapp_university': {
-                'CSM': 'EPFL',
-            }
-        }
-
         self.user_id_map = {}
         self.anonymous_user_id_map = {}
-        self.course_id_map = {
-            self.course_id: self.course_id_substitute()
-        }
         self.export_dir = '/tmp/course_export'
         self.import_dir = '/home/ubuntu/stacks/openedx-university/logs/course_export'
         self.import_dir_docker = '/openedx/data/logs/course_export'
@@ -551,13 +542,6 @@ class MigrateCourse:
         if 'user_id' in row:
             row['user_id'] = self.user_id_map[row['user_id']]
             
-        #if 'course_id' in row:
-        #    row['course_id'] = self.course_id_map[row['course_id']]
-
-        # experiments_experimentdata has key field as course_id
-        #if table_name == 'experiments_experimentdata' and 'key' in row:
-        #    row['key'] = self.course_id_map[row['key']]
-
         # courseware_studentmodule has student_id field as user_id
         if table_name == 'courseware_studentmodule' and 'student_id' in row:
             row['student_id'] = self.user_id_map[row['student_id']]
@@ -578,16 +562,6 @@ class MigrateCourse:
             row['scorer_id'] = self.anonymous_user_id_map[row['scorer_id']]
 
         return row
-
-    def course_id_substitute(self):
-        result = self.course_id
-        for i in self.course_map[self.destination]:
-            result = re.sub(
-                r'course-v1:{}'.format(i),
-                'course-v1:{}'.format(self.course_map[self.destination][i]),
-                result
-            )
-        return result
 
     def mkdir(self, vm):
         return_code, stdout, stderr = cmd([
