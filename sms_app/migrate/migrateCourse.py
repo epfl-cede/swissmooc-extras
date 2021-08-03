@@ -52,12 +52,12 @@ class MigrateCourse:
 
         try:
             self.migrateUsers(users)
-            #self.migrateCourse()
+            self.migrateCourse()
             self.migrateCourseActivityStudent() # fillup anonymous_id_map
-            #self.migrateCourseActivityCourseware()
-            #self.migrateCourseActivityAssessment()
-            #self.migrateCourseActivityWorkflow()
-            #self.migrateCourseActivitySubmission()
+            self.migrateCourseActivityCourseware()
+            self.migrateCourseActivityAssessment()
+            self.migrateCourseActivityWorkflow()
+            self.migrateCourseActivitySubmission()
             self.migrateCourseActivitySubmissionFiles()
         except Exception as e:
             logger.error(e)
