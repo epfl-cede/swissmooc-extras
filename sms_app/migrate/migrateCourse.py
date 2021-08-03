@@ -300,9 +300,7 @@ class MigrateCourse:
             )
         # assessment_assessment
         for assessment_assessment_row in assessment_assessment_rows:
-            print(assessment_assessment_row)
             assessment_assessment_row['scorer_id'] = self.anonymous_user_id_map[assessment_assessment_row['scorer_id']]
-            print(assessment_assessment_row)
             insertOrUpdateRow(
                 assessment_assessment_row,
                 'assessment_assessment',

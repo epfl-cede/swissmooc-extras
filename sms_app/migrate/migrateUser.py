@@ -35,7 +35,7 @@ class MigrateUser:
         data = {}
         User = selectRows('auth_user', {'id': self.user_id}, CONNECTION_SOURCE)
         if not User:
-            logger.info("User with id={} not find".format(self.user_id))
+            logger.info("User with id={} not found".format(self.user_id))
             exit(0)
 
         data['User'] = User[0]
@@ -74,7 +74,7 @@ class MigrateUser:
         User = self._getUser(data['User'], connection)
         if User:
             if self.overwrite:
-                print('[{}] User {} <{}> exists in destination DB, overwrite'.format(
+                logger.warning('[{}] User {} <{}> exists in destination DB, overwrite'.format(
                     connection,
                     data['User']['username'],
                     data['User']['email']
@@ -86,7 +86,7 @@ class MigrateUser:
                 self._insertOrUpdateApiUserpreference(data['ApiUserpreference'], connection)
                 self._insertOrUpdateUsersocialauth(data['User']['username'], data['Usersocialauth'], connection)
             else:
-                print('[{}] User {} <{}> exists in destination DB, skip update, specify --overwrite to force update'.format(
+                logger.warning('[{}] User {} <{}> exists in destination DB, skip update, specify --overwrite to force update'.format(
                     connection,
                     data['User']['username'],
                     data['User']['email']
@@ -94,7 +94,7 @@ class MigrateUser:
                 self.pk = User['id']
                 
         else:
-            print('Add new user'.format(data['User']['username'], data['User']['email']))
+            logger.info('Add new user'.format(data['User']['username'], data['User']['email']))
             self.pk = self._insertOrUpdateUser(data['User'], connection)
             self._insertOrUpdateUserProfile(data['UserProfile'], connection)
             self._insertOrUpdateRegistration(data['Registration'], connection)
