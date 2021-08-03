@@ -20,6 +20,8 @@ class Command(BaseCommand):
         parser.set_defaults(overwrite=False)
 
     def handle(self, *args, **options):
+        if not options['course']:
+            raise CommandError('Please, provide --course argument')
         if not options['destination']:
             raise CommandError('Please, provide --destination argument')
         if options['destination'] not in DESTINATIONS:
