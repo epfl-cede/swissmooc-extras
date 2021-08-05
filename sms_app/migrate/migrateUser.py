@@ -19,12 +19,13 @@ from migrate.helpers import CONNECTION_SOURCE, CONNECTION_ID
 logger = logging.getLogger(__name__)
 
 class MigrateUser:
-    def __init__(self, destination, user_id, overwrite, debug):
-        self.destination = destination
+    def __init__(self, destination, user_id, overwrite, debug, exit_empty_auth = True):
+        self.destination = "edxapp_{}".format(destination)
         self.user_id = user_id
         self.overwrite = overwrite
         self.debug = debug
         self.pk = 0
+        self.username = ''
 
     def run(self):
         self.migrateUser()
@@ -57,7 +58,11 @@ class MigrateUser:
         Usersocialauth = selectRows('social_auth_usersocialauth', {'user_id': self.user_id}, CONNECTION_SOURCE, self.debug)
         if not Usersocialauth:
             logger.error("User {} <{}> doesn't have any social auth, exit'".format(User[0]['email'], User[0]['username']))
-            exit(1)
+            if exit_empty_auth:
+                exit(1)
+            else:
+                return 0
+
         data['Usersocialauth'] = Usersocialauth
 
         self.writeAuthData(data, CONNECTION_ID)
@@ -90,10 +95,12 @@ class MigrateUser:
                     data['User']['email']
                 ))
                 self.pk = User['id']
+            self.username = User['username']
                 
         else:
             logger.info('Add new user'.format(data['User']['username'], data['User']['email']))
             self.pk = self._insertOrUpdateUser(data['User'], connection)
+            self.username = data['User']['username']
             self._insertOrUpdateUserProfile(data['UserProfile'], connection)
             self._insertOrUpdateRegistration(data['Registration'], connection)
             self._insertOrUpdateUserattribute(data['Userattribute'], connection)

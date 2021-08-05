@@ -6,7 +6,7 @@ from django.db import connections
 logger = logging.getLogger(__name__)
 
 DESTINATIONS = [
-    'edxapp_university'
+    'university'
 ]
 
 CONNECTION_SOURCE = 'edxapp_readonly'
