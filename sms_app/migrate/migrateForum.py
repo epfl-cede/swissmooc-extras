@@ -87,7 +87,7 @@ class MigrateForum:
         # find all posts for the course
         users = {}
         for post in self.db_src.contents.find({'course_id': self.course_id}):
-            users[post['author_username']] = post['author_id']
+            users[post['author_username']] = str(post['author_id'])
 
         for user_name in users:
             user_id = users[user_name]
