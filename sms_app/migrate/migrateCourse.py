@@ -34,7 +34,7 @@ class migrateCourseException(BaseException):
 
 class MigrateCourse:
     def __init__(self, destination, course_id, overwrite, debug):
-        self.destination = "edxapp_{}".format(destination)
+        self.destination = destination
         self.course_id = course_id
         self.overwrite = overwrite
         self.debug = debug

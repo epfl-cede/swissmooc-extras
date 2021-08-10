@@ -27,7 +27,7 @@ class Command(BaseCommand):
             raise CommandError('Destination "%s" not in the list' % options['destination'])
 
         Migrate = MigrateUser(
-            options['destination'],
+            "edxapp_{}".format(options['destination']),
             options['user_id'],
             options['overwrite'],
             options['debug']

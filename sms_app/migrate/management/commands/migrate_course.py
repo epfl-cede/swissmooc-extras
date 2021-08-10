@@ -28,7 +28,7 @@ class Command(BaseCommand):
             raise CommandError('Destination "%s" not in the list' % options['destination'])
 
         Migrate = MigrateCourse(
-            options['destination'],
+            "edxapp_{}".format(options['destination']),
             options['course_id'],
             options['overwrite'],
             options['debug']

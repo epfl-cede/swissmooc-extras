@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 class MigrateUser:
     def __init__(self, destination, user_id, overwrite, debug, exit_empty_auth = True):
-        self.destination = "edxapp_{}".format(destination)
+        self.destination = destination
         self.user_id = user_id
         self.overwrite = overwrite
         self.debug = debug
