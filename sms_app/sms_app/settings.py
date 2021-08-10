@@ -101,7 +101,7 @@ if os.environ.get('UNIVERISTY_EDXAPP_MYSQL_USER', ''):
         'PORT': '3306',
     }
 
-if os.environ.get('UNIVERISTY_EDXAPP_MYSQL_USER', ''):
+if os.environ.get('ID_EDXAPP_MYSQL_USER', ''):
     DATABASES['edxapp_id'] = {
         'NAME': 'docker_id_edxapp',
         'ENGINE': 'django.db.backends.mysql',
@@ -110,6 +110,17 @@ if os.environ.get('UNIVERISTY_EDXAPP_MYSQL_USER', ''):
         'HOST': os.environ.get('EDXAPP_MYSQL_HOST', ''),
         'PORT': '3306',
     }
+
+if os.environ.get('SMS_EDXAPP_MYSQL_USER', ''):
+    DATABASES['edxapp_sms'] = {
+        'NAME': 'docker_sms_edxapp',
+        'ENGINE': 'django.db.backends.mysql',
+        'USER': os.environ.get('SMS_EDXAPP_MYSQL_USER', ''),
+        'PASSWORD': os.environ.get('SMS_EDXAPP_MYSQL_PASSWORD', ''),
+        'HOST': os.environ.get('EDXAPP_MYSQL_HOST', ''),
+        'PORT': '3306',
+    }
+
 
 # Password validation
 # https://docs.djangoproject.com/en/2.2/ref/settings/#auth-password-validators
@@ -194,9 +205,9 @@ SMS_APP_ENV=os.environ.get("SMS_APP_ENV")
 
 AWS_STORAGE_BUCKET_NAME_ANALYTICS='{env}-analytics'.format(env=SMS_APP_ENV)
 
-EDXAPP_MYSQL_HOST=os.environ.get("EDXAPP_MYSQL_HOST")
-EDXAPP_MYSQL_USER=os.environ.get("EDXAPP_MYSQL_USER")
-EDXAPP_MYSQL_PASSWORD=os.environ.get("EDXAPP_MYSQL_PASSWORD")
+#EDXAPP_MYSQL_HOST=os.environ.get("EDXAPP_MYSQL_HOST")
+#EDXAPP_MYSQL_USER=os.environ.get("EDXAPP_MYSQL_USER")
+#EDXAPP_MYSQL_PASSWORD=os.environ.get("EDXAPP_MYSQL_PASSWORD")
 
 EMAIL_FROM_ADDRESS = 'noreply@epfl.ch'
 EMAIL_TO_ADDRESSES = ['edx-monitor@groupes.epfl.ch']
