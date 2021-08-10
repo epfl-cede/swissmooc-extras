@@ -581,7 +581,7 @@ class MigrateCourse:
         return_code, stdout, stderr = cmd([
             'ssh', 'ubuntu@zh-%s-swarm-1' % self.APP_ENV,
             '/home/ubuntu/.local/bin/docker-run-command', 'openedx-%s_cms' % self.destination,
-            "'python manage.py cms --settings=tutor.production dump_course_ids'"
+            "python", "manage.py", "cms", "--settings=tutor.production", "dump_course_ids"
         ], self.debug)
         if return_code == 0:
             for line in stdout.decode('utf-8').split('\n'):
