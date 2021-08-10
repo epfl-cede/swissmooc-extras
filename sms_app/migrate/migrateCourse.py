@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 S3_SOURCE_BUCKET = '%s-usercontent'
 S3_SOURCE_PREFIX = 'submissions_attachments'
-S3_DESTINATION_BUCKET = 'file-upload-university'
+S3_DESTINATION_BUCKET = 'file-upload-%s'
 S3_DESTINATION_PREFIX = 'submissions-attachments'
 
 
@@ -42,7 +42,7 @@ class MigrateCourse:
         self.user_id_map = {}
         self.anonymous_user_id_map = {}
         self.export_dir = '/tmp/course_export'
-        self.import_dir = '/home/ubuntu/stacks/openedx-university/logs/course_export'
+        self.import_dir = '/home/ubuntu/stacks/openedx-%s/logs/course_export' % self.destination
         self.import_dir_docker = '/openedx/data/logs/course_export'
 
     def run(self):
@@ -210,10 +210,10 @@ class MigrateCourse:
                 "Copy file %s: %s to %s: %s",
                 S3_SOURCE_BUCKET % self.APP_ENV,
                 source_key,
-                S3_DESTINATION_BUCKET,
+                S3_DESTINATION_BUCKET % self.destination,
                 destination_key
             )
-            s3.meta.client.copy(copy_source, S3_DESTINATION_BUCKET, destination_key)
+            s3.meta.client.copy(copy_source, S3_DESTINATION_BUCKET % self.destination, destination_key)
         except botocore.exceptions.ClientError as e:
             logger.error("Boto3 client error: %s", e)
         
@@ -580,7 +580,7 @@ class MigrateCourse:
     def courseExists(self):
         return_code, stdout, stderr = cmd([
             'ssh', 'ubuntu@zh-%s-swarm-1' % self.APP_ENV,
-            '/home/ubuntu/.local/bin/docker-run-command', 'openedx-university_cms',
+            '/home/ubuntu/.local/bin/docker-run-command', 'openedx-%s_cms' % self.destination,
             "'python manage.py cms --settings=tutor.production dump_course_ids'"
         ], self.debug)
         if return_code == 0:
@@ -617,7 +617,7 @@ class MigrateCourse:
         # docker-run-command openedx-university_lms 'python manage.py cms --settings=tutor.production bla bla bla '
         return_code, stdout, stderr = cmd([
             'ssh', 'ubuntu@zh-%s-swarm-1' % self.APP_ENV,
-            '/home/ubuntu/.local/bin/docker-run-command', 'openedx-university_cms',
+            '/home/ubuntu/.local/bin/docker-run-command', 'openedx-%s_cms' % self.destination,
             "'python manage.py lms --settings=tutor.production import {} {}'".format(self.course_id, self.import_dir_docker)
         ], self.debug)
         if return_code != 0: raise migrateCourseException("CMD error")
@@ -646,7 +646,7 @@ class MigrateCourse:
         return_code, stdout, stderr = cmd([
             'ssh', 'ubuntu@zh-%s-swarm-1' % self.APP_ENV,
             '~/.local/bin/docker-run-command',
-            'openedx-university_lms',
+            'openedx-%s_lms' % self.destination,
             './manage.py', 'cms',
             '--settings=tutor.production',
             'shell', '-c',
