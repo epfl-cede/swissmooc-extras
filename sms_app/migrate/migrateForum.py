@@ -70,7 +70,7 @@ class MigrateForum:
 
     def _migrateUser(self, user_id):
         # mysql
-        Migrate = MigrateUser(self.destination, user_id, self.overwrite, self.debug, False)
+        Migrate = MigrateUser(self.APP_ENV, self.destination, user_id, self.overwrite, self.debug, False)
         Migrate.run()
 
         # mongodb

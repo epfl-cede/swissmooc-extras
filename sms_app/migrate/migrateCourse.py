@@ -66,7 +66,7 @@ class MigrateCourse:
 
     def migrateUsers(self, users):
         for user in users:
-            Migrate = MigrateUser(self.destination, user['user_id'], self.overwrite, self.debug)
+            Migrate = MigrateUser(self.APP_ENV, self.destination, user['user_id'], self.overwrite, self.debug)
             Migrate.run()
             self.user_id_map[user['user_id']] = Migrate.pk
 
