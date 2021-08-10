@@ -19,7 +19,8 @@ from migrate.helpers import CONNECTION_SOURCE, CONNECTION_ID
 logger = logging.getLogger(__name__)
 
 class MigrateUser:
-    def __init__(self, destination, user_id, overwrite, debug, exit_empty_auth = True):
+    def __init__(self, APP_ENV, destination, user_id, overwrite, debug, exit_empty_auth = True):
+        self.APP_ENV = APP_ENV
         self.destination = destination
         self.user_id = user_id
         self.overwrite = overwrite

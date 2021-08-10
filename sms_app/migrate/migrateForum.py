@@ -28,7 +28,8 @@ class migrateForumException(BaseException):
     pass
 
 class MigrateForum:
-    def __init__(self, destination, course_id, overwrite, debug):
+    def __init__(self, APP_ENV, destination, course_id, overwrite, debug):
+        self.APP_ENV = APP_ENV
         self.destination = destination
         self.course_id = course_id
         self.overwrite = overwrite

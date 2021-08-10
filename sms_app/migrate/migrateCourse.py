@@ -23,7 +23,7 @@ from migrate.migrateUser import MigrateUser
 
 logger = logging.getLogger(__name__)
 
-S3_SOURCE_BUCKET = 'staging-usercontent'
+S3_SOURCE_BUCKET = '%s-usercontent'
 S3_SOURCE_PREFIX = 'submissions_attachments'
 S3_DESTINATION_BUCKET = 'file-upload-university'
 S3_DESTINATION_PREFIX = 'submissions-attachments'
@@ -33,7 +33,8 @@ class migrateCourseException(BaseException):
     pass
 
 class MigrateCourse:
-    def __init__(self, destination, course_id, overwrite, debug):
+    def __init__(self, APP_ENV, destination, course_id, overwrite, debug):
+        self.APP_ENV = APP_ENV
         self.destination = destination
         self.course_id = course_id
         self.overwrite = overwrite
@@ -201,13 +202,13 @@ class MigrateCourse:
             file_key.replace(anonymous_id, self.anonymous_user_id_map[anonymous_id])
         )
         copy_source = {
-            'Bucket': S3_SOURCE_BUCKET,
+            'Bucket': S3_SOURCE_BUCKET % self.APP_ENV,
             'Key': source_key
         }
         try:
             logger.info(
                 "Copy file %s: %s to %s: %s",
-                S3_SOURCE_BUCKET,
+                S3_SOURCE_BUCKET % self.APP_ENV,
                 source_key,
                 S3_DESTINATION_BUCKET,
                 destination_key
@@ -578,7 +579,7 @@ class MigrateCourse:
 
     def courseExists(self):
         return_code, stdout, stderr = cmd([
-            'ssh', 'ubuntu@zh-staging-swarm-1',
+            'ssh', 'ubuntu@zh-%s-swarm-1' % self.APP_ENV,
             '/home/ubuntu/.local/bin/docker-run-command', 'openedx-university_cms',
             "'python manage.py cms --settings=tutor.production dump_course_ids'"
         ], self.debug)
@@ -592,10 +593,10 @@ class MigrateCourse:
             raise migrateCourseException("CMD error <{}>".format(stdout))
 
     def exportCourse(self):
-        self.mkdir('zh-staging-app-205')
+        self.mkdir('zh-%s-app-205' % self.APP_ENV)
 
         return_code, stdout, stderr = cmd([
-            'ssh', 'ubuntu@zh-staging-app-205',
+            'ssh', 'ubuntu@zh-%s-app-205' % self.APP_ENV,
             'sudo', '-u', 'www-data',
             '/edx/bin/python.edxapp', '/edx/bin/manage.edxapp',
             'cms', 'export', self.course_id, self.export_dir,
@@ -604,18 +605,18 @@ class MigrateCourse:
         if return_code != 0: raise migrateCourseException("CMD error")
 
     def importCourse(self):
-        self.mkdir('zh-staging-swarm-1')
+        self.mkdir('zh-%s-swarm-1' % self.APP_ENV)
 
         return_code, stdout, stderr = cmd([
-            'ssh', 'ubuntu@zh-staging-swarm-1',
-            'scp', '-r', 'ubuntu@zh-staging-app-205:{}'.format(self.export_dir),
+            'ssh', 'ubuntu@zh-%s-swarm-1' % self.APP_ENV,
+            'scp', '-r', 'ubuntu@zh-%s-app-205:%s' % (self.APP_ENV, self.export_dir),
             '/'.join(self.import_dir.split('/')[0:-1])
         ], self.debug)
         if return_code != 0: raise migrateCourseException("CMD error")
 
         # docker-run-command openedx-university_lms 'python manage.py cms --settings=tutor.production bla bla bla '
         return_code, stdout, stderr = cmd([
-            'ssh', 'ubuntu@zh-staging-swarm-1',
+            'ssh', 'ubuntu@zh-%s-swarm-1' % self.APP_ENV,
             '/home/ubuntu/.local/bin/docker-run-command', 'openedx-university_cms',
             "'python manage.py lms --settings=tutor.production import {} {}'".format(self.course_id, self.import_dir_docker)
         ], self.debug)
@@ -643,7 +644,7 @@ class MigrateCourse:
     def generate_anonymous_user_id(self, source_user_id):
         user_id = self.user_id_map[source_user_id]
         return_code, stdout, stderr = cmd([
-            'ssh', 'ubuntu@zh-staging-swarm-1',
+            'ssh', 'ubuntu@zh-%s-swarm-1' % self.APP_ENV,
             '~/.local/bin/docker-run-command',
             'openedx-university_lms',
             './manage.py', 'cms',
