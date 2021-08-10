@@ -28,7 +28,7 @@ class Command(BaseCommand):
 
         Migrate = MigrateUser(
             APP_ENV,
-            "edxapp_{}".format(options['destination']),
+            options['destination'],
             options['user_id'],
             options['overwrite'],
             options['debug']

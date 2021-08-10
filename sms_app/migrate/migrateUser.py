@@ -64,7 +64,7 @@ class MigrateUser:
         data['Usersocialauth'] = Usersocialauth
 
         self.writeAuthData(data, CONNECTION_ID)
-        self.writeAuthData(data, self.destination)
+        self.writeAuthData(data, "edxapp_%s" % self.destination)
 
     def writeAuthData(self, data, connection):
         # check user exists

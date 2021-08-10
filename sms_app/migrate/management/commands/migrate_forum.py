@@ -28,7 +28,7 @@ class Command(BaseCommand):
 
         Migrate = MigrateForum(
             APP_ENV,
-            "edxapp_{}".format(options['destination']),
+            (options['destination'],
             options['course_id'],
             options['overwrite'],
             options['debug']

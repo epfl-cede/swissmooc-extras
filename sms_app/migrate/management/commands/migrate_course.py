@@ -29,7 +29,7 @@ class Command(BaseCommand):
 
         Migrate = MigrateCourse(
             APP_ENV,
-            "edxapp_{}".format(options['destination']),
+            options['destination'],
             options['course_id'],
             options['overwrite'],
             options['debug']

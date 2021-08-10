@@ -284,7 +284,7 @@ class MigrateCourse:
                 'assessment_rubric',
                 ['id', 'content_hash', 'structure_hash'],
                 ['id'],
-                self.destination,
+                "edxapp_%s" % self.destination,
                 self.debug
             )
         # assessment_assessment
@@ -295,7 +295,7 @@ class MigrateCourse:
                 'assessment_assessment',
                 ['id', 'submission_uuid', 'scored_at', 'scorer_id', 'score_type', 'feedback', 'rubric_id'],
                 ['id'],
-                self.destination,
+                "edxapp_%s" % self.destination,
                 self.debug
             )
         # assessment_peerworkflowitem
@@ -305,7 +305,7 @@ class MigrateCourse:
                 'assessment_peerworkflowitem',
                 ['id', 'submission_uuid', 'started_at', 'scored', 'assessment_id', 'author_id', 'scorer_id'],
                 ['id'],
-                self.destination,
+                "edxapp_%s" % self.destination,
                 self.debug
             )
 
@@ -498,7 +498,7 @@ class MigrateCourse:
                 table_name,
                 fields,
                 keys,
-                self.destination,
+                "edxapp_%s" % self.destination,
                 self.debug
             ))
         return pks
@@ -516,7 +516,7 @@ class MigrateCourse:
                     table_name,
                     fields,
                     keys,
-                    self.destination,
+                    "edxapp_%s" % self.destination,
                     self.debug
                 )
             )
