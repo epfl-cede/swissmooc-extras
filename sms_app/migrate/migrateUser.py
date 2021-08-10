@@ -24,6 +24,7 @@ class MigrateUser:
         self.user_id = user_id
         self.overwrite = overwrite
         self.debug = debug
+        self.exit_empty_auth  = exit_empty_auth
         self.pk = 0
         self.username = ''
 
@@ -58,7 +59,7 @@ class MigrateUser:
         Usersocialauth = selectRows('social_auth_usersocialauth', {'user_id': self.user_id}, CONNECTION_SOURCE, self.debug)
         if not Usersocialauth:
             logger.error("User {} <{}> doesn't have any social auth, exit'".format(User[0]['email'], User[0]['username']))
-            if exit_empty_auth:
+            if self.exit_empty_auth:
                 exit(1)
             else:
                 return 0
