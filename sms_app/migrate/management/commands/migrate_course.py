@@ -7,7 +7,7 @@ from django.core.management.base import BaseCommand, CommandError
 
 from migrate.migrateUser import MigrateUser
 from migrate.migrateCourse import MigrateCourse
-from migrate.helpers import DESTINATIONS
+from migrate.helpers import APP_ENVS, DESTINATIONS
 
 class Command(BaseCommand):
     help = 'Migrate particular course'
@@ -20,7 +20,10 @@ class Command(BaseCommand):
         parser.set_defaults(overwrite=False)
 
     def handle(self, *args, **options):
-        if options['destination'] not in DESTINATIONS:
+        APP_ENV = os.getenv('SMS_APP_ENV')
+        if APP_ENV not in APP_ENVS:
+            raise CommandError('Please, provide app environment(staging|campus)')
+        if options['destination'] not in DESTINATIONS[APP_ENV]:
             raise CommandError('Destination "%s" not in the list' % options['destination'])
 
         Migrate = MigrateCourse(

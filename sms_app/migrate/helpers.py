@@ -5,9 +5,18 @@ from django.db import connections
 
 logger = logging.getLogger(__name__)
 
-DESTINATIONS = [
-    'university'
+APP_ENVS = [
+    'staging',
+    'campus'
 ]
+DESTINATIONS = {
+    'staging': [
+        'university'
+    ],
+    'campus': [
+        'sms'
+    ]
+}
 
 CONNECTION_SOURCE = 'edxapp_readonly'
 CONNECTION_ID = 'edxapp_id'
