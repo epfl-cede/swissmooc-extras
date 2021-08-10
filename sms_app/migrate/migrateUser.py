@@ -58,11 +58,7 @@ class MigrateUser:
 
         Usersocialauth = selectRows('social_auth_usersocialauth', {'user_id': self.user_id}, CONNECTION_SOURCE, self.debug)
         if not Usersocialauth:
-            logger.error("User {} <{}> doesn't have any social auth, exit'".format(User[0]['email'], User[0]['username']))
-            if self.exit_empty_auth:
-                exit(1)
-            else:
-                return 0
+            logger.warning("User {} <{}> doesn't have any social auth".format(User[0]['email'], User[0]['username']))
 
         data['Usersocialauth'] = Usersocialauth
 
