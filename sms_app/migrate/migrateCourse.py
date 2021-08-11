@@ -2,6 +2,7 @@ import re
 import os
 import logging
 import json
+import pprint
 from datetime import datetime
 
 import boto3, botocore
@@ -102,10 +103,8 @@ class MigrateCourse:
             'student_anonymoususerid',
             {'course_id': self.course_id},
         )
-        for student_anonymoususerid_row in student_anonymoususerid_rows:
-            # this will create new row = no need to copy
-            anonymous_user_id = self.generate_anonymous_user_id(student_anonymoususerid_row['user_id'])
-            self.anonymous_user_id_map[student_anonymoususerid_row['anonymous_user_id']] = anonymous_user_id
+
+        self.generate_anonymous_user_ids(student_anonymoususerid_rows)
 
         for user_id in self.user_id_map:
             self.copyData(
@@ -643,8 +642,12 @@ class MigrateCourse:
             self.debug
         )
 
-    def generate_anonymous_user_id(self, source_user_id):
-        user_id = self.user_id_map[source_user_id]
+    def generate_anonymous_user_ids(self, student_anonymoususerid_rows):
+        src_anonymous_user_ids_map = {}
+        for student_anonymoususerid_row in student_anonymoususerid_rows:
+            src_anonymous_user_ids_map[student_anonymoususerid_row['user_id']] = student_anonymoususerid_row['anonymous_user_id']
+
+        dst_user_ids = [self.user_id_map[src_user_id] for src_user_id in src_anonymous_user_ids_map]
         return_code, stdout, stderr = cmd([
             'ssh', 'ubuntu@zh-%s-swarm-1' % self.APP_ENV,
             '/home/ubuntu/.local/bin/docker-run-command',
@@ -652,12 +655,26 @@ class MigrateCourse:
             './manage.py', 'cms',
             '--settings=tutor.production',
             'shell', '-c',
-            '"from django.contrib.auth.models import User; from common.djangoapps.student.models import anonymous_id_for_user; a=anonymous_id_for_user(User.objects.get(pk={}), \'course-v1:CSM+01+2020\');print(\'anonymous_user_id=\'+a)"'.format(user_id)
+            '''$'from django.contrib.auth.models import User
+from common.djangoapps.student.models import anonymous_id_for_user
+for user_id in {}:
+    anonymous_id = anonymous_id_for_user(User.objects.get(pk=user_id), "course-v1:CSM+01+2020")
+    print("anonymous_user_id: %s %s" % (user_id, anonymous_id))\''''.format(dst_user_ids)
         ], self.debug)
+        users = []
         if return_code == 0:
+            dst_anonymous_user_ids_map = {}
             for line in stdout.decode('utf-8').split('\n'):
-                if line.find('anonymous_user_id=') == 0:
-                    return line[18:]
-            return None
+                if line.find('anonymous_user_id: ') == 0:
+                    tmp = line.split(': ')[1].split(' ')
+                    user_id, anonymous_user_id = tmp[0], tmp[1]
+                    dst_anonymous_user_ids_map[int(user_id)] = anonymous_user_id
+                    # self.anonymous_user_id_map[student_anonymoususerid_row['anonymous_user_id']] = anonymous_user_id
+                    #for _user_id in self.user_id_map:
+                    #    if self.user_id_map[_user_id] == user_id:
+                    #        self.anonymous_user_id_map[source_anonymous_user_ids_map[_user_id]] = anonymous_user_id
+                    #        break
+            for src_user_id in src_anonymous_user_ids_map:
+                self.anonymous_user_id_map[src_anonymous_user_ids_map[src_user_id]] = dst_anonymous_user_ids_map[self.user_id_map[src_user_id]]
         else:
             raise migrateCourseException("CMD error <{}>".format(stderr))
