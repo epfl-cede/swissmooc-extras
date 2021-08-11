@@ -583,7 +583,7 @@ class MigrateCourse:
         return_code, stdout, stderr = cmd([
             'ssh', 'ubuntu@zh-%s-swarm-1' % self.APP_ENV,
             '/home/ubuntu/.local/bin/docker-run-command', 'openedx-%s_cms' % self.destination,
-            "python", "manage.py", "cms", "--settings=tutor.production", "dump_course_ids"
+            'python', 'manage.py', 'cms', '--settings=tutor.production', 'dump_course_ids'
         ], self.debug)
         if return_code == 0:
             for line in stdout.decode('utf-8').split('\n'):
@@ -620,7 +620,7 @@ class MigrateCourse:
         return_code, stdout, stderr = cmd([
             'ssh', 'ubuntu@zh-%s-swarm-1' % self.APP_ENV,
             '/home/ubuntu/.local/bin/docker-run-command', 'openedx-%s_cms' % self.destination,
-            "'python manage.py lms --settings=tutor.production import {} {}'".format(self.course_id, self.import_dir_docker)
+            'python', 'manage.py', 'lms', '--settings=tutor.production', 'import', self.course_id, self.import_dir_docker
         ], self.debug)
         if return_code != 0: raise migrateCourseException("CMD error")
 
@@ -647,7 +647,7 @@ class MigrateCourse:
         user_id = self.user_id_map[source_user_id]
         return_code, stdout, stderr = cmd([
             'ssh', 'ubuntu@zh-%s-swarm-1' % self.APP_ENV,
-            '~/.local/bin/docker-run-command',
+            '/home/ubuntu/.local/bin/docker-run-command',
             'openedx-%s_lms' % self.destination,
             './manage.py', 'cms',
             '--settings=tutor.production',
