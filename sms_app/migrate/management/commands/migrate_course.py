@@ -17,7 +17,9 @@ class Command(BaseCommand):
         parser.add_argument('--destination', help='Destination DB', nargs='?', type=str, required=True)
         parser.add_argument('--course_id', help='course_id', required=True)
         parser.add_argument('--overwrite', action='store_true', help='Overwrite existing data')
+        parser.add_argument('--users_only', action='store_true', help='Migrate only users')
         parser.add_argument('--debug', action='store_true', help='Debug info')
+        parser.set_defaults(users_only=False)
         parser.set_defaults(overwrite=False)
 
     def handle(self, *args, **options):
@@ -32,6 +34,7 @@ class Command(BaseCommand):
             options['destination'],
             options['course_id'],
             options['overwrite'],
+            options['users_only'],
             options['debug']
         )
         Migrate.run()

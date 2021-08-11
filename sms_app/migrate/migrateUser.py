@@ -18,6 +18,13 @@ from migrate.helpers import CONNECTION_SOURCE, CONNECTION_ID
 
 logger = logging.getLogger(__name__)
 
+class migrateUserException(BaseException):
+    pass
+class migrateUserExistsWithUsernameException(migrateUserException):
+    pass
+class migrateUserExistsWithEmailException(migrateUserException):
+    pass
+
 class MigrateUser:
     def __init__(self, APP_ENV, destination, user_id, overwrite, debug, exit_empty_auth = True):
         self.APP_ENV = APP_ENV
@@ -72,7 +79,15 @@ class MigrateUser:
         # replace 966186222692@eduid.ch to 735531216246_eduid_ch
         # replace 240575@epfl.ch to 253705_epfl_ch
         data['User']['username'] = data['User']['username'].replace('@', '_').replace('.', '_')
-        User = self._getUser(data['User'], connection)
+        try:
+            User = self._getUser(data['User'], connection)
+            self._createUser(User, data, connection)
+        except migrateUserExistsWithEmailException as e:
+            logger.warning(e)
+        except migrateUserExistsWithUsernameException as e:
+            logger.warning(e)
+
+    def _createUser(self, User, data, connection):
         if User:
             if self.overwrite:
                 logger.warning('[{}] User {} <{}> exists in destination DB, overwrite'.format(
@@ -132,8 +147,14 @@ class MigrateUser:
             cursor.execute(sql, params)
             UserCheck = cursor.fetchone()
             if UserCheck:
-                logger.error("User {} <{}> exists only with '{}' on '{}'".format(User['email'], User['username'], key, connection))
-                exit(1)
+                if key == 'email':
+                    raise migrateUserExistsWithEmailException(
+                        "User {} <{}> exists only with '{}' on '{}'".format(User['email'], User['username'], key, connection)
+                    )
+                if key == 'username':
+                    raise migrateUserExistsWithUsernameException(
+                        "User {} <{}> exists only with '{}' on '{}'".format(User['email'], User['username'], key, connection)
+                    )
 
 
     def _insertOrUpdateUser(self, User, connection):

@@ -33,11 +33,12 @@ class migrateCourseException(BaseException):
     pass
 
 class MigrateCourse:
-    def __init__(self, APP_ENV, destination, course_id, overwrite, debug):
+    def __init__(self, APP_ENV, destination, course_id, overwrite, users_only, debug):
         self.APP_ENV = APP_ENV
         self.destination = destination
         self.course_id = course_id
         self.overwrite = overwrite
+        self.users_only = users_only
         self.debug = debug
         self.user_id_map = {}
         self.anonymous_user_id_map = {}
@@ -53,13 +54,14 @@ class MigrateCourse:
 
         try:
             self.migrateUsers(users)
-            self.migrateCourse()
-            self.migrateCourseActivityStudent() # fillup anonymous_id_map
-            self.migrateCourseActivityCourseware()
-            self.migrateCourseActivityAssessment()
-            self.migrateCourseActivityWorkflow()
-            self.migrateCourseActivitySubmission()
-            self.migrateCourseActivitySubmissionFiles()
+            if not self.users_only:
+                self.migrateCourse()
+                self.migrateCourseActivityStudent() # fillup anonymous_id_map
+                self.migrateCourseActivityCourseware()
+                self.migrateCourseActivityAssessment()
+                self.migrateCourseActivityWorkflow()
+                self.migrateCourseActivitySubmission()
+                self.migrateCourseActivitySubmissionFiles()
         except Exception as e:
             logger.error(e)
             raise e
