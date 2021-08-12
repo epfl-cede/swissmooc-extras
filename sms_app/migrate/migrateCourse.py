@@ -254,8 +254,6 @@ class MigrateCourse:
             ['id', 'student_id', 'item_id', 'course_id', 'submission_uuid', 'created_at', 'completed_at', 'grading_completed_at', 'cancelled_at'],
             ['id']
         )
-        if not assessment_peerworkflow_ids:
-            return None
 
         assessment_peerworkflowitem_author_rows = self.selectRowsIn(
             'assessment_peerworkflowitem',

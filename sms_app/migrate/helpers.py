@@ -42,6 +42,7 @@ def selectRows(table_name, params, connection, debug=False):
         return dictfetchall(cursor)
 
 def selectRowsIn(table_name, param, values, connection, debug=False):
+    if not values: return []
     with connections[connection].cursor() as cursor:
         sql = "SELECT * FROM {} WHERE {} IN ({})".format(
             table_name, param, ", ".join(["%s"]*len(values))
@@ -64,6 +65,7 @@ def selectField(table_name, field, params, connection, debug=False):
         return set([row[field] for row in dictfetchall(cursor)])
 
 def selectFieldIn(table_name, field, param, values, connection, debug=False):
+    if not values: return []
     with connections[connection].cursor() as cursor:
         sql = "SELECT {} FROM {} WHERE {} IN ({})".format(
             field, table_name, param, ", ".join(["%s"]*len(values))
