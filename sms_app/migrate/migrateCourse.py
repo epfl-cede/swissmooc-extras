@@ -169,8 +169,22 @@ class MigrateCourse:
         # submissions_scoresummary
         self.copyDataIn(
             'submissions_scoresummary',
-            'id',
+            'highest_id',
             set(submissions_score_ids_1 + submissions_score_ids_2),
+            ['id', 'highest_id', 'latest_id', 'student_item_id'],
+            ['id']
+        )
+        self.copyDataIn(
+            'submissions_scoresummary',
+            'latest_id',
+            set(submissions_score_ids_1 + submissions_score_ids_2),
+            ['id', 'highest_id', 'latest_id', 'student_item_id'],
+            ['id']
+        )
+        self.copyDataIn(
+            'submissions_scoresummary',
+            'student_item_id',
+            submissions_studentitem_ids,
             ['id', 'highest_id', 'latest_id', 'student_item_id'],
             ['id']
         )
