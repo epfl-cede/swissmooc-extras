@@ -390,9 +390,22 @@ class MigrateCourse:
             ['id']
         )
 
+        self.fill_assessment_by_submission_uuid()
+
         self.fill_assessment_trainingexample()
 
         self.fill_assessment_assessmentfeedback(assessment_assessment_ids)
+
+    def fill_assessment_by_submission_uuid(self):
+        submission_uuids_rows = self.selectRows('assessment_staffworkflow', {'course_id': self.course_id})
+        submission_uuids = [row['submission_uuid'] for row in submission_uuids_rows]
+        self.copyDataIn(
+            'assessment_assessment',
+            'submission_uuid',
+            submission_uuids,
+            ['id', 'submission_uuid', 'scored_at', 'scorer_id', 'score_type', 'feedback', 'rubric_id'],
+            ['id']
+        )
 
     def fill_assessment_assessmentfeedback(self, assessment_assessment_ids):
         assessmentfeedback_id_ids = self.selectFieldIn(
