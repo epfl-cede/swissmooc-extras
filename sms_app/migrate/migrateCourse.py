@@ -399,6 +399,21 @@ class MigrateCourse:
     def fill_assessment_by_submission_uuid(self):
         submission_uuids_rows = self.selectRows('assessment_staffworkflow', {'course_id': self.course_id})
         submission_uuids = [row['submission_uuid'] for row in submission_uuids_rows]
+
+        submission_uuids_rows = self.selectRowsIn(
+            'assessment_assessment',
+            'submission_uuid',
+            submission_uuids
+        )
+        rubric_ids = [row['rubric_id'] for row in submission_uuids_rows]
+        self.copyDataIn(
+            'assessment_rubric',
+            'id',
+            rubric_ids,
+            ['id', 'content_hash', 'structure_hash'],
+            ['id']
+        )
+
         self.copyDataIn(
             'assessment_assessment',
             'submission_uuid',
