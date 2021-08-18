@@ -700,8 +700,8 @@ class MigrateCourse:
             '''$'from django.contrib.auth.models import User
 from common.djangoapps.student.models import anonymous_id_for_user
 for user_id in {}:
-    anonymous_id = anonymous_id_for_user(User.objects.get(pk=user_id), "course-v1:CSM+01+2020")
-    print("anonymous_user_id: %s %s" % (user_id, anonymous_id))\''''.format(dst_user_ids)
+    anonymous_id = anonymous_id_for_user(User.objects.get(pk=user_id), "{}")
+    print("anonymous_user_id: %s %s" % (user_id, anonymous_id))\''''.format(dst_user_ids, self.course_id)
         ], self.debug)
         users = []
         if return_code == 0:
