@@ -429,6 +429,18 @@ class MigrateCourse:
             ['id']
         )
 
+        assessment_assessmentpart_rows = self.selectRowsIn(
+            'assessment_assessmentpart',
+            'assessment_id',
+            assessment_assessment_ids
+        )
+        self.copyDataIn(
+            'assessment_criterionoption',
+            'id',
+            [row['option_id'] for row in assessment_assessmentpart_rows],
+            ['id', 'order_num', 'points', 'name', 'label', 'explanation', 'criterion_id'],
+            ['id']
+        )
         self.copyDataIn(
             'assessment_assessmentpart',
             'assessment_id',
