@@ -28,7 +28,7 @@ class DeleteCourse:
             self.deleteCourseActivitySubmission()
             self.deleteCourseActivityWorkflow()
             self.deleteCourseActivityAssessment()
-            #self.deleteCourseActivityCourseware()
+            self.deleteCourseActivityCourseware()
             #self.deleteCourseActivityStudent()
             #self.deleteCourse()
         except Exception as e:
@@ -168,6 +168,22 @@ class DeleteCourse:
         )
         self.deleteRows(
             'assessment_peerworkflow',
+            {'course_id': self.course_id},
+        )
+
+    def deleteCourseActivityCourseware(self):
+        courseware_studentmodule_rows = self.selectRows(
+            'courseware_studentmodule',
+            {'course_id': self.course_id},
+        )
+        courseware_studentmodule_ids = [row['id'] for row in courseware_studentmodule_rows]
+        self.deleteRowsIn(
+            'courseware_studentmodulehistory',
+            'student_module_id',
+            courseware_studentmodule_ids,
+        )
+        self.deleteRows(
+            'courseware_studentmodule',
             {'course_id': self.course_id},
         )
         
