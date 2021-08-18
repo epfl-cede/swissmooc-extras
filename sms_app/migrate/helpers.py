@@ -136,3 +136,24 @@ def cmd(cmd, debug=False):
         logger.info("CMD CODE={}, STDOUT={}, STDERR={}".format(return_code, stdout, stderr))
 
     return return_code, stdout, stderr
+
+def deleteRows(table_name, params, connection, debug=False):
+    with connections[connection].cursor() as cursor:
+        sql = "DELETE FROM {} WHERE {}".format(
+            table_name, " AND ".join(["{}=%s"]*len(params)).format(*params.keys())
+        )
+        if debug:
+            logger.info("{}: SQL={}".format(connection, sql))
+            logger.info("{}: params={}".format(connection, params.values()))
+        cursor.execute(sql, params.values())
+
+def deleteRowsIn(table_name, param, values, connection, debug=False):
+    if not values: return []
+    with connections[connection].cursor() as cursor:
+        sql = "DELETE FROM {} WHERE {} IN ({})".format(
+            table_name, param, ", ".join(["%s"]*len(values))
+        )
+        if debug:
+            logger.info("{}: SQL={}".format(connection, sql))
+            logger.info("{}: params={}".format(connection, values))
+        cursor.execute(sql, values)

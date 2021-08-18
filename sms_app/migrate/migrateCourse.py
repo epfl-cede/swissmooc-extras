@@ -18,7 +18,7 @@ from migrate.models_hawthorn import (
     StudentUserattribute,
     UserApiUserpreference,
 )
-from migrate.helpers import insertOrUpdateRow, selectRows, selectRowsIn, selectField, selectFieldIn, copyTable, cmd
+from migrate.helpers import insertOrUpdateRow, selectRows, selectRowsIn, selectField, selectFieldIn, cmd
 from migrate.helpers import CONNECTION_SOURCE, CONNECTION_ID
 from migrate.migrateUser import MigrateUser
 
