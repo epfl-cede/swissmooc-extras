@@ -421,11 +421,19 @@ class MigrateCourse:
             ['id']
         )
 
-        self.copyDataIn(
+        assessment_assessment_ids = self.copyDataIn(
             'assessment_assessment',
             'submission_uuid',
             submission_uuids,
             ['id', 'submission_uuid', 'scored_at', 'scorer_id', 'score_type', 'feedback', 'rubric_id'],
+            ['id']
+        )
+
+        self.copyDataIn(
+            'assessment_assessmentpart',
+            'assessment_id',
+            assessment_assessment_ids,
+            ['id', 'feedback', 'assessment_id', 'criterion_id', 'option_id'],
             ['id']
         )
 
