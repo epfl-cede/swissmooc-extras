@@ -25,10 +25,9 @@ class DeleteCourse:
 
     def run(self):
         try:
-            self.deleteCourseActivitySubmissionFiles()
-            #self.deleteCourseActivitySubmission()
-            #self.deleteCourseActivityWorkflow()
-            #self.deleteCourseActivityAssessment()
+            self.deleteCourseActivitySubmission()
+            self.deleteCourseActivityWorkflow()
+            self.deleteCourseActivityAssessment()
             #self.deleteCourseActivityCourseware()
             #self.deleteCourseActivityStudent()
             #self.deleteCourse()
@@ -37,7 +36,7 @@ class DeleteCourse:
             raise e
 
 
-    def deleteCourseActivitySubmissionFiles(self):
+    def deleteCourseActivitySubmission(self):
         submissions_studentitem_rows = self.selectRows(
             'submissions_studentitem',
             {'course_id': self.course_id}
@@ -95,6 +94,83 @@ class DeleteCourse:
             'submissions_studentitem',
             {'course_id': self.course_id}
         )
+
+    def deleteCourseActivityWorkflow(self):
+        # workflow_assessmentworkflow
+        workflow_assessmentworkflow_rows = self.selectRows(
+            'workflow_assessmentworkflow',
+            {'course_id': self.course_id},
+        )
+        workflow_assessmentworkflow_ids = [row['id'] for row in workflow_assessmentworkflow_rows]
+
+        # workflow_assessmentworkflowcancellation
+        self.deleteRowsIn(
+            'workflow_assessmentworkflowcancellation',
+            'workflow_id',
+            workflow_assessmentworkflow_ids,
+        )
+
+        # workflow_assessmentworkflowstep
+        self.deleteRowsIn(
+            'workflow_assessmentworkflowstep',
+            'workflow_id',
+            workflow_assessmentworkflow_ids,
+        )
+        self.deleteRows(
+            'workflow_assessmentworkflow',
+            {'course_id': self.course_id},
+        )
+
+    def deleteCourseActivityAssessment(self):
+        assessment_peerworkflow_rows = self.selectRows(
+            'assessment_peerworkflow',
+            {'course_id': self.course_id},
+        )
+        assessment_peerworkflow_ids = [row['id'] for row in assessment_peerworkflow_rows]
+
+        assessment_peerworkflowitem_author_rows = self.selectRowsIn(
+            'assessment_peerworkflowitem',
+            'author_id',
+            assessment_peerworkflow_ids
+        )
+        assessment_peerworkflowitem_scorer_rows = self.selectRowsIn(
+            'assessment_peerworkflowitem',
+            'scorer_id',
+            assessment_peerworkflow_ids
+        )
+        assessment_peerworkflowitem_ids = set([row['id'] for row in assessment_peerworkflowitem_author_rows] + [row['id'] for row in assessment_peerworkflowitem_scorer_rows])
+        assessment_assessment_ids = set([row['assessment_id'] for row in assessment_peerworkflowitem_author_rows] + [row['assessment_id'] for row in assessment_peerworkflowitem_scorer_rows])
+        assessment_assessment_rows = self.selectRowsIn(
+            'assessment_assessment',
+            'id',
+            assessment_assessment_ids
+        )
+        assessment_rubric_ids = set([row['rubric_id'] for row in assessment_assessment_rows])
+        self.deleteRowsIn(
+            'assessment_rubric',
+            'id',
+            assessment_rubric_ids
+        )
+        self.deleteRowsIn(
+            'assessment_assessment',
+            'id',
+            assessment_assessment_ids
+        )
+        self.deleteRowsIn(
+            'assessment_peerworkflowitem',
+            'author_id',
+            assessment_peerworkflow_ids
+        )
+        self.deleteRowsIn(
+            'assessment_peerworkflowitem',
+            'scorer_id',
+            assessment_peerworkflow_ids
+        )
+        self.deleteRows(
+            'assessment_peerworkflow',
+            {'course_id': self.course_id},
+        )
+        
 
     def deleteRows(self, table_name, select):
         return deleteRows(
