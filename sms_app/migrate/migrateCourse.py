@@ -413,6 +413,13 @@ class MigrateCourse:
             ['id', 'content_hash', 'structure_hash'],
             ['id']
         )
+        self.copyDataIn(
+            'assessment_criterion',
+            'rubric_id',
+            rubric_ids,
+            ['id', 'name', 'label', 'order_num', 'prompt', 'rubric_id'],
+            ['id']
+        )
 
         self.copyDataIn(
             'assessment_assessment',
