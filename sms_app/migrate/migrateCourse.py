@@ -424,7 +424,7 @@ class MigrateCourse:
         assessment_assessment_ids = self.copyDataIn(
             'assessment_assessment',
             'submission_uuid',
-            submission_uuids,
+            assessment_staffworkflow_submission_uuids,
             ['id', 'submission_uuid', 'scored_at', 'scorer_id', 'score_type', 'feedback', 'rubric_id'],
             ['id']
         )
