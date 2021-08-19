@@ -29,7 +29,7 @@ class DeleteCourse:
             self.deleteCourseActivityWorkflow()
             self.deleteCourseActivityAssessment()
             self.deleteCourseActivityCourseware()
-            #self.deleteCourseActivityStudent()
+            self.deleteCourseActivityStudent()
             #self.deleteCourse()
         except Exception as e:
             logger.error(e)
@@ -187,6 +187,32 @@ class DeleteCourse:
             {'course_id': self.course_id},
         )
         
+
+    def deleteCourseActivityStudent(self):
+        student_courseenrollment_rows = self.selectRows(
+            'student_courseenrollment',
+            {'course_id': self.course_id},
+        )
+        student_anonymoususerid_rows = self.selectRows(
+            'student_anonymoususerid',
+            {'course_id': self.course_id},
+        )
+
+        self.deleteRowsIn(
+            'experiments_experimentdata',
+            'user_id',
+            [row['user_id'] for row in student_anonymoususerid_rows]
+        )
+
+        # I dont want to regenerate it each time
+        #self.deleteRows(
+        #    'student_anonymoususerid',
+        #    {'course_id': self.course_id},
+        #)
+        self.deleteRows(
+            'student_courseenrollment',
+            {'course_id': self.course_id},
+        )
 
     def deleteRows(self, table_name, select):
         return deleteRows(
