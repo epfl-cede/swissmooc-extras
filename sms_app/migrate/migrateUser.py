@@ -57,7 +57,7 @@ class MigrateUser:
         if Registration:
             data['Registration'] = Registration[0]
         else:
-            data['Registration'] = Registration[0]
+            data['Registration'] = False
 
         # relation: ForeignKey
         Userattribute = selectRows('student_userattribute', {'user_id': self.user_id}, CONNECTION_SOURCE, self.debug)
