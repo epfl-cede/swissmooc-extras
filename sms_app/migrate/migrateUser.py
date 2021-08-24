@@ -54,7 +54,10 @@ class MigrateUser:
 
         # relation: OneToOneField
         Registration = selectRows('auth_registration', {'user_id': self.user_id}, CONNECTION_SOURCE, self.debug)
-        data['Registration'] = Registration[0]
+        if Registration:
+            data['Registration'] = Registration[0]
+        else:
+            data['Registration'] = Registration[0]
 
         # relation: ForeignKey
         Userattribute = selectRows('student_userattribute', {'user_id': self.user_id}, CONNECTION_SOURCE, self.debug)
@@ -240,15 +243,16 @@ class MigrateUser:
          CONSTRAINT `auth_registration_user_id_f99bc297_fk_auth_user_id` FOREIGN KEY (`user_id`) REFERENCES `auth_user` (`id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=latin1
         '''
-        Registration['user_id'] = self.pk
-        insertOrUpdateRow(
-            Registration,
-            'auth_registration',
-            ['activation_key', 'user_id'],
-            ['user_id'],
-            connection,
-            self.debug
-        )
+        if Registration:
+            Registration['user_id'] = self.pk
+            insertOrUpdateRow(
+                Registration,
+                'auth_registration',
+                ['activation_key', 'user_id'],
+                ['user_id'],
+                connection,
+                self.debug
+            )
 
     def _insertOrUpdateUserattribute(self, Userattribute, connection):
         '''
