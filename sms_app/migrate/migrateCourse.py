@@ -749,6 +749,7 @@ for user_id in {}:
                     #        self.anonymous_user_id_map[source_anonymous_user_ids_map[_user_id]] = anonymous_user_id
                     #        break
             for src_user_id in src_anonymous_user_ids_map:
-                self.anonymous_user_id_map[src_anonymous_user_ids_map[src_user_id]] = dst_anonymous_user_ids_map[self.user_id_map[src_user_id]]
+                if src_user_id in self.user_id_map:
+                    self.anonymous_user_id_map[src_anonymous_user_ids_map[src_user_id]] = dst_anonymous_user_ids_map[self.user_id_map[src_user_id]]
         else:
             raise migrateCourseException("CMD error <{}>".format(stderr))
