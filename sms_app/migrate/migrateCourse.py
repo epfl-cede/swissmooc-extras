@@ -716,7 +716,12 @@ class MigrateCourse:
         for student_anonymoususerid_row in student_anonymoususerid_rows:
             src_anonymous_user_ids_map[student_anonymoususerid_row['user_id']] = student_anonymoususerid_row['anonymous_user_id']
 
-        dst_user_ids = [self.user_id_map[src_user_id] for src_user_id in src_anonymous_user_ids_map]
+        dst_user_ids = []
+        for src_user_id in src_anonymous_user_ids_map:
+            # sometimes users don't have anonymous id
+            if src_user_id in self.user_id_map:
+                dst_user_ids.append(self.user_id_map[src_user_id])
+
         return_code, stdout, stderr = cmd([
             'ssh', 'ubuntu@zh-%s-swarm-1' % self.APP_ENV,
             '/home/ubuntu/.local/bin/docker-run-command',
