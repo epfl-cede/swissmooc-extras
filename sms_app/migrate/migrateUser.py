@@ -336,7 +336,7 @@ class MigrateUser:
             if '_parent_id' in extra_data: continue
             uid = self._translateUid(ua['uid'])
             if not uid:
-                logger.error("social_auth_usersocialauth hasn't translated uid {}".format(ua))
+                logger.error("social_auth_usersocialauth hasn't translated uid: {}".format(ua))
                 exit(1)
             else:
                 if connection == CONNECTION_ID:
@@ -385,27 +385,52 @@ class MigrateUser:
                 'e555442cd67c9e3ae0436f5b506d6c',
                 '719e3c350a1927223be1723d4a5ed0',
                 # campus
-                '0afa10bd0b43cc80f209d31e6b2ce2',
-                '2e89408363c69f1b2393ff0d75ffd0',
-                '6f354848093935d0d00e3735319ee2',
-                '7975f3db9039ea5266e44ed4569907',
-                'a0ddec20e7fe8ee2d6a82d4041b9b3',
-                'b1150456ac6d78d77f2d7bc3b0ae5a',
-                'b3850434bb2f87e9e7277c0fa87ce9',
-                'bcd434f32188265c353c0b3a2d2af7',
-                'c788487ec165538e07bf0cc846f7c4',
-                'c94c3dce582c816a4f8ce482f5b11f',
-                'd1b7c62067ae0d324af91f417bb982',
-                'db9ccf5b1390af0bd62b843099befb',
+                '0afa10bd0b43cc80f209d31e6b2ce2', # demo.swissmooc.ch
+                '2e89408363c69f1b2393ff0d75ffd0', # moocs.zhaw.ch
+                '6f354848093935d0d00e3735319ee2', # courseware.epfl.ch
+                '7975f3db9039ea5266e44ed4569907', # online.ethz.ch
+                'a0ddec20e7fe8ee2d6a82d4041b9b3', # courseware.uni.li
+                'b1150456ac6d78d77f2d7bc3b0ae5a', # swissmoocs.hes-so.ch
+                'b3850434bb2f87e9e7277c0fa87ce9', # mooc.supsi.ch
+                'bcd434f32188265c353c0b3a2d2af7', # openedx.unibas.ch
+                'c788487ec165538e07bf0cc846f7c4', # mooc.usi.ch
+                'c94c3dce582c816a4f8ce482f5b11f', # edu-exchange.uzh.ch
+                'd1b7c62067ae0d324af91f417bb982', # mooc.bfh.ch disabled
+                'db9ccf5b1390af0bd62b843099befb', # courses.swissmooc.ch
             ],
             'epfl': [
                 # staging
                 '5e5ca030c983ab469dc3f6249ae239',
                 # campus
-                'eff426fd0f4172d33a7073de4501f0',
-                '3c89411445a104c9a973b8a088cb83',
-                '5e5ca030c983ab469dc3f6249ae239',
+                'eff426fd0f4172d33a7073de4501f0', # demo.swissmooc.ch
+                '3c89411445a104c9a973b8a088cb83', # courses.swissmooc.ch
+                '5e5ca030c983ab469dc3f6249ae239', # courseware.epfl.ch
             ],
+            'ffhs': [ # there is only legacy login on the site ffhs-mooc.ch
+                'f9e4fa005f218f2105b5f5c36a9060', # courses.swissmooc.ch
+            ],
+            'zhaw': [
+                '1061a919fa29f6ebddc22d2fea028c', # moocs.zhaw.ch
+                'aa0f02f07b589d855b04b38f4cadf4', # courses.swissmooc.ch
+            ],
+            'uzh': [
+                '34ba450712db904c5dae62d0e9dfb4', # edu-exchange.uzh.ch
+                '70b99d83e5d09f8b0a69ed5e9bc302', # courses.swissmooc.ch
+            ],
+            'ethz': [
+                'ff38b50453926bfb7226aea9c06937', # online.ethz.ch
+                '7c0f578892b86427d298a0cb2160d9', # courses.swissmooc.ch
+            ],
+            'uni-li': [
+                '1609c197689dc0b9e8a654a7633409', # courseware.uni.li
+                'ec698120b0b2968dfd3a42b1bb80b5', # courses.swissmooc.ch
+            ],
+            'unil': [
+                '3bbd93c228a6c8cc448bb612e29548', # courses.swissmooc.ch
+            ],
+            'unige': [
+                '810a1ad778aa6cc820b3f8d9a89db0', # courses.swissmooc.ch
+            ]
         }
         for provider_map in providers_map:
             for provider_uid in providers_map[provider_map]:
