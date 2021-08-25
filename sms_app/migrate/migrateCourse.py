@@ -88,6 +88,7 @@ class MigrateCourse:
             ['id', 'course_id', 'created', 'is_active', 'mode', 'user_id'],
             ['id', 'course_id', 'user_id']
         )
+        # There is also student_courseenrollment_history table
 
         #self.copyData(
         #    'student_anonymoususerid',
@@ -102,6 +103,13 @@ class MigrateCourse:
         student_anonymoususerid_rows = self.selectRows(
             'student_anonymoususerid',
             {'course_id': self.course_id},
+        )
+
+        self.copyData(
+            'student_courseaccessrole',
+            {'course_id': self.course_id},
+            ['id', 'org', 'course_id', 'role', 'user_id'],
+            ['id']
         )
 
         self.generate_anonymous_user_ids(student_anonymoususerid_rows)
@@ -613,6 +621,12 @@ class MigrateCourse:
         if 'user_id' in row:
             row['user_id'] = self.user_id_map[row['user_id']]
             
+        if table_name == 'student_courseenrollment' and 'user_id' in row:
+            row['user_id'] = self.user_id_map[row['user_id']]
+
+        if table_name == 'student_courseaccessrole' and 'user_id' in row:
+            row['user_id'] = self.user_id_map[row['user_id']]
+
         # courseware_studentmodule has student_id field as user_id
         if table_name == 'courseware_studentmodule' and 'student_id' in row:
             row['student_id'] = self.user_id_map[row['student_id']]

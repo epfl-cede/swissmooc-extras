@@ -73,6 +73,14 @@ class MigrateUser:
 
         data['Usersocialauth'] = Usersocialauth
 
+        # course_creators_coursecreator user_id
+        # course_overviews_historicalcourseoverview history_user_id
+        # course_groups_courseusergroup_users user_id
+        # course_groups_cohortmembership user_id + course_id
+
+        # student_manualenrollmentaudit
+        # student_historicalmanualenrollmentaudit
+
         self.writeAuthData(data, CONNECTION_ID)
         self.writeAuthData(data, "edxapp_%s" % self.destination)
 
@@ -327,7 +335,10 @@ class MigrateUser:
             # skip links created by us
             if '_parent_id' in extra_data: continue
             uid = self._translateUid(ua['uid'])
-            if uid:
+            if not uid:
+                logger.error("social_auth_usersocialauth hasn't translated uid {}".format(ua))
+                exit(1)
+            else:
                 if connection == CONNECTION_ID:
                     insertOrUpdateRow(
                         {
