@@ -334,6 +334,26 @@ class MigrateUser:
             extra_data = json.loads(ua['extra_data'])
             # skip links created by us
             if '_parent_id' in extra_data: continue
+            legacy_uids = [
+                '3a2ebde090f91e96e6b6e11819f08f',
+                '68bda56f4019e461a47f5ae63fc5ba',
+                '21001f8824c5453e6458c768b28728',
+                '90cd78331b583fb13fc11e4d755090',
+                '574a748bcc16c07e0a127be7b61cee',
+                '682fb94dc1d32a7e44de6f5de17b4a',
+                '8e7d36074cc38623af8369f1e9a5b8',
+                '7e8a2758d788eaa524ed6094f20400',
+                '682fb94dc1d32a7e44de6f5de17b4a',
+                'e7cca3da85edc4dc9fde00bcd68a32',
+                '9f6df0733efafd3de06e3d4e94b811',
+                'e0b8340c8ce9cf7e77829b9e765851',
+                '9050c8fc3499702db214c5f854c0f3',
+                'ba00ee948a3d418bce2659ab59384f',
+                'ff2e8e342cf2fd2f906eb9f4c4bc63',
+                '490a9b66f2a2eea250cd8c4622efe4',
+                
+            ]
+            if ua['uid'] in legacy_uids: continue # skip legacy.swissmooc.ch
             uid = self._translateUid(ua['uid'])
             if not uid:
                 logger.error("social_auth_usersocialauth hasn't translated uid: {}".format(ua))
