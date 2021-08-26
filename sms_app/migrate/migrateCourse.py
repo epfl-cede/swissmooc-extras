@@ -2,8 +2,6 @@ import re
 import os
 import logging
 import json
-import pprint
-import numpy
 from datetime import datetime
 
 import boto3, botocore
@@ -33,6 +31,11 @@ S3_DESTINATION_PREFIX = 'submissions-attachments'
 
 class migrateCourseException(BaseException):
     pass
+
+def chunks(lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]
 
 class MigrateCourse:
     def __init__(self, APP_ENV, destination, course_id, overwrite, users_only, debug):
@@ -132,7 +135,7 @@ class MigrateCourse:
             ['id', 'student_id', 'module_id', 'course_id']
         )
         # courseware_studentmodulehistory
-        for chunk in numpy.array_split(courseware_studentmodule_ids, 1000):
+        for chunk in chunks(courseware_studentmodule_ids, 1000):
             self.copyDataIn(
                 'courseware_studentmodulehistory',
                 'student_module_id',
