@@ -3,6 +3,7 @@ import os
 import logging
 import json
 import pprint
+import numpy
 from datetime import datetime
 
 import boto3, botocore
@@ -131,13 +132,14 @@ class MigrateCourse:
             ['id', 'student_id', 'module_id', 'course_id']
         )
         # courseware_studentmodulehistory
-        self.copyDataIn(
-            'courseware_studentmodulehistory',
-            'student_module_id',
-            courseware_studentmodule_ids,
-            ['id', 'version', 'created', 'state', 'grade', 'max_grade', 'student_module_id'],
-            ['id', 'student_module_id']
-        )
+        for chunk in numpy.array_split(courseware_studentmodule_ids, 1000):
+            self.copyDataIn(
+                'courseware_studentmodulehistory',
+                'student_module_id',
+                chunk,
+                ['id', 'version', 'created', 'state', 'grade', 'max_grade', 'student_module_id'],
+                ['id', 'student_module_id']
+            )
 
 
     def migrateCourseActivitySubmission(self):
