@@ -57,6 +57,9 @@ class MigrateCourse:
             logger.info("There isn't users in the course with id={}, are you sure you want to migrate this course?".format(self.course_id))
             exit(0)
 
+        # set max_allowed_packet to 64M
+        connections["edxapp_%s" % self.destination].execute('set max_allowed_packet=67108864')
+
         try:
             self.migrateUsers(users)
             if not self.users_only:
@@ -109,12 +112,12 @@ class MigrateCourse:
             {'course_id': self.course_id},
         )
 
-        self.copyData(
-            'student_courseaccessrole',
-            {'course_id': self.course_id},
-            ['id', 'org', 'course_id', 'role', 'user_id'],
-            ['id']
-        )
+        #self.copyData(
+        #    'student_courseaccessrole',
+        #    {'course_id': self.course_id},
+        #    ['id', 'org', 'course_id', 'role', 'user_id'],
+        #    ['id']
+        #)
 
         self.generate_anonymous_user_ids(student_anonymoususerid_rows)
 
@@ -626,11 +629,11 @@ class MigrateCourse:
         if 'user_id' in row:
             row['user_id'] = self.user_id_map[row['user_id']]
             
-        if table_name == 'student_courseenrollment' and 'user_id' in row:
-            row['user_id'] = self.user_id_map[row['user_id']]
+        #if table_name == 'student_courseenrollment' and 'user_id' in row:
+        #    row['user_id'] = self.user_id_map[row['user_id']]
 
-        if table_name == 'student_courseaccessrole' and 'user_id' in row:
-            row['user_id'] = self.user_id_map[row['user_id']]
+        #if table_name == 'student_courseaccessrole' and 'user_id' in row:
+        #    row['user_id'] = self.user_id_map[row['user_id']]
 
         # courseware_studentmodule has student_id field as user_id
         if table_name == 'courseware_studentmodule' and 'student_id' in row:
