@@ -58,18 +58,19 @@ class MigrateCourse:
         else:
             return True
 
+    def _users(self):
+        return  self.selectRows('student_courseenrollment', {'course_id': self.course_id}) + self.selectRows('student_courseaccessrole', {'course_id': self.course_id})
+
     def run_users(self):
         try:
-            users = self.selectRows('student_courseenrollment', {'course_id': self.course_id})
-            self.migrateUsers(users)
+            self.migrateUsers(self._users())
         except Exception as e:
             logger.error(e)
             raise e
 
     def run_course(self):
         try:
-            users = self.selectRows('student_courseenrollment', {'course_id': self.course_id})
-            self.migrateUsers(users)
+            self.migrateUsers(self._users())
             self.migrateCourse()
             self.migrateCourseActivityStaff()
             self.migrateDjango()
@@ -81,8 +82,7 @@ class MigrateCourse:
         # set max_allowed_packet to 64M
         # connections["edxapp_%s" % self.destination].execute('set max_allowed_packet=67108864')
         try:
-            users = self.selectRows('student_courseenrollment', {'course_id': self.course_id})
-            self.migrateUsers(users)
+            self.migrateUsers(self._users())
             self.migrateCourse()
             self.migrateCourseActivityStudent() # fillup anonymous_id_map
             self.migrateCourseActivityStaff()
