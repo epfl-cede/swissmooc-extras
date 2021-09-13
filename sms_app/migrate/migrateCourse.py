@@ -38,12 +38,11 @@ def chunks(lst, n):
         yield lst[i:i + n]
 
 class MigrateCourse:
-    def __init__(self, APP_ENV, destination, course_id, overwrite, users_only, debug):
+    def __init__(self, APP_ENV, destination, course_id, overwrite, debug):
         self.APP_ENV = APP_ENV
         self.destination = destination
         self.course_id = course_id
         self.overwrite = overwrite
-        self.users_only = users_only
         self.debug = debug
         self.user_id_map = {}
         self.anonymous_user_id_map = {}
@@ -51,25 +50,48 @@ class MigrateCourse:
         self.import_dir = '/home/ubuntu/stacks/openedx-%s/logs/course_export' % self.destination
         self.import_dir_docker = '/openedx/data/logs/course_export'
 
-    def run(self):
-        users =  self.selectRows('student_courseenrollment', {'course_id': self.course_id})
+    def check_users(self):
+        users = self.selectRows('student_courseenrollment', {'course_id': self.course_id})
         if not users:
-            logger.info("There isn't users in the course with id={}, are you sure you want to migrate this course?".format(self.course_id))
-            exit(0)
+            logger.info("There isn't users in the course with id={}, check your settings and course_id.".format(self.course_id))
+            return False
+        else:
+            return True
 
-        # set max_allowed_packet to 64M
-        connections["edxapp_%s" % self.destination].execute('set max_allowed_packet=67108864')
-
+    def run_users(self):
         try:
+            users = self.selectRows('student_courseenrollment', {'course_id': self.course_id})
             self.migrateUsers(users)
-            if not self.users_only:
-                self.migrateCourse()
-                self.migrateCourseActivityStudent() # fillup anonymous_id_map
-                self.migrateCourseActivityCourseware()
-                self.migrateCourseActivityAssessment()
-                self.migrateCourseActivityWorkflow()
-                self.migrateCourseActivitySubmission()
-                self.migrateCourseActivitySubmissionFiles()
+        except Exception as e:
+            logger.error(e)
+            raise e
+
+    def run_course(self):
+        try:
+            users = self.selectRows('student_courseenrollment', {'course_id': self.course_id})
+            self.migrateUsers(users)
+            self.migrateCourse()
+            self.migrateCourseActivityStaff()
+            self.migrateDjango()
+        except Exception as e:
+            logger.error(e)
+            raise e
+
+    def run_full(self):
+        # set max_allowed_packet to 64M
+        # connections["edxapp_%s" % self.destination].execute('set max_allowed_packet=67108864')
+        try:
+            users = self.selectRows('student_courseenrollment', {'course_id': self.course_id})
+            self.migrateUsers(users)
+            self.migrateCourse()
+            self.migrateCourseActivityStudent() # fillup anonymous_id_map
+            self.migrateCourseActivityStaff()
+            self.migrateCourseActivityCourseware()
+            self.migrateCourseActivityAssessment()
+            self.migrateCourseActivityWorkflow()
+            self.migrateCourseActivitySubmission()
+            self.migrateCourseActivitySubmissionFiles()
+            self.migrateDjango()
         except Exception as e:
             logger.error(e)
             raise e
@@ -85,7 +107,54 @@ class MigrateCourse:
         if not self.overwrite and self.courseExists(): return True
         self.exportCourse()
         self.importCourse()
+
+    def migrateDjango(self):
+        # django_comment_common_coursediscussionsettings
+        self.copyData(
+            'django_comment_common_coursediscussionsettings',
+            {'course_id': self.course_id},
+            ['id', 'course_id', 'always_divide_inline_discussions', 'divided_discussions', 'division_scheme', 'discussions_id_map'],
+            ['id']
+        )
         
+
+    def migrateCourseActivityStaff(self):
+        self.copyData(
+            'student_courseaccessrole',
+            {'course_id': self.course_id},
+            ['id', 'org', 'course_id', 'role', 'user_id'],
+            ['id']
+        )
+        self.copyData(
+            'student_courseenrollment',
+            {'course_id': self.course_id},
+            ['id', 'course_id', 'created', 'is_active', 'mode', 'user_id'],
+            ['id']
+        )
+        # student_courseenrollment_history
+        # student_courseenrollmentallowed
+        self.copyData(
+            'student_courseenrollmentallowed',
+            {'course_id': self.course_id},
+            ['id', 'email', 'course_id', 'auto_enroll', 'created', 'user_id'],
+            ['id']
+        )
+        self.copyData(
+            'course_overviews_courseoverview',
+            {'id': self.course_id},
+            ['created', 'modified', 'version', 'id', '_location', 'display_name', 'display_number_with_default', 'display_org_with_default', 'start', 'end', 'advertised_start', 'course_image_url', 'social_sharing_url',
+             'end_of_course_survey_url', 'certificates_display_behavior', 'certificates_show_before_end', 'cert_html_view_enabled', 'has_any_active_web_certificate', 'cert_name_short', 'cert_name_long', 'lowest_passing_grade',
+             'days_early_for_beta', 'mobile_available', 'visible_to_staff_only', '_pre_requisite_courses_json', 'enrollment_start', 'enrollment_end', 'enrollment_domain', 'invitation_only', 'max_student_enrollments_allowed',
+             'announcement', 'catalog_visibility', 'course_video_url', 'effort', 'short_description', 'org', 'self_paced', 'marketing_url', 'eligible_for_financial_aid', 'language', 'certificate_available_date'],
+            ['id']
+        )
+        # created by course import?
+        #self.copyData(
+        #    'course_overviews_courseoverviewtab',
+        #    {'course_overview_id': self.course_id},
+        #    ['id', 'tab_id', 'course_overview_id'],
+        #    ['id']
+        #)
 
     def migrateCourseActivityStudent(self):
         # enroll
@@ -629,12 +698,6 @@ class MigrateCourse:
         if 'user_id' in row:
             row['user_id'] = self.user_id_map[row['user_id']]
             
-        #if table_name == 'student_courseenrollment' and 'user_id' in row:
-        #    row['user_id'] = self.user_id_map[row['user_id']]
-
-        #if table_name == 'student_courseaccessrole' and 'user_id' in row:
-        #    row['user_id'] = self.user_id_map[row['user_id']]
-
         # courseware_studentmodule has student_id field as user_id
         if table_name == 'courseware_studentmodule' and 'student_id' in row:
             row['student_id'] = self.user_id_map[row['student_id']]
