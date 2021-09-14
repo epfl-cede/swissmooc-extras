@@ -14,7 +14,8 @@ DESTINATIONS = {
         'university'
     ],
     'campus': [
-        'sms'
+        'sms',
+        'zhaw',
     ]
 }
 
