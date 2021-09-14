@@ -353,7 +353,7 @@ class MigrateUser:
                 '490a9b66f2a2eea250cd8c4622efe4',
                 
             ]
-            if ua['uid'] in legacy_uids: continue # skip legacy.swissmooc.ch
+            if ua['uid'].split(":")[0] in legacy_uids: continue # skip legacy.swissmooc.ch
             uid = self._translateUid(ua['uid'])
             if not uid:
                 logger.error("social_auth_usersocialauth hasn't translated uid: {}".format(ua))
