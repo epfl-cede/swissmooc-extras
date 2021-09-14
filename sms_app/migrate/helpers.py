@@ -90,6 +90,9 @@ def copyTable(table_name, src, dst, debug=False):
         insertOrUpdateRow(row, table_name, fields, ['id'], dst, debug)
 
 def insertOrUpdateRow(Object, table_name, fields, unique_keys, connection, debug=False):
+    # do nothing id there isn't Object to copy
+    if not Object: return
+
     with connections[connection].cursor() as cursor:
         fields_for_update = fields.copy()
         for f in unique_keys:

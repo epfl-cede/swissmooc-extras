@@ -705,6 +705,8 @@ class MigrateCourse:
             
         # courseware_studentmodule has student_id field as user_id
         if table_name == 'courseware_studentmodule' and 'student_id' in row:
+            # user might be unenrolled - do not copy such rows
+            if row['student_id'] not in self.user_id_map: return False
             row['student_id'] = self.user_id_map[row['student_id']]
 
         if table_name == 'assessment_peerworkflow' and 'student_id' in row:
