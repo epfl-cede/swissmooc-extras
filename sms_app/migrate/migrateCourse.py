@@ -70,9 +70,10 @@ class MigrateCourse:
 
     def run_course(self):
         try:
+            self.migrateUsers(self.selectRows('student_courseaccessrole', {'course_id': self.course_id}))
             self.migrateCourse()
-            #self.migrateCourseActivityStaff()
-            #self.migrateDjango()
+            self.migrateCourseActivityStaff()
+            self.migrateDjango()
         except Exception as e:
             logger.error(e)
             raise e
@@ -124,6 +125,7 @@ class MigrateCourse:
             ['id', 'org', 'course_id', 'role', 'user_id'],
             ['id']
         )
+        '''
         self.copyData(
             'student_courseenrollment',
             {'course_id': self.course_id},
@@ -147,6 +149,7 @@ class MigrateCourse:
              'announcement', 'catalog_visibility', 'course_video_url', 'effort', 'short_description', 'org', 'self_paced', 'marketing_url', 'eligible_for_financial_aid', 'language', 'certificate_available_date'],
             ['id']
         )
+        '''
         # created by course import?
         #self.copyData(
         #    'course_overviews_courseoverviewtab',
