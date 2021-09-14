@@ -70,10 +70,9 @@ class MigrateCourse:
 
     def run_course(self):
         try:
-            self.migrateUsers(self._users())
             self.migrateCourse()
-            self.migrateCourseActivityStaff()
-            self.migrateDjango()
+            #self.migrateCourseActivityStaff()
+            #self.migrateDjango()
         except Exception as e:
             logger.error(e)
             raise e
