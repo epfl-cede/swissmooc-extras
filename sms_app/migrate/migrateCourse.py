@@ -59,7 +59,7 @@ class MigrateCourse:
             return True
 
     def _users(self):
-        return  self.selectRows('student_courseenrollment', {'course_id': self.course_id}) + self.selectRows('student_courseaccessrole', {'course_id': self.course_id})
+        return self.selectRows('student_courseenrollment', {'course_id': self.course_id}) + self.selectRows('student_courseaccessrole', {'course_id': self.course_id})
 
     def run_users(self):
         try:
@@ -696,7 +696,12 @@ class MigrateCourse:
 
     def substitute(self, table_name, row):
         if 'user_id' in row:
-            row['user_id'] = self.user_id_map[row['user_id']]
+            if table_name == 'student_courseenrollmentallowed':
+                # substitute user_id in this table only if it presents
+                if row['user_id']:
+                    row['user_id'] = self.user_id_map[row['user_id']]
+            else:
+                row['user_id'] = self.user_id_map[row['user_id']]
             
         # courseware_studentmodule has student_id field as user_id
         if table_name == 'courseware_studentmodule' and 'student_id' in row:
