@@ -140,6 +140,7 @@ class MigrateCourse:
             ['id', 'email', 'course_id', 'auto_enroll', 'created', 'user_id'],
             ['id']
         )
+        '''
         self.copyData(
             'course_overviews_courseoverview',
             {'id': self.course_id},
@@ -149,7 +150,6 @@ class MigrateCourse:
              'announcement', 'catalog_visibility', 'course_video_url', 'effort', 'short_description', 'org', 'self_paced', 'marketing_url', 'eligible_for_financial_aid', 'language', 'certificate_available_date'],
             ['id']
         )
-        '''
         # created by course import?
         #self.copyData(
         #    'course_overviews_courseoverviewtab',
