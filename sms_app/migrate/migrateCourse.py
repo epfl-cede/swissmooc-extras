@@ -715,23 +715,28 @@ class MigrateCourse:
         if table_name == 'assessment_peerworkflow' and 'student_id' in row:
             # sometimes there is 'student' string = do not change it
             if row['student_id'] != 'student':
+                if row['student_id'] not in self.anonymous_user_id_map: return False
                 row['student_id'] = self.anonymous_user_id_map[row['student_id']]
 
         if table_name == 'assessment_studenttrainingworkflow' and 'student_id' in row:
             if row['student_id'] != 'student':
+                if row['student_id'] not in self.anonymous_user_id_map: return False
                 row['student_id'] = self.anonymous_user_id_map[row['student_id']]
 
         if table_name == 'submissions_studentitem' and 'student_id' in row:
             if row['student_id'] != 'student':
+                if row['student_id'] not in self.anonymous_user_id_map: return False
                 row['student_id'] = self.anonymous_user_id_map[row['student_id']]
 
         if table_name == 'workflow_assessmentworkflowcancellation' and 'cancelled_by_id' in row:
             if row['cancelled_by_id'] != 'student':
+                if row['cancelled_by_id'] not in self.anonymous_user_id_map: return False
                 row['cancelled_by_id'] = self.anonymous_user_id_map[row['cancelled_by_id']]
 
         if table_name == 'assessment_assessment' and 'scorer_id' in row:
             # sometimes there is 'student' string = do not change it
             if row['scorer_id'] != 'student':
+                if row['scorer_id'] not in self.anonymous_user_id_map: return False
                 row['scorer_id'] = self.anonymous_user_id_map[row['scorer_id']]
 
         return row
