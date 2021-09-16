@@ -391,7 +391,8 @@ class MigrateCourse:
             )
         # assessment_assessment
         for assessment_assessment_row in assessment_assessment_rows:
-            assessment_assessment_row['scorer_id'] = self.anonymous_user_id_map[assessment_assessment_row['scorer_id']]
+            if assessment_assessment_row['scorer_id'] != 'student':
+                assessment_assessment_row['scorer_id'] = self.anonymous_user_id_map[assessment_assessment_row['scorer_id']]
             insertOrUpdateRow(
                 assessment_assessment_row,
                 'assessment_assessment',
