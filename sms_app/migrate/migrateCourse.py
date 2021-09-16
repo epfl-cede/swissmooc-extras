@@ -726,7 +726,9 @@ class MigrateCourse:
             row['cancelled_by_id'] = self.anonymous_user_id_map[row['cancelled_by_id']]
 
         if table_name == 'assessment_assessment' and 'scorer_id' in row:
-            row['scorer_id'] = self.anonymous_user_id_map[row['scorer_id']]
+            # sometimes there is 'student' string = do not change it
+            if row['scorer_id'] != 'student':
+                row['scorer_id'] = self.anonymous_user_id_map[row['scorer_id']]
 
         return row
 
