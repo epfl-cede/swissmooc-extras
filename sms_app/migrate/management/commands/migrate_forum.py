@@ -28,7 +28,7 @@ class Command(BaseCommand):
 
         Migrate = MigrateForum(
             APP_ENV,
-            (options['destination'],
+            options['destination'],
             options['course_id'],
             options['overwrite'],
             options['debug']
