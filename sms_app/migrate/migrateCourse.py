@@ -712,7 +712,9 @@ class MigrateCourse:
             row['student_id'] = self.user_id_map[row['student_id']]
 
         if table_name == 'assessment_peerworkflow' and 'student_id' in row:
-            row['student_id'] = self.anonymous_user_id_map[row['student_id']]
+            # sometimes there is 'student' string = do not change it
+            if row['student_id'] != 'student':
+                row['student_id'] = self.anonymous_user_id_map[row['student_id']]
 
         if table_name == 'assessment_studenttrainingworkflow' and 'student_id' in row:
             row['student_id'] = self.anonymous_user_id_map[row['student_id']]
