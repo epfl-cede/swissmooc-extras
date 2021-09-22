@@ -26,13 +26,13 @@ class migrateUserExistsWithEmailException(migrateUserException):
     pass
 
 class MigrateUser:
-    def __init__(self, APP_ENV, destination, user_id, overwrite, debug, exit_empty_auth = True):
+    def __init__(self, APP_ENV, destination, user_id, overwrite, debug, exit_empty_social_auth = True):
         self.APP_ENV = APP_ENV
         self.destination = destination
         self.user_id = user_id
         self.overwrite = overwrite
         self.debug = debug
-        self.exit_empty_auth  = exit_empty_auth
+        self.exit_empty_social_auth  = exit_empty_social_auth
         self.pk = 0
         self.username = ''
 
@@ -70,6 +70,7 @@ class MigrateUser:
         Usersocialauth = selectRows('social_auth_usersocialauth', {'user_id': self.user_id}, CONNECTION_SOURCE, self.debug)
         if not Usersocialauth:
             logger.warning("User {} <{}> doesn't have any social auth".format(User[0]['email'], User[0]['username']))
+            if self.exit_empty_social_auth: exit(0)
 
         data['Usersocialauth'] = Usersocialauth
 
