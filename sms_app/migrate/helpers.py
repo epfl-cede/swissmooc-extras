@@ -17,6 +17,7 @@ DESTINATIONS = {
         'sms',
         'zhaw',
         'ffhs',
+        'unili',
     ]
 }
 
