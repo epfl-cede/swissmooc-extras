@@ -73,7 +73,7 @@ class Command(BaseCommand):
             'rsync',
             '-az',
             os.path.dirname(zip_name),
-            'ubuntu@192.168.{}.191:{}/'.format(settings.EDXAPP_MYSQL_HOST.split('.')[2], settings.DUMP_XML_PATH)
+            'ubuntu@192.168.{}.191:{}/'.format(settings.DATABASES['edxapp_readonly']['HOST'].split('.')[2], settings.DUMP_XML_PATH)
         ]
         try:
             with open(os.devnull, 'w') as devnull:

@@ -62,7 +62,7 @@ class Command(BaseCommand):
                 tf = tempfile.NamedTemporaryFile(delete=False)
                 cmd = [
                     'mongoexport',
-                    '--host', settings.EDXAPP_MYSQL_HOST,
+                    '--host', settings.DATABASES['edxapp_readonly']['HOST'],
                     '--username', 'admin',
                     '--password', 'GtTD6ajkaSdzyHH8',
                     '--authenticationDatabase', 'admin',
