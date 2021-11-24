@@ -635,14 +635,42 @@ class MigrateCourse:
             ['id', 'order_num', 'started_at', 'completed_at', 'training_example_id', 'workflow_id'],
             ['id']
         )
-        self.copyDataIn(
+        self.copyDataInIn(
             'assessment_studenttrainingworkflowitem',
             'training_example_id',
             assessment_trainingexample_ids,
             ['id', 'order_num', 'started_at', 'completed_at', 'training_example_id', 'workflow_id'],
-            ['id']
+            ['id'],
+            {'workflow_id': assessment_studenttrainingworkflow_ids}
         )
-        
+
+    # mimic AND sql-statement
+    # not all rows should be copied here
+    def copyDataInIn(self, table_name, select, values, fields, keys, _in):
+        rows = self.selectRowsIn(
+            table_name,
+            select,
+            values
+        )
+        pks = []
+        for row in rows:
+            if self._checkRowIn(row, _in):
+                pks.append(insertOrUpdateRow(
+                    self.substitute(table_name, row.copy()),
+                    table_name,
+                    fields,
+                    keys,
+                    "edxapp_%s" % self.destination,
+                    self.debug
+                ))
+        return pks
+
+    def _checkRowIn(self, row, _in):
+        for i in _in:
+            if row[i] in _in[i]:
+                return True
+        return False
+
     def copyDataIn(self, table_name, select, values, fields, keys):
         rows = self.selectRowsIn(
             table_name,
@@ -660,7 +688,7 @@ class MigrateCourse:
                 self.debug
             ))
         return pks
-        
+
     def copyData(self, table_name, select, fields, keys):
         rows =  self.selectRows(
             table_name,
