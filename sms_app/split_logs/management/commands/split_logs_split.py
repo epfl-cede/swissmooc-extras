@@ -13,26 +13,38 @@ from split_logs.models import DirOriginal, FileOriginal
 
 logger = logging.getLogger(__name__)
 
+PLATFORM_OLD = 'old'
+PLATFORM_NEW = 'new'
+
 class Command(BaseCommand):
     help = 'Split tracking logs by organizations'
 
     def add_arguments(self, parser):
         parser.add_argument('--limit', type=int, default=3)
+        parser.add_argument('--platform', type=str, default=PLATFORM_OLD)
 
     def handle(self, *args, **options):
-        logger.info("get files for split from old platform")
-        self._handle_old(options['limit'])
+        if options['platform'] == PLATFORM_OLD:
+            logger.info("get files for split from old platform")
+            self._handle_old(options['limit'])
+        elif options['platform'] == PLATFORM_NEW:
+            logger.info("get files for split from new platform")
+            self._handle_new(options['limit'])
+        else:
+            logger.warning("unknown platform <{}>".format(options['platform']))
 
     def _handle_old(self, limit):
-        cnt = 0
+        # get list of original files
+        originals = self._get_list(settings.TRACKING_LOGS_ORIGINAL_DST)
 
         # get list of processed files
         processed = self._get_processed(FileOriginal)
 
-        # get list of original files
-        originals = self._get_list(settings.TRACKING_LOGS_ORIGINAL_DST)
-
         # loop through files
+        self._loop_files(originals, processed, limit)
+
+    def _loop_files(self, originals, processed, limit):
+        cnt = 0
         for dirname, files in originals.items():
             for filename in files:
                 filename_full = "{}/{}".format(dirname, filename)
