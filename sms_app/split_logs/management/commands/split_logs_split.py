@@ -20,26 +20,24 @@ class Command(BaseCommand):
         parser.add_argument('--limit', type=int, default=3)
 
     def handle(self, *args, **options):
-        limit = options['limit']
+        logger.info("get files for split from old platform")
+        self._handle_old(options['limit'])
+
+    def _handle_old(self, limit):
         cnt = 0
 
         # get list of processed files
-        processed = list(
-            FileOriginal.objects
-                .annotate(_name=Concat('dir_original__name', Value('/'), 'name'))
-                .values_list('_name', flat=True)
-                .order_by('_name')
-        )
+        processed = self._get_processed(FileOriginal)
 
         # get list of original files
-        originals = self._get_list()
+        originals = self._get_list(settings.TRACKING_LOGS_ORIGINAL_DST)
 
         # loop through files
         for dirname, files in originals.items():
             for filename in files:
                 filename_full = "{}/{}".format(dirname, filename)
                 if filename_full in processed:
-                    logger.debug("debug: file already processed")
+                    logger.debug("file already processed")
                 else:
                     # create dir row if not exists
                     dir_original, created = DirOriginal.objects.update_or_create(name=dirname)
@@ -51,11 +49,23 @@ class Command(BaseCommand):
                     processed.append(filename_full)
                 if cnt >= limit: break
             if cnt >= limit: break
+        if cnt == 0:
+            logger.info("all files were processed before this run")
+        else:
+            logger.info("{} files were processed".format(cnt))
+
+    def _get_processed(self, model):
+        return list(
+            model.objects
+                .annotate(_name=Concat('dir_original__name', Value('/'), 'name'))
+                .values_list('_name', flat=True)
+                .order_by('_name')
+        )
 
     def _process_file(self, dirname, filename):
-        logger.debug("debug: process file {}/{}".format(dirname, filename))
+        logger.debug("process file {}/{}".format(dirname, filename))
 
-        logger.info("info: start split file {}/{}".format(dirname, filename))
+        logger.info("start split file {}/{}".format(dirname, filename))
 
         # reset counters
         lines_total = 0
@@ -84,8 +94,8 @@ class Command(BaseCommand):
                     except KeyError:
                         organization = '_none'
 
-                    #logger.debug("debug: line for organization %s", organization)
-                    #logger.debug("debug: line '%s'", data)
+                    #logger.debug("line for organization %s", organization)
+                    #logger.debug("line '%s'", data)
 
                     # create dir
                     splited_dir = '{}/{}'.format(settings.TRACKING_LOGS_SPLITTED, organization)
@@ -109,15 +119,15 @@ class Command(BaseCommand):
                 splited_file = gzip.open(splited_filename, 'ab+')
                 splited_file.write(b''.join(lines_for_add[organization][date]))
 
-        logger.info("info: error lines {} of {}".format(lines_error, lines_total))
+        logger.info("error lines {} of {}".format(lines_error, lines_total))
         return lines_total, lines_error
         
         
-    def _get_list(self):
+    def _get_list(self, original_dir):
         dirs = {}
-        for (dirpath, dirnames, filenames) in os.walk(settings.TRACKING_LOGS_ORIGINAL_DST):
+        for (dirpath, dirnames, filenames) in os.walk(original_dir):
             files = [ fi for fi in filenames if fi.endswith(".gz") ]
             if len(files):
                 files.sort()
-                dirs[dirpath[len(settings.TRACKING_LOGS_ORIGINAL_DST)+1:]] = files
+                dirs[dirpath[len(original_dir)+1:]] = files
         return dirs
