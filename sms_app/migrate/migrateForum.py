@@ -41,7 +41,7 @@ class MigrateForum:
             COLLECTION_SOURCE
         )
         self.db_dst = self._connection(
-            "%s_%s" % (destination, os.environ.get('MONGODB_USER_DST', '')),
+            os.environ.get('MONGODB_USER_DST', ''),
             os.environ.get('MONGODB_PASSWORD_DST', ''),
             "{}_cs_comments_service".format(destination)
         )
