@@ -9,7 +9,7 @@ from django.core.management.base import BaseCommand
 from django.db.models.functions import Concat
 from django.db.models import Q, F, Value
 
-from split_logs.models import DirOriginal, FileOriginal
+from split_logs.models import DirOriginal, FileOriginal, FileOriginalDocker
 
 logger = logging.getLogger(__name__)
 
@@ -34,11 +34,27 @@ class Command(BaseCommand):
             logger.warning("unknown platform <{}>".format(options['platform']))
 
     def _handle_old(self, limit):
+        self.original_dir = settings.TRACKING_LOGS_ORIGINAL_DST
+        self.file_model = FileOriginal
+
         # get list of original files
-        originals = self._get_list(settings.TRACKING_LOGS_ORIGINAL_DST)
+        originals = self._get_list()
 
         # get list of processed files
-        processed = self._get_processed(FileOriginal)
+        processed = self._get_processed()
+
+        # loop through files
+        self._loop_files(originals, processed, limit)
+
+    def _handle_new(self, limit):
+        self.original_dir = settings.TRACKING_LOGS_ORIGINAL_DOCKER_DST
+        self.file_model = FileOriginalDocker
+
+        # get list of original files
+        originals = self._get_list()
+
+        # get list of processed files
+        processed = self._get_processed()
 
         # loop through files
         self._loop_files(originals, processed, limit)
@@ -55,7 +71,7 @@ class Command(BaseCommand):
                     dir_original, created = DirOriginal.objects.update_or_create(name=dirname)
 
                     total, error = self._process_file(dirname, filename)
-                    file_original = FileOriginal(dir_original=dir_original, name=filename, lines_total=total, lines_error=error)
+                    file_original = self.file_model(dir_original=dir_original, name=filename, lines_total=total, lines_error=error)
                     file_original.save()
                     cnt += 1
                     processed.append(filename_full)
@@ -66,25 +82,23 @@ class Command(BaseCommand):
         else:
             logger.info("{} files were processed".format(cnt))
 
-    def _get_processed(self, model):
+    def _get_processed(self):
         return list(
-            model.objects
+            self.file_model.objects
                 .annotate(_name=Concat('dir_original__name', Value('/'), 'name'))
                 .values_list('_name', flat=True)
                 .order_by('_name')
         )
 
     def _process_file(self, dirname, filename):
-        logger.debug("process file {}/{}".format(dirname, filename))
-
-        logger.info("start split file {}/{}".format(dirname, filename))
+        logger.info("provess file {}/{}".format(dirname, filename))
 
         # reset counters
         lines_total = 0
         lines_error = 0
 
         # read file line by line
-        with gzip.open('{}/{}/{}'.format(settings.TRACKING_LOGS_ORIGINAL_DST, dirname, filename), 'rb') as f:
+        with gzip.open('{}/{}/{}'.format(self.original_dir, dirname, filename), 'rb') as f:
             lines_for_add = {}
             for line in f:
                 lines_total += 1
@@ -95,16 +109,10 @@ class Command(BaseCommand):
                 except UnicodeDecodeError as e:
                     lines_error += 1
                 else:
-                    # detect orzanization string
                     time = parser.parse(data['time'])
                     date = time.strftime('%Y-%m-%d')
-                    try:
-                        if data['context']['org_id']:
-                            organization = data['context']['org_id']
-                        else:
-                            organization = '_empty'
-                    except KeyError:
-                        organization = '_none'
+                    # detect orzanization string
+                    organization = self._detect_org(data['context'], dirname)
 
                     #logger.debug("line for organization %s", organization)
                     #logger.debug("line '%s'", data)
@@ -115,7 +123,7 @@ class Command(BaseCommand):
                         os.mkdir(splited_dir)
                     except FileExistsError as e:
                         pass
-                        
+
                     # put line to corresponding files
                     if organization not in lines_for_add:
                         lines_for_add[organization] = {}
@@ -133,13 +141,26 @@ class Command(BaseCommand):
 
         logger.info("error lines {} of {}".format(lines_error, lines_total))
         return lines_total, lines_error
-        
-        
-    def _get_list(self, original_dir):
+
+    def _detect_org(self, context, dirname):
+        if self.original_dir == settings.TRACKING_LOGS_ORIGINAL_DST:
+            try:
+                if data['context']['org_id']:
+                    organization = data['context']['org_id']
+                else:
+                    organization = '_empty'
+            except KeyError:
+                organization = '_none'
+        else:
+            organisation = dirname.split('/')[0]
+
+        return organisation
+
+    def _get_list(self):
         dirs = {}
-        for (dirpath, dirnames, filenames) in os.walk(original_dir):
+        for (dirpath, dirnames, filenames) in os.walk(self.original_dir):
             files = [ fi for fi in filenames if fi.endswith(".gz") ]
             if len(files):
                 files.sort()
-                dirs[dirpath[len(original_dir)+1:]] = files
+                dirs[dirpath[len(self.original_dir)+1:]] = files
         return dirs

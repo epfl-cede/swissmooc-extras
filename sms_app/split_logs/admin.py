@@ -1,10 +1,14 @@
 from django.contrib import admin
 
-from .models import FileOriginal, DirOriginal, PublicKey, Organisation, Course, CourseDump, CourseDumpTable
+from .models import FileOriginal, FileOriginalDocker, DirOriginal, PublicKey, Organisation, Course, CourseDump, CourseDumpTable
 
 class DirOriginalAdmin(admin.ModelAdmin):
     list_display = ('name', 'created', 'updated')
 class FileOriginalAdmin(admin.ModelAdmin):
+    list_display = ('fullname', 'lines_total', 'lines_error', 'created', 'updated')
+    search_fields = ['name']
+    list_filter = ['dir_original']
+class FileOriginalDockerAdmin(admin.ModelAdmin):
     list_display = ('fullname', 'lines_total', 'lines_error', 'created', 'updated')
     search_fields = ['name']
     list_filter = ['dir_original']
@@ -20,6 +24,7 @@ class CourseDumpTableAdmin(admin.ModelAdmin):
 
 admin.site.register(DirOriginal, DirOriginalAdmin)
 admin.site.register(FileOriginal, FileOriginalAdmin)
+admin.site.register(FileOriginalDocker, FileOriginalDockerAdmin)
 admin.site.register(PublicKey)
 admin.site.register(Organisation)
 admin.site.register(Course, CourseAdmin)
