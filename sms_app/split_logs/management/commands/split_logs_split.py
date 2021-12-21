@@ -35,6 +35,7 @@ class Command(BaseCommand):
 
     def _handle_old(self, limit):
         self.original_dir = settings.TRACKING_LOGS_ORIGINAL_DST
+        self.splitted_dir = settings.TRACKING_LOGS_SPLITTED
         self.file_model = FileOriginal
 
         # get list of original files
@@ -48,6 +49,7 @@ class Command(BaseCommand):
 
     def _handle_new(self, limit):
         self.original_dir = settings.TRACKING_LOGS_ORIGINAL_DOCKER_DST
+        self.splitted_dir = settings.TRACKING_LOGS_SPLITTED_DOCKER
         self.file_model = FileOriginalDocker
 
         # get list of original files
@@ -118,7 +120,7 @@ class Command(BaseCommand):
                     #logger.debug("line '%s'", data)
 
                     # create dir
-                    splited_dir = '{}/{}'.format(settings.TRACKING_LOGS_SPLITTED, organization)
+                    splited_dir = '{}/{}'.format(self.splitted_dir, organization)
                     try:
                         os.mkdir(splited_dir)
                     except FileExistsError as e:
@@ -135,7 +137,7 @@ class Command(BaseCommand):
         # bunch adding lines, to prevent posibility for duplicates
         for organization in lines_for_add:
             for date in lines_for_add[organization]:
-                splited_filename = '{}/{}/{}.log.gz'.format(settings.TRACKING_LOGS_SPLITTED, organization, date)
+                splited_filename = '{}/{}/{}.log.gz'.format(self.splitted_dir, organization, date)
                 splited_file = gzip.open(splited_filename, 'ab+')
                 splited_file.write(b''.join(lines_for_add[organization][date]))
 
@@ -145,8 +147,8 @@ class Command(BaseCommand):
     def _detect_org(self, context, dirname):
         if self.original_dir == settings.TRACKING_LOGS_ORIGINAL_DST:
             try:
-                if data['context']['org_id']:
-                    organization = data['context']['org_id']
+                if context['org_id']:
+                    organization = context['org_id']
                 else:
                     organization = '_empty'
             except KeyError:
