@@ -94,4 +94,3 @@ class Command(BaseCommand):
         except FileNotFoundError:
             logger.warning("forlder for organisation alias %s does not exist", org)
         return files
-

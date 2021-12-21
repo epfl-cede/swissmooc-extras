@@ -154,9 +154,9 @@ class Command(BaseCommand):
             except KeyError:
                 organization = '_none'
         else:
-            organisation = dirname.split('/')[0]
+            organization = dirname.split('/')[0]
 
-        return organisation
+        return organization
 
     def _get_list(self):
         dirs = {}
