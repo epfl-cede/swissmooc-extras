@@ -16,14 +16,39 @@ logger = logging.getLogger(__name__)
 MTIME_LESS_DAYS_AGO = 2
 MTIME_GREATER_DAYS_AGO = 30
 
+PLATFORM_OLD = 'old'
+PLATFORM_NEW = 'new'
+
 class Command(BaseCommand):
     help = 'Encrypt files with organization keys and put it on SWITCH Drive'
 
     def add_arguments(self, parser):
         parser.add_argument('--limit', type=int, default=3)
+        parser.add_argument('--platform', type=str, default=PLATFORM_OLD)
 
     def handle(self, *args, **options):
-        limit = options['limit']
+        if options['platform'] == PLATFORM_OLD:
+            logger.info("get files for split from old platform")
+            self._handle_old(options['limit'])
+        elif options['platform'] == PLATFORM_NEW:
+            logger.info("get files for split from new platform")
+            self._handle_new(options['limit'])
+        else:
+            logger.warning("unknown platform <{}>".format(options['platform']))
+
+    def _handle_old(self, limit):
+        self.splitted_dir = settings.TRACKING_LOGS_SPLITTED
+        self.encrypted_dir = settings.TRACKING_LOGS_ENCRYPTED
+
+        self._loop_organizations(limit)
+
+    def _handle_new(self, limit):
+        self.splitted_dir = settings.TRACKING_LOGS_SPLITTED_DOCKER
+        self.encrypted_dir = settings.TRACKING_LOGS_ENCRYPTED_DOCKER
+
+        self._loop_organizations(limit)
+
+    def _loop_organizations(self, limit):
         cnt = 0
         organisations = Organisation.objects.all()
         for o in organisations:
@@ -42,7 +67,7 @@ class Command(BaseCommand):
                 # collect data into temporary file
                 buff = b''
                 for org in alias_list:
-                    orig_file_full_path = "{}/{}/{}".format(settings.TRACKING_LOGS_SPLITTED, org[1], file_name)
+                    orig_file_full_path = "{}/{}/{}".format(self.splitted_dir, org[1], file_name)
                     with open(orig_file_full_path, 'rb') as f:
                         buff += f.read()
 
@@ -61,7 +86,7 @@ class Command(BaseCommand):
 
     def _get_encrypted_file_full_path(self, organisation, fname):
         return "{}/{}/{}-courseware-events-{}.gpg".format(
-            settings.TRACKING_LOGS_ENCRYPTED,
+            self.encrypted_dir,
             organisation.name,
             organisation.name.lower(),
             fname
@@ -74,13 +99,13 @@ class Command(BaseCommand):
             org = a.strip()
             filelist = self._get_list(org)
             for orig_file in filelist:
-                orig_file_full_path = "{}/{}/{}".format(settings.TRACKING_LOGS_SPLITTED, org, orig_file)
+                orig_file_full_path = "{}/{}/{}".format(self.splitted_dir, org, orig_file)
                 less_days_ago = datetime.datetime.now() - datetime.timedelta(days=MTIME_LESS_DAYS_AGO)
                 greater_days_ago = datetime.datetime.now() - datetime.timedelta(days=MTIME_GREATER_DAYS_AGO)
                 mtime = os.path.getmtime(orig_file_full_path)
                 # skip files created less then 2 days ago
                 if mtime < less_days_ago.timestamp() and mtime > greater_days_ago.timestamp():
-                    pathlib.Path("{}/{}".format(settings.TRACKING_LOGS_ENCRYPTED, organisation.name)).mkdir(parents=True, exist_ok=True)
+                    pathlib.Path("{}/{}".format(self.encrypted_dir, organisation.name)).mkdir(parents=True, exist_ok=True)
                     if not os.path.isfile(self._get_encrypted_file_full_path(organisation, orig_file)):
                         if orig_file not in result: result[orig_file] = list()
                         result[orig_file].append((organisation.name, org))
@@ -89,7 +114,7 @@ class Command(BaseCommand):
     def _get_list(self, org):
         files = list()
         try:
-            path = "{}/{}".format(settings.TRACKING_LOGS_SPLITTED, org)
+            path = "{}/{}".format(self.splitted_dir, org)
             files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
         except FileNotFoundError:
             logger.warning("forlder for organisation alias %s does not exist", org)

@@ -93,7 +93,7 @@ class Command(BaseCommand):
         )
 
     def _process_file(self, dirname, filename):
-        logger.info("provess file {}/{}".format(dirname, filename))
+        logger.info("process file {}/{}".format(dirname, filename))
 
         # reset counters
         lines_total = 0
