@@ -9,12 +9,9 @@ from django.core.management.base import BaseCommand
 from django.db.models.functions import Concat
 from django.db.models import Q, F, Value
 
-from split_logs.models import DirOriginal, FileOriginal, FileOriginalDocker
+from split_logs.models import DirOriginal, FileOriginal, FileOriginalDocker, PLATFORM_OLD, PLATFORM_NEW
 
 logger = logging.getLogger(__name__)
-
-PLATFORM_OLD = 'old'
-PLATFORM_NEW = 'new'
 
 class Command(BaseCommand):
     help = 'Split tracking logs by organizations'

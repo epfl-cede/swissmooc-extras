@@ -9,15 +9,12 @@ from dateutil import parser
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
-from split_logs.models import Organisation
+from split_logs.models import Organisation, PLATFORM_OLD, PLATFORM_NEW
 
 logger = logging.getLogger(__name__)
 
 MTIME_LESS_DAYS_AGO = 2
 MTIME_GREATER_DAYS_AGO = 30
-
-PLATFORM_OLD = 'old'
-PLATFORM_NEW = 'new'
 
 class Command(BaseCommand):
     help = 'Encrypt files with organization keys and put it on SWITCH Drive'
@@ -117,5 +114,5 @@ class Command(BaseCommand):
             path = "{}/{}".format(self.splitted_dir, org)
             files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
         except FileNotFoundError:
-            logger.warning("forlder for organisation alias %s does not exist", org)
+            logger.warning("folder for organisation alias %s does not exist", org)
         return files
