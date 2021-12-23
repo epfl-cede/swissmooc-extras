@@ -37,11 +37,16 @@ class Command(BaseCommand):
                 org = self._find_org_by_name(os.path.basename(efile).split('-')[0])
                 if org:
                     LOGGER.info('Upload file %s', efile)
-                    upload_file(org, efile, '{org}/dump-xml/{date}/{name}'.format(
-                        org=org.name,
-                        date=efile.split('/')[-2],
-                        name=os.path.basename(efile)
-                    ))
+                    upload_file(
+                        settings.AWS_STORAGE_BUCKET_NAME_ANALYTICS,
+                        org,
+                        efile,
+                        '{org}/dump-xml/{date}/{name}'.format(
+                            org=org.name,
+                            date=efile.split('/')[-2],
+                            name=os.path.basename(efile)
+                        )
+                    )
 
     def _encrypt(self, org, fname):
         gpg = gnupg.GPG()

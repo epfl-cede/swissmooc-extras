@@ -10,8 +10,6 @@ from split_logs.models import Organisation, PLATFORM_OLD, PLATFORM_NEW
 
 logger = logging.getLogger(__name__)
 
-BUCKET = settings.AWS_STORAGE_BUCKET_NAME_ANALYTICS
-
 class Command(BaseCommand):
     help = 'Encrypt files with organization keys and put it on SWITCH Drive'
 
@@ -31,7 +29,6 @@ class Command(BaseCommand):
 
     def _handle_old(self, limit):
         self.remote_dir = 'tracking-logs'
-        self.splitted_dir = settings.TRACKING_LOGS_SPLITTED
         self.encrypted_dir = settings.TRACKING_LOGS_ENCRYPTED
 
         self._loop_organizations(limit)
@@ -47,6 +44,7 @@ class Command(BaseCommand):
 
         organisations = Organisation.objects.all()
         for o in organisations:
+            # overwrite BUCKET for docker-based logs
             aliases = o.aliases.split(',')
             for a in aliases:
                 org = a.strip()
@@ -54,6 +52,7 @@ class Command(BaseCommand):
                 filelist = self._get_list(org)
                 for encripted_file in filelist:
                     upload_file(
+                        self._bucket(o),
                         o,
                         '{}/{}/{}'.format(
                             self.encrypted_dir,
@@ -65,6 +64,11 @@ class Command(BaseCommand):
                     cnt += 1
                     if cnt >= limit: break
 
+    def _bucket(self, organisation):
+        if self.encrypted_dir == settings.TRACKING_LOGS_ENCRYPTED_DOCKER:
+            return '{}-{}'.format(settings.AWS_STORAGE_BUCKET_NAME_ANALYTICS, str(organisation).lower())
+        else:
+            return settings.AWS_STORAGE_BUCKET_NAME_ANALYTICS
 
     def _get_list(self, org):
         files = list()

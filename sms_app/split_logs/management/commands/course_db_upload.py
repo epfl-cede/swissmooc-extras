@@ -4,6 +4,7 @@ import logging
 import gnupg
 import shutil
 
+from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from split_logs.utils import upload_file
@@ -42,10 +43,15 @@ class Command(BaseCommand):
                             org=org.name,
                             name=os.path.basename(zip_name),
                         ))
-                        upload_file(org, zip_name, '{org}/dump-db/{name}'.format(
-                            org=org.name,
-                            name=os.path.basename(zip_name),
-                        ))
+                        upload_file(
+                            settings.AWS_STORAGE_BUCKET_NAME_ANALYTICS,
+                            org,
+                            zip_name,
+                            '{org}/dump-db/{name}'.format(
+                                org=org.name,
+                                name=os.path.basename(zip_name),
+                            )
+                        )
 
                     if os.path.isdir(folder_name):
                         # remove original folder
