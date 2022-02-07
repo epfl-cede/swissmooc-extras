@@ -812,18 +812,22 @@ class MigrateCourse:
     def importCourse(self):
         self.mkdir('zh-%s-swarm-1' % self.APP_ENV)
 
-        return_code, stdout, stderr = cmd([
-            'ssh', 'ubuntu@zh-%s-swarm-1' % self.APP_ENV,
-            'rm', '-rf', '{}/{}'.format('/'.join(self.import_dir.split('/')[0:-1]), 'course_export')
-        ], self.debug)
-        if return_code != 0: raise migrateCourseException("CMD error")
+        # remove old data from all swarm nodes
+        for i in range(1, 6):
+            return_code, stdout, stderr = cmd([
+                'ssh', 'ubuntu@zh-%s-swarm-%d' % (self.APP_ENV, i),
+                'rm', '-rf', '{}/{}'.format('/'.join(self.import_dir.split('/')[0:-1]), 'course_export')
+            ], self.debug)
+            if return_code != 0: raise migrateCourseException("CMD error")
 
-        return_code, stdout, stderr = cmd([
-            'ssh', 'ubuntu@zh-%s-swarm-1' % self.APP_ENV,
-            'scp', '-r', 'ubuntu@zh-%s-app-205:%s' % (self.APP_ENV, self.export_dir),
-            '/'.join(self.import_dir.split('/')[0:-1])
-        ], self.debug)
-        if return_code != 0: raise migrateCourseException("CMD error")
+        # copy course to all swarm nodes
+        for i in range(1, 6):
+            return_code, stdout, stderr = cmd([
+                'ssh', 'ubuntu@zh-%s-swarm-%d' % (self.APP_ENV, i),
+                'scp', '-r', 'ubuntu@zh-%s-app-205:%s' % (self.APP_ENV, self.export_dir),
+                '/'.join(self.import_dir.split('/')[0:-1])
+            ], self.debug)
+            if return_code != 0: raise migrateCourseException("CMD error")
 
         # docker-run-command openedx-university_lms 'python manage.py cms --settings=tutor.production bla bla bla '
         return_code, stdout, stderr = cmd([
