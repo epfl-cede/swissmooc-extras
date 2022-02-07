@@ -19,6 +19,7 @@ DESTINATIONS = {
         'ffhs',
         'unili',
         'ethz',
+        'epfl',
     ]
 }
 
