@@ -210,7 +210,7 @@ class MigrateCourse:
             ['id', 'student_id', 'module_id', 'course_id']
         )
         # courseware_studentmodulehistory
-        for chunk in chunks(courseware_studentmodule_ids, 1000):
+        for chunk in chunks(courseware_studentmodule_ids, 400):
             self.copyDataIn(
                 'courseware_studentmodulehistory',
                 'student_module_id',
