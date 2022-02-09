@@ -38,11 +38,12 @@ def chunks(lst, n):
         yield lst[i:i + n]
 
 class MigrateCourse:
-    def __init__(self, APP_ENV, destination, course_id, overwrite, debug):
+    def __init__(self, APP_ENV, destination, course_id, overwrite, ignore_user_migration, debug):
         self.APP_ENV = APP_ENV
         self.destination = destination
         self.course_id = course_id
         self.overwrite = overwrite
+        self.ignore_user_migration = ignore_user_migration
         self.debug = debug
         self.user_id_map = {}
         self.anonymous_user_id_map = {}
@@ -98,7 +99,7 @@ class MigrateCourse:
 
     def migrateUsers(self, users):
         for user in users:
-            Migrate = MigrateUser(self.APP_ENV, self.destination, user['user_id'], self.overwrite, self.debug)
+            Migrate = MigrateUser(self.APP_ENV, self.destination, user['user_id'], self.overwrite, self.debug, not self.ignore_user_migration)
             Migrate.run()
             self.user_id_map[user['user_id']] = Migrate.pk
 
