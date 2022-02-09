@@ -26,6 +26,9 @@ DESTINATIONS = {
 CONNECTION_SOURCE = 'edxapp_readonly'
 CONNECTION_ID = 'edxapp_id'
 
+def set_max_allowed_packet(connection):
+    with connections[connection].cursor() as cursor:
+        cursor.execute("SET max_allowed_packet=1073741824")
 
 def dictfetchall(cursor):
     "Return all rows from a cursor as a dict"

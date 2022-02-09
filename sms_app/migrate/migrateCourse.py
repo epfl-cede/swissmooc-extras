@@ -19,6 +19,8 @@ from migrate.models_hawthorn import (
 )
 from migrate.helpers import insertOrUpdateRow, selectRows, selectRowsIn, selectField, selectFieldIn, cmd
 from migrate.helpers import CONNECTION_SOURCE, CONNECTION_ID
+from migrate.helpers import set_max_allowed_packet
+
 from migrate.migrateUser import MigrateUser
 
 logger = logging.getLogger(__name__)
@@ -50,6 +52,8 @@ class MigrateCourse:
         self.export_dir = '/tmp/course_export'
         self.import_dir = '/home/ubuntu/stacks/openedx-%s/logs/course_export' % self.destination
         self.import_dir_docker = '/openedx/data/logs/course_export'
+
+        set_max_allowed_packet("edxapp_%s" % self.destination)
 
     def check_users(self):
         users = self.selectRows('student_courseenrollment', {'course_id': self.course_id})
