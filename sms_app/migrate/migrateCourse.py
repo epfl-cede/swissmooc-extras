@@ -53,7 +53,7 @@ class MigrateCourse:
         self.import_dir = '/home/ubuntu/stacks/openedx-%s/logs/course_export' % self.destination
         self.import_dir_docker = '/openedx/data/logs/course_export'
 
-        set_max_allowed_packet("edxapp_%s" % self.destination)
+        #set_max_allowed_packet("edxapp_%s" % self.destination)
 
     def check_users(self):
         users = self.selectRows('student_courseenrollment', {'course_id': self.course_id})
