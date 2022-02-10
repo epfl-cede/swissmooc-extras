@@ -215,6 +215,7 @@ class MigrateCourse:
         )
 
         # courseware_studentmodule: get ids
+        """ It;s empty anyway
         courseware_studentmodule_ids = self.selectFieldIn(
             'courseware_studentmodule',
             'id',
@@ -233,7 +234,7 @@ class MigrateCourse:
                 ['id', 'version', 'created', 'state', 'grade', 'max_grade', 'student_module_id'],
                 ['id', 'student_module_id']
             )
-
+        """
 
     def migrateCourseActivitySubmission(self):
         # submissions_studentitem
