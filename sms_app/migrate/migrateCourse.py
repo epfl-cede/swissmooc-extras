@@ -206,15 +206,26 @@ class MigrateCourse:
             )
 
     def migrateCourseActivityCourseware(self):
-        # courseware_studentmodule
-        courseware_studentmodule_ids = self.copyData(
+        # courseware_studentmodule: copy data
+        self.copyData(
             'courseware_studentmodule',
             {'course_id': self.course_id},
             ['id', 'module_type', 'module_id', 'course_id', 'state', 'grade', 'max_grade', 'done', 'created', 'modified', 'student_id'],
             ['id', 'student_id', 'module_id', 'course_id']
         )
+
+        # courseware_studentmodule: get ids
+        courseware_studentmodule_ids = self.selectFieldIn(
+            'courseware_studentmodule',
+            'id',
+            'course_id',
+            self.course_id
+        )
+        # convert set to list
+        courseware_studentmodule_ids = list(courseware_studentmodule_ids)
+
         # courseware_studentmodulehistory
-        for chunk in chunks(courseware_studentmodule_ids, 400):
+        for chunk in chunks(courseware_studentmodule_ids, 100):
             self.copyDataIn(
                 'courseware_studentmodulehistory',
                 'student_module_id',
