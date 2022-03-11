@@ -31,8 +31,6 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    'split_logs.apps.SplitLogsConfig',
-    'check_ssl.apps.CheckSslConfig',
     'migrate.apps.MigrateConfig',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -40,6 +38,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'split_logs.apps.SplitLogsConfig',
+    'check_ssl.apps.CheckSslConfig',
+    'openedx_stats.apps.OpenedxStatsConfig',
 ]
 
 MIDDLEWARE = [
@@ -255,6 +256,8 @@ TRACKING_LOGS_ENCRYPTED=os.environ.get("TRACKING_LOGS_ENCRYPTED")
 TRACKING_LOGS_ENCRYPTED_DOCKER=os.environ.get("TRACKING_LOGS_ENCRYPTED_DOCKER")
 DUMP_DB_PATH=os.environ.get("DUMP_DB_PATH")
 DUMP_XML_PATH=os.environ.get("DUMP_XML_PATH")
+
+STATS_FILE_PATH=os.environ.get("STATS_FILE_PATH")
 
 SMS_APP_ENV=os.environ.get("SMS_APP_ENV")
 
