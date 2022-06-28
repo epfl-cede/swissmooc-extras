@@ -20,6 +20,7 @@ DESTINATIONS = {
         'unili',
         'ethz',
         'epfl',
+        'unige',
     ]
 }
 
