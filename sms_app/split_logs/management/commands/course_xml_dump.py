@@ -16,7 +16,7 @@ class Command(BaseCommand):
     help = 'Course XML dump; encrypt and upload course XMLs'
 
     def handle(self, *args, **options):
-        organisations = Organisation.objects.all()
+        organisations = Organisation.objects.filter(active=True)
 
         now = datetime.datetime.now().date()
         dirs = [os.path.join(settings.DUMP_XML_PATH, o) for o in os.listdir(settings.DUMP_XML_PATH) if os.path.isdir(os.path.join(settings.DUMP_XML_PATH, o))]

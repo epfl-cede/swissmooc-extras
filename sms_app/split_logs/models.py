@@ -78,6 +78,7 @@ class Organisation(models.Model):
     name = models.CharField(max_length=255)
     aliases = models.CharField(max_length=1024)
     public_key = models.ForeignKey(PublicKey, on_delete=models.CASCADE)
+    active = models.BooleanField(default=True)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     def __str__(self):
