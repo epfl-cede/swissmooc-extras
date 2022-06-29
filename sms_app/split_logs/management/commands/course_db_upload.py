@@ -21,7 +21,7 @@ class Command(BaseCommand):
 
         gpg = gnupg.GPG()
         gpg.encoding = 'utf-8'
-        organisations = Organisation.objects.all()
+        organisations = Organisation.objects.filter(active=True)
         tables = CourseDumpTable.objects.all()
         now = datetime.datetime.now().date()
         for org in organisations:

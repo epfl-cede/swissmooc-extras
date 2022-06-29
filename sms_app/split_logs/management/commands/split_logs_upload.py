@@ -42,7 +42,7 @@ class Command(BaseCommand):
     def _loop_organizations(self, limit):
         cnt = 0
 
-        organisations = Organisation.objects.all()
+        organisations = Organisation.objects.filter(active=True)
         for o in organisations:
             # overwrite BUCKET for docker-based logs
             aliases = o.aliases.split(',')

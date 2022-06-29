@@ -21,12 +21,14 @@ class CourseDumpAdmin(admin.ModelAdmin):
     search_fields = ['course__name']
 class CourseDumpTableAdmin(admin.ModelAdmin):
     list_display = ('db_type', 'db_name', 'name', 'primary_key', 'created', 'updated')
+class OrganisationAdmin(admin.ModelAdmin):
+    list_display = ('name', 'active')
 
 admin.site.register(DirOriginal, DirOriginalAdmin)
 admin.site.register(FileOriginal, FileOriginalAdmin)
 admin.site.register(FileOriginalDocker, FileOriginalDockerAdmin)
 admin.site.register(PublicKey)
-admin.site.register(Organisation)
+admin.site.register(Organisation, OrganisationAdmin)
 admin.site.register(Course, CourseAdmin)
 admin.site.register(CourseDump, CourseDumpAdmin)
 admin.site.register(CourseDumpTable, CourseDumpTableAdmin)

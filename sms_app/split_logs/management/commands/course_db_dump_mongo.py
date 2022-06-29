@@ -24,7 +24,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         self._dump_mongo_tabes()
-        organisations = Organisation.objects.all()
+        organisations = Organisation.objects.filter(active=True)
         tables = CourseDumpTable.objects.all()
         for o in organisations:
             logger.info("process organization %s", o.name)

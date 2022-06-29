@@ -12,7 +12,7 @@ class Command(BaseCommand):
     help = 'Renew table Course: remove outdated courses and add new'
 
     def handle(self, *args, **options):
-        organisations = Organisation.objects.all()
+        organisations = Organisation.objects.filter(active=True)
         for o in organisations:
             logger.info("process organization %s", o.name)
             Course.objects.filter(organisation=o).update(active=NOT_ACTIVE)

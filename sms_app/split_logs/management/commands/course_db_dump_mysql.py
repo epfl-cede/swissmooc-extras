@@ -22,7 +22,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         self._fill_mysql_tables_columns()
-        organisations = Organisation.objects.all()
+        organisations = Organisation.objects.filter(active=True)
         tables = CourseDumpTable.objects.all()
         for o in organisations:
             logger.info("process organization %s", o.name)
