@@ -44,7 +44,7 @@ class Command(BaseCommand):
 
             zip_name = self._course_zip(course_id, course_dir)
             self._course_copy(course_id, zip_name)
-            
+
             # remove course
             os.remove(zip_name)
 
@@ -81,12 +81,12 @@ class Command(BaseCommand):
         except Exception as e:
             logger.error('rsync course %s error: %s', course_id, e)
             exit(1)
-        
+
     def _course_zip(self, course_id, course_dir):
         zip_name = shutil.make_archive(course_dir, 'zip', os.path.dirname(os.path.dirname(course_dir)), os.path.basename(course_dir[:-1]))
         shutil.rmtree(course_dir)
         return zip_name
-        
+
     def _course_dump(self, course_id, course_dir):
         cmd = [
             'sudo',
@@ -111,7 +111,7 @@ class Command(BaseCommand):
 
         subprocess.run(['sudo', 'chown', '-R', 'ubuntu:ubuntu', course_dir])
         return result
-            
+
     def _get_courses(self):
         cmd = [
             'sudo',
