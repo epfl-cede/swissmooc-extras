@@ -35,6 +35,7 @@ class MigrateUser:
         self.exit_empty_social_auth  = exit_empty_social_auth
         self.pk = 0
         self.username = ''
+        self.migrate_social_auth = self.destination not in ['tdr']
 
     def run(self):
         self.migrateUser()
@@ -67,12 +68,15 @@ class MigrateUser:
         ApiUserpreference = selectRows('user_api_userpreference', {'user_id': self.user_id}, CONNECTION_SOURCE, self.debug)
         data['ApiUserpreference'] = ApiUserpreference
 
-        Usersocialauth = selectRows('social_auth_usersocialauth', {'user_id': self.user_id}, CONNECTION_SOURCE, self.debug)
-        if not Usersocialauth:
-            logger.warning("User {} <{}> doesn't have any social auth".format(User[0]['email'], User[0]['username']))
-            if self.exit_empty_social_auth: exit(0)
+        if self.migrate_social_auth:
+            Usersocialauth = selectRows('social_auth_usersocialauth', {'user_id': self.user_id}, CONNECTION_SOURCE, self.debug)
+            if not Usersocialauth:
+                logger.warning("User {} <{}> doesn't have any social auth".format(User[0]['email'], User[0]['username']))
+                if self.exit_empty_social_auth: exit(0)
 
-        data['Usersocialauth'] = Usersocialauth
+            data['Usersocialauth'] = Usersocialauth
+        else:
+            data['Usersocialauth'] = []
 
         # course_creators_coursecreator user_id
         # course_overviews_historicalcourseoverview history_user_id
@@ -82,7 +86,7 @@ class MigrateUser:
         # student_manualenrollmentaudit
         # student_historicalmanualenrollmentaudit
 
-        if self.destination not in ['tdr']:
+        if self.migrate_social_auth:
             self.writeAuthData(data, CONNECTION_ID)
         self.writeAuthData(data, "edxapp_%s" % self.destination)
 
