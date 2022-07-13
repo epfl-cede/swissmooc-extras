@@ -82,7 +82,8 @@ class MigrateUser:
         # student_manualenrollmentaudit
         # student_historicalmanualenrollmentaudit
 
-        self.writeAuthData(data, CONNECTION_ID)
+        if self.destination not in ['tdr']:
+            self.writeAuthData(data, CONNECTION_ID)
         self.writeAuthData(data, "edxapp_%s" % self.destination)
 
     def writeAuthData(self, data, connection):
@@ -121,7 +122,7 @@ class MigrateUser:
                 ))
                 self.pk = User['id']
             self.username = User['username']
-                
+
         else:
             logger.info('Add new user'.format(data['User']['username'], data['User']['email']))
             self.pk = self._insertOrUpdateUser(data['User'], connection)
@@ -352,7 +353,7 @@ class MigrateUser:
                 'ba00ee948a3d418bce2659ab59384f',
                 'ff2e8e342cf2fd2f906eb9f4c4bc63',
                 '490a9b66f2a2eea250cd8c4622efe4',
-                
+
             ]
             if ua['uid'].split(":")[0] in legacy_uids: continue # skip legacy.swissmooc.ch
             uid = self._translateUid(ua['uid'])
@@ -459,4 +460,4 @@ class MigrateUser:
                     uid = uid.replace(provider_uid, provider_map)
                     return uid
         return False
-        
+

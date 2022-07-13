@@ -21,6 +21,7 @@ DESTINATIONS = {
         'ethz',
         'epfl',
         'unige',
+        'tdr',
     ]
 }
 
