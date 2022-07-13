@@ -363,7 +363,7 @@ class MigrateCourse:
             ['id']
         )
 
-        
+
     def migrateCourseActivityAssessment(self):
         # assessment_peerworkflow
         assessment_peerworkflow_ids = self.copyData(
@@ -384,7 +384,10 @@ class MigrateCourse:
             assessment_peerworkflow_ids
         )
         assessment_peerworkflowitem_ids = set([row['id'] for row in assessment_peerworkflowitem_author_rows] + [row['id'] for row in assessment_peerworkflowitem_scorer_rows])
-        assessment_assessment_ids = set([row['assessment_id'] for row in assessment_peerworkflowitem_author_rows] + [row['assessment_id'] for row in assessment_peerworkflowitem_scorer_rows])
+        assessment_assessment_ids = set(
+            list(filter(None, [row['assessment_id'] for row in assessment_peerworkflowitem_author_rows])) +
+            list(filter(None, [row['assessment_id'] for row in assessment_peerworkflowitem_scorer_rows]))
+        )
         assessment_assessment_rows = self.selectRowsIn(
             'assessment_assessment',
             'id',
@@ -445,7 +448,7 @@ class MigrateCourse:
             ['id', 'name', 'label', 'order_num', 'prompt', 'rubric_id'],
             ['id']
         )
-        
+
         # assessment_criterionoption
         assessment_criterionoption_ids = self.copyDataIn(
             'assessment_criterionoption',
@@ -479,7 +482,7 @@ class MigrateCourse:
         )
         assessment_assessmentpart_ids.update([row['id'] for row in rows])
         assessment_assessment_ids_parts.update([row['assessment_id'] for row in rows])
-        
+
         self.copyDataIn(
             'assessment_assessment',
             'id',
