@@ -483,7 +483,7 @@ class MigrateCourse:
         assessment_assessmentpart_ids.update([row['id'] for row in rows])
         assessment_assessment_ids_parts.update([row['assessment_id'] for row in rows])
 
-        self.copyDataIn(
+        rows = self.copyDataIn(
             'assessment_assessment',
             'id',
             assessment_assessment_ids_parts,
@@ -492,8 +492,8 @@ class MigrateCourse:
         )
         self.copyDataIn(
             'assessment_assessmentpart',
-            'id',
-            assessment_assessmentpart_ids,
+            'assessment_id',
+            rows,
             ['id', 'feedback', 'assessment_id', 'criterion_id', 'option_id'],
             ['id']
         )
@@ -675,14 +675,15 @@ class MigrateCourse:
         pks = []
         for row in rows:
             if self._checkRowIn(row, _in):
-                pks.append(insertOrUpdateRow(
+                res = insertOrUpdateRow(
                     self.substitute(table_name, row.copy()),
                     table_name,
                     fields,
                     keys,
                     "edxapp_%s" % self.destination,
                     self.debug
-                ))
+                )
+                if res: pks.append(res))
         return pks
 
     def _checkRowIn(self, row, _in):
