@@ -1,24 +1,30 @@
-import re
-import os
-import logging
+# -*- coding: utf-8 -*-
 import json
+import logging
+import os
+import re
 from datetime import datetime
-from pymongo import MongoClient, errors
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import connections
 from django.db.models import Q
-from django.core.exceptions import ObjectDoesNotExist
-
-from migrate.models_hawthorn import (
-    AuthUser,
-    AuthUserProfile,
-    AuthRegistration,
-    StudentUserattribute,
-    UserApiUserpreference,
-)
-from migrate.helpers import insertOrUpdateRow, selectRows, selectRowsIn, selectField, selectFieldIn, copyTable, cmd
-from migrate.helpers import CONNECTION_SOURCE, CONNECTION_ID
+from migrate.helpers import cmd
+from migrate.helpers import CONNECTION_ID
+from migrate.helpers import CONNECTION_SOURCE
+from migrate.helpers import copyTable
+from migrate.helpers import insertOrUpdateRow
+from migrate.helpers import selectField
+from migrate.helpers import selectFieldIn
+from migrate.helpers import selectRows
+from migrate.helpers import selectRowsIn
 from migrate.migrateUser import MigrateUser
+from migrate.models_hawthorn import AuthRegistration
+from migrate.models_hawthorn import AuthUser
+from migrate.models_hawthorn import AuthUserProfile
+from migrate.models_hawthorn import StudentUserattribute
+from migrate.models_hawthorn import UserApiUserpreference
+from pymongo import errors
+from pymongo import MongoClient
 
 COLLECTION_SOURCE = 'cs_comments_service'
 

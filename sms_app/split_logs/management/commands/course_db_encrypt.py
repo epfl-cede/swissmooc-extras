@@ -1,14 +1,19 @@
-import os
+# -*- coding: utf-8 -*-
 import logging
+import os
+
 import gnupg
-
 from django.conf import settings
-from django.db import connections
-from django.core.management.base import BaseCommand
 from django.core.exceptions import ObjectDoesNotExist
-
-from split_logs.models import Course, CourseDump, Organisation
-from split_logs.models import ACTIVE, NOT_ACTIVE, YES, NO
+from django.core.management.base import BaseCommand
+from django.db import connections
+from split_logs.models import ACTIVE
+from split_logs.models import Course
+from split_logs.models import CourseDump
+from split_logs.models import NO
+from split_logs.models import NOT_ACTIVE
+from split_logs.models import Organisation
+from split_logs.models import YES
 
 logger = logging.getLogger(__name__)
 

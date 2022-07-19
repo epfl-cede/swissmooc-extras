@@ -1,7 +1,9 @@
-import os
+# -*- coding: utf-8 -*-
 import logging
-import boto3, botocore
+import os
 
+import boto3
+import botocore
 from django.conf import settings
 
 LOGGER = logging.getLogger(__name__)

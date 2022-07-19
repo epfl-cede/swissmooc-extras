@@ -1,15 +1,18 @@
-import os
+# -*- coding: utf-8 -*-
 import datetime
 import logging
-import gnupg
+import os
 import shutil
 
+import gnupg
 from django.conf import settings
 from django.core.management.base import BaseCommand
-
+from split_logs.models import ACTIVE
+from split_logs.models import CourseDump
+from split_logs.models import CourseDumpTable
+from split_logs.models import Organisation
+from split_logs.models import YES
 from split_logs.utils import upload_file
-from split_logs.models import CourseDump, Organisation, CourseDumpTable
-from split_logs.models import ACTIVE, YES
 
 LOGGER = logging.getLogger(__name__)
 

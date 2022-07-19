@@ -1,13 +1,15 @@
+# -*- coding: utf-8 -*-
+import datetime
 import os
 import sys
-import datetime
 
 from django.conf import settings
 from django.core.mail import send_mail
-from django.core.management.base import BaseCommand, CommandError
-
+from django.core.management.base import BaseCommand
+from django.core.management.base import CommandError
+from migrate.helpers import APP_ENVS
+from migrate.helpers import DESTINATIONS
 from migrate.migrateForum import MigrateForum
-from migrate.helpers import APP_ENVS, DESTINATIONS
 
 class Command(BaseCommand):
     help = 'Migrate forum for particular course'

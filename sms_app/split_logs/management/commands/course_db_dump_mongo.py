@@ -1,18 +1,26 @@
-import os
-import json
-import pathlib
+# -*- coding: utf-8 -*-
 import datetime
+import json
 import logging
+import os
+import pathlib
 import subprocess
 import tempfile
 
 from django.conf import settings
-from django.db import connections
-from django.core.management.base import BaseCommand
 from django.core.exceptions import ObjectDoesNotExist
-
-from split_logs.models import Course, CourseDump, CourseDumpTable, Organisation
-from split_logs.models import ACTIVE, NOT_ACTIVE, YES, NO, DB_TYPE_MYSQL, DB_TYPE_MONGO
+from django.core.management.base import BaseCommand
+from django.db import connections
+from split_logs.models import ACTIVE
+from split_logs.models import Course
+from split_logs.models import CourseDump
+from split_logs.models import CourseDumpTable
+from split_logs.models import DB_TYPE_MONGO
+from split_logs.models import DB_TYPE_MYSQL
+from split_logs.models import NO
+from split_logs.models import NOT_ACTIVE
+from split_logs.models import Organisation
+from split_logs.models import YES
 
 logger = logging.getLogger(__name__)
 

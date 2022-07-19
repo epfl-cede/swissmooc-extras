@@ -1,14 +1,14 @@
-import os
-import shutil
+# -*- coding: utf-8 -*-
 import datetime
 import logging
-import gnupg
+import os
+import shutil
 
+import gnupg
 from django.conf import settings
 from django.core.management.base import BaseCommand
-
-from split_logs.utils import upload_file
 from split_logs.models import Organisation
+from split_logs.utils import upload_file
 
 LOGGER = logging.getLogger(__name__)
 

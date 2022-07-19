@@ -1,15 +1,20 @@
-import re
-import os
-import logging
+# -*- coding: utf-8 -*-
 import json
+import logging
+import os
 import pprint
+import re
 from datetime import datetime
 
-from django.db import connections
 from django.core.exceptions import ObjectDoesNotExist
-
-from migrate.helpers import insertOrUpdateRow, deleteRows, deleteRowsIn, selectRows, selectRowsIn
-from migrate.helpers import CONNECTION_SOURCE, CONNECTION_ID
+from django.db import connections
+from migrate.helpers import CONNECTION_ID
+from migrate.helpers import CONNECTION_SOURCE
+from migrate.helpers import deleteRows
+from migrate.helpers import deleteRowsIn
+from migrate.helpers import insertOrUpdateRow
+from migrate.helpers import selectRows
+from migrate.helpers import selectRowsIn
 
 logger = logging.getLogger(__name__)
 

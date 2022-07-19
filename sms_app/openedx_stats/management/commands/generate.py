@@ -1,13 +1,14 @@
-import os
-import re
-import pathlib
+# -*- coding: utf-8 -*-
+import csv
 import datetime
 import logging
-import csv
+import os
+import pathlib
+import re
 
 from django.conf import settings
-from django.db import connections
 from django.core.management.base import BaseCommand
+from django.db import connections
 
 logger = logging.getLogger(__name__)
 

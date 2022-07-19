@@ -1,10 +1,13 @@
+# -*- coding: utf-8 -*-
 import logging
 
-from django.db import connections
-from django.core.management.base import BaseCommand
 from django.core.exceptions import ObjectDoesNotExist
-
-from split_logs.models import Course, Organisation, ACTIVE, NOT_ACTIVE
+from django.core.management.base import BaseCommand
+from django.db import connections
+from split_logs.models import ACTIVE
+from split_logs.models import Course
+from split_logs.models import NOT_ACTIVE
+from split_logs.models import Organisation
 
 logger = logging.getLogger(__name__)
 

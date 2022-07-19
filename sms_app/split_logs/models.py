@@ -1,10 +1,9 @@
+# -*- coding: utf-8 -*-
 import datetime
 
 from django.conf import settings
 from django.db import models
-
 # Create your models here.
-from django.db import models
 
 ACTIVE = '1'
 NOT_ACTIVE = '0'

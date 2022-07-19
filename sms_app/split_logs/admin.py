@@ -1,6 +1,14 @@
+# -*- coding: utf-8 -*-
 from django.contrib import admin
 
-from .models import FileOriginal, FileOriginalDocker, DirOriginal, PublicKey, Organisation, Course, CourseDump, CourseDumpTable
+from .models import Course
+from .models import CourseDump
+from .models import CourseDumpTable
+from .models import DirOriginal
+from .models import FileOriginal
+from .models import FileOriginalDocker
+from .models import Organisation
+from .models import PublicKey
 
 class DirOriginalAdmin(admin.ModelAdmin):
     list_display = ('name', 'created', 'updated')

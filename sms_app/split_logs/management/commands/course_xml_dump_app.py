@@ -1,7 +1,8 @@
-import os
-import shutil
+# -*- coding: utf-8 -*-
 import datetime
 import logging
+import os
+import shutil
 import subprocess
 
 from django.conf import settings

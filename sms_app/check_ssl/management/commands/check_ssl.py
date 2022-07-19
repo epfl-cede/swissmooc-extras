@@ -1,14 +1,14 @@
-import sys
+# -*- coding: utf-8 -*-
 import datetime
-import ssl
 import socket
-
-
-from django.conf import settings
-from django.core.mail import send_mail
-from django.core.management.base import BaseCommand, CommandError
+import ssl
+import sys
 
 from check_ssl.models import Site
+from django.conf import settings
+from django.core.mail import send_mail
+from django.core.management.base import BaseCommand
+from django.core.management.base import CommandError
 
 WARNING_DELTA = datetime.timedelta(days=7)
 

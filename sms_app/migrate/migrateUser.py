@@ -1,20 +1,20 @@
+# -*- coding: utf-8 -*-
 import json
 import logging
 from datetime import datetime
 
-from django.db.models import Q
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import connections
-
-from migrate.models_hawthorn import (
-    AuthUser,
-    AuthUserProfile,
-    AuthRegistration,
-    StudentUserattribute,
-    UserApiUserpreference,
-)
-from migrate.helpers import insertOrUpdateRow, selectRows
-from migrate.helpers import CONNECTION_SOURCE, CONNECTION_ID
+from django.db.models import Q
+from migrate.helpers import CONNECTION_ID
+from migrate.helpers import CONNECTION_SOURCE
+from migrate.helpers import insertOrUpdateRow
+from migrate.helpers import selectRows
+from migrate.models_hawthorn import AuthRegistration
+from migrate.models_hawthorn import AuthUser
+from migrate.models_hawthorn import AuthUserProfile
+from migrate.models_hawthorn import StudentUserattribute
+from migrate.models_hawthorn import UserApiUserpreference
 
 logger = logging.getLogger(__name__)
 

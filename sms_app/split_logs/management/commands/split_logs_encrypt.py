@@ -1,15 +1,17 @@
+# -*- coding: utf-8 -*-
 import datetime
+import gzip
 import logging
 import os
-import gzip
-import gnupg
 import pathlib
-from dateutil import parser
 
+import gnupg
+from dateutil import parser
 from django.conf import settings
 from django.core.management.base import BaseCommand
-
-from split_logs.models import Organisation, PLATFORM_OLD, PLATFORM_NEW
+from split_logs.models import Organisation
+from split_logs.models import PLATFORM_NEW
+from split_logs.models import PLATFORM_OLD
 
 logger = logging.getLogger(__name__)
 

@@ -1,27 +1,30 @@
-import re
-import os
-import logging
+# -*- coding: utf-8 -*-
 import json
+import logging
+import os
+import re
 from datetime import datetime
 
-import boto3, botocore
-
+import boto3
+import botocore
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import connections
 from django.db.models import Q
-from django.core.exceptions import ObjectDoesNotExist
-
-from migrate.models_hawthorn import (
-    AuthUser,
-    AuthUserProfile,
-    AuthRegistration,
-    StudentUserattribute,
-    UserApiUserpreference,
-)
-from migrate.helpers import insertOrUpdateRow, selectRows, selectRowsIn, selectField, selectFieldIn, cmd
-from migrate.helpers import CONNECTION_SOURCE, CONNECTION_ID
+from migrate.helpers import cmd
+from migrate.helpers import CONNECTION_ID
+from migrate.helpers import CONNECTION_SOURCE
+from migrate.helpers import insertOrUpdateRow
+from migrate.helpers import selectField
+from migrate.helpers import selectFieldIn
+from migrate.helpers import selectRows
+from migrate.helpers import selectRowsIn
 from migrate.helpers import set_max_allowed_packet
-
 from migrate.migrateUser import MigrateUser
+from migrate.models_hawthorn import AuthRegistration
+from migrate.models_hawthorn import AuthUser
+from migrate.models_hawthorn import AuthUserProfile
+from migrate.models_hawthorn import StudentUserattribute
+from migrate.models_hawthorn import UserApiUserpreference
 
 logger = logging.getLogger(__name__)
 
@@ -683,7 +686,7 @@ class MigrateCourse:
                     "edxapp_%s" % self.destination,
                     self.debug
                 )
-                if res: pks.append(res))
+                if res: pks.append(res)
         return pks
 
     def _checkRowIn(self, row, _in):

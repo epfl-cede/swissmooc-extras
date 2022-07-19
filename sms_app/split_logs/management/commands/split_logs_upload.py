@@ -1,12 +1,15 @@
+# -*- coding: utf-8 -*-
 import logging
 import os
+
 from dateutil import parser
-
 from django.conf import settings
+from django.core.management.base import BaseCommand
+from django.core.management.base import CommandError
+from split_logs.models import Organisation
+from split_logs.models import PLATFORM_NEW
+from split_logs.models import PLATFORM_OLD
 from split_logs.utils import upload_file
-from django.core.management.base import BaseCommand, CommandError
-
-from split_logs.models import Organisation, PLATFORM_OLD, PLATFORM_NEW
 
 logger = logging.getLogger(__name__)
 

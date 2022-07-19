@@ -1,15 +1,21 @@
-import logging
+# -*- coding: utf-8 -*-
 import gzip
 import json
+import logging
 import os
-from dateutil import parser
 
+from dateutil import parser
 from django.conf import settings
 from django.core.management.base import BaseCommand
+from django.db.models import F
+from django.db.models import Q
+from django.db.models import Value
 from django.db.models.functions import Concat
-from django.db.models import Q, F, Value
-
-from split_logs.models import DirOriginal, FileOriginal, FileOriginalDocker, PLATFORM_OLD, PLATFORM_NEW
+from split_logs.models import DirOriginal
+from split_logs.models import FileOriginal
+from split_logs.models import FileOriginalDocker
+from split_logs.models import PLATFORM_NEW
+from split_logs.models import PLATFORM_OLD
 
 logger = logging.getLogger(__name__)
 
