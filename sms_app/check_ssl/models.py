@@ -16,4 +16,3 @@ class Site(models.Model):
             return (self.expires - datetime.datetime.utcnow()).days
         else:
             return '-'
-

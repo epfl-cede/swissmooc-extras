@@ -464,4 +464,3 @@ class MigrateUser:
                     uid = uid.replace(provider_uid, provider_map)
                     return uid
         return False
-

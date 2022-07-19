@@ -65,7 +65,7 @@ class Command(BaseCommand):
                 os.remove(fname)
             else:
                 LOGGER.error("ERROR: %s", status.status)
-                
+
     def _find_org_by_name(self, name):
         try:
             org = Organisation.objects.get(name=name);

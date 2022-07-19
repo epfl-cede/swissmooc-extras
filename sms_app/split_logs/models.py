@@ -34,7 +34,7 @@ class DirOriginal(models.Model):
     updated = models.DateTimeField(auto_now=True)
     def __str__(self):
         return self.name
-    
+
 class FileOriginal(models.Model):
     name = models.CharField(max_length=255)
     dir_original = models.ForeignKey(DirOriginal, on_delete=models.CASCADE)
@@ -115,7 +115,7 @@ class CourseDumpTable(models.Model):
     updated = models.DateTimeField(auto_now=True)
     def __str__(self):
         return '{}/{}.{}'.format(self.db_type, self.db_name, self.name)
-    
+
 class CourseDump(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     table = models.ForeignKey(CourseDumpTable, on_delete=models.CASCADE)

@@ -58,5 +58,3 @@ class Command(BaseCommand):
                         shutil.rmtree(folder_name)
                 else:
                     LOGGER.warning("Not all tables were dumped/encrypted, please check: organization=%s, date=%s", org.name, now)
-            
-            

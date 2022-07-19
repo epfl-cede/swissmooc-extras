@@ -58,7 +58,7 @@ class MigrateForum:
             ))
         return client[collection]
 
-        
+
     def run(self):
         try:
             self.migrateForumUsers()
@@ -128,4 +128,3 @@ class MigrateForum:
             CONNECTION_SOURCE,
             self.debug
         )
-

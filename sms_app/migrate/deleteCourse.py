@@ -53,7 +53,7 @@ class DeleteCourse:
             'student_item_id',
             submissions_studentitem_ids
         )
-        
+
         self.deleteRowsIn(
             'submissions_teamsubmission',
             'id',
@@ -186,7 +186,7 @@ class DeleteCourse:
             'courseware_studentmodule',
             {'course_id': self.course_id},
         )
-        
+
 
     def deleteCourseActivityStudent(self):
         student_courseenrollment_rows = self.selectRows(

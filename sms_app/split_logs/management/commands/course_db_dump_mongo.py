@@ -47,14 +47,14 @@ class Command(BaseCommand):
         logger.info("dump %s table into %s", table.name, dump_file_name)
         with open(dump_file_name, 'w') as f:
             with open(self.data_files[table.name], 'r') as data:
-                for line in data: 
+                for line in data:
                     json_data = json.loads(line)
                     if json_data['course_id'] == course.name:
                         f.write(line)
             f.close()
 
         cd.save()
-        
+
     def _dump_mongo_tabes(self):
         # dump all data to temporary files
         for table in CourseDumpTable.objects.all():

@@ -121,7 +121,7 @@ class MigrateCourse:
             ['id', 'course_id', 'always_divide_inline_discussions', 'divided_discussions', 'division_scheme', 'discussions_id_map'],
             ['id']
         )
-        
+
 
     def migrateCourseActivityStaff(self):
         self.copyData(
@@ -335,7 +335,7 @@ class MigrateCourse:
             s3.meta.client.copy(copy_source, S3_DESTINATION_BUCKET % self.destination, destination_key)
         except botocore.exceptions.ClientError as e:
             logger.error("Boto3 client error: %s", e)
-        
+
     def migrateCourseActivityWorkflow(self):
         # workflow_assessmentworkflow
         workflow_assessmentworkflow_ids = self.copyData(
@@ -619,7 +619,7 @@ class MigrateCourse:
             ['id', 'submission_uuid', 'student_id', 'item_id', 'course_id'],
             ['id']
         )
-        
+
         assessment_studenttrainingworkflowitem_training_example_ids = self.selectFieldIn(
             'assessment_studenttrainingworkflowitem',
             'training_example_id',
@@ -753,7 +753,7 @@ class MigrateCourse:
                     row['user_id'] = self.user_id_map[row['user_id']]
             else:
                 row['user_id'] = self.user_id_map[row['user_id']]
-            
+
         # courseware_studentmodule has student_id field as user_id
         if table_name == 'courseware_studentmodule' and 'student_id' in row:
             # user might be unenrolled - do not copy such rows

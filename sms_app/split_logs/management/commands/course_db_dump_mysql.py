@@ -51,7 +51,7 @@ class Command(BaseCommand):
             f.close()
 
         cd.save()
-        
+
     def _fill_mysql_tables_columns(self):
         with connections['edxapp_readonly'].cursor() as cursor:
             for table in CourseDumpTable.objects.all():
@@ -84,7 +84,7 @@ class Command(BaseCommand):
             # table header
             result.insert(0, TABLE_COLUMNS[table.id])
             return result
-        
+
     def _get_mysql_users(self, course):
         with connections['edxapp_readonly'].cursor() as cursor:
             cursor.execute("SELECT user_id FROM edxapp.student_courseenrollment WHERE course_id = %s", [course.name])

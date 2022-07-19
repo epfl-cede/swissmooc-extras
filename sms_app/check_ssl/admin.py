@@ -7,6 +7,5 @@ class SiteAdmin(admin.ModelAdmin):
     list_display = ('hostname', 'expires', 'expires_days', 'error', 'updated')
     exclude = ('ssl_expire', 'error',)
 
-    
-admin.site.register(Site, SiteAdmin)
 
+admin.site.register(Site, SiteAdmin)
