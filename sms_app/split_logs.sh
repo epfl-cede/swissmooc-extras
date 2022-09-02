@@ -8,6 +8,6 @@ source /home/ubuntu/sms-extras/venv/bin/activate
 cd /home/ubuntu/sms-extras/sms_app
 
 python manage.py split_logs_fetch_new
-python manage.py split_logs_split --limit 100
-python manage.py split_logs_encrypt --limit 100
-python manage.py split_logs_upload
+python manage.py split_logs_split --platform new --limit 100
+python manage.py split_logs_encrypt --platform new --limit 100
+python manage.py split_logs_upload --platform new
