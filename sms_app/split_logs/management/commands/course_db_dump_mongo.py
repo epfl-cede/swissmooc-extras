@@ -31,11 +31,11 @@ class Command(BaseCommand):
     data_files = {}
 
     def handle(self, *args, **options):
-        self._dump_mongo_tabes()
         organisations = Organisation.objects.filter(active=True)
         tables = CourseDumpTable.objects.all()
         for o in organisations:
             logger.info("process organization %s", o.name)
+            self._dump_mongo_tabes(o)
             for course in o.course_set.filter(active=ACTIVE):
                 for table in tables:
                     if table.db_type == DB_TYPE_MONGO:
@@ -63,7 +63,7 @@ class Command(BaseCommand):
 
         cd.save()
 
-    def _dump_mongo_tabes(self):
+    def _dump_mongo_tabes(self, o):
         # dump all data to temporary files
         for table in CourseDumpTable.objects.all():
             if table.db_type == DB_TYPE_MONGO:
@@ -75,7 +75,7 @@ class Command(BaseCommand):
                     '--password', 'GtTD6ajkaSdzyHH8',
                     '--authenticationDatabase', 'admin',
                     '--db', table.db_name,
-                    '--collection', table.name
+                    '--collection', o.name.lower() + '_' + table.name
                 ]
                 subprocess.run(cmd, shell=False, check=True, stdout=tf)
                 tf.close()
