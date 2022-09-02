@@ -20,9 +20,8 @@ class Command(BaseCommand):
             logger.info("process organization %s", o.name)
             Course.objects.filter(organisation=o).update(active=NOT_ACTIVE)
 
-            # find all courses belongs to organization in edx
-            with connections['edxapp_readonly'].cursor() as cursor:
-                cursor.execute("SELECT course_id FROM student_courseenrollment WHERE course_id LIKE %s GROUP BY course_id", ["%"+o.name+'%'])
+            with connections['edxapp_readonly_' + o.name.lower()].cursor() as cursor:
+                cursor.execute("SELECT course_id FROM student_courseenrollment GROUP BY course_id")
                 for row in cursor.fetchall():
                     name = row[0]
                     try:

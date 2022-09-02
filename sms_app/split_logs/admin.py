@@ -22,7 +22,7 @@ class FileOriginalDockerAdmin(admin.ModelAdmin):
     list_filter = ['dir_original']
 class CourseAdmin(admin.ModelAdmin):
     list_display = ('name', 'organisation', 'active', 'created', 'updated')
-    list_filter = ['organisation']
+    search_fields = ['name', 'organisation__name']
 class CourseDumpAdmin(admin.ModelAdmin):
     list_display = ('course', 'table', 'date', 'is_encypted', 'created', 'updated')
     list_filter = ['course__organisation', 'date', 'is_encypted']

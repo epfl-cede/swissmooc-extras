@@ -73,6 +73,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'sms_app.wsgi.application'
 
+INSTANCES = os.environ.get('INSTANCES', '').split(',')
 
 # Database
 # https://docs.djangoproject.com/en/2.2/ref/settings/#databases
@@ -92,6 +93,19 @@ DATABASES = {
     }
 }
 
+# fill up all the INSTANSES read_only accounts
+for instance in INSTANCES:
+    DATABASES['edxapp_readonly_' + instance] = {
+        'NAME': 'docker_' + instance + '_edxapp',
+        'ENGINE': 'django.db.backends.mysql',
+        'USER': os.environ.get('EDXAPP_MYSQL_USER', ''),
+        'PASSWORD': os.environ.get('EDXAPP_MYSQL_PASSWORD', ''),
+        'HOST': os.environ.get('EDXAPP_MYSQL_HOST', ''),
+        'PORT': '3306',
+    }
+
+
+# REMOVE AFTER MIGRATION
 if os.environ.get('UNIVERISTY_EDXAPP_MYSQL_USER', ''):
     DATABASES['edxapp_university'] = {
         'NAME': 'docker_university_edxapp',
