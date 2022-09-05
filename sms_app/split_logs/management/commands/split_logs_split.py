@@ -29,9 +29,11 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         if options['platform'] == PLATFORM_OLD:
             logger.info("get files for split from old platform")
+            self.platform = 'old'
             self._handle_old(options['limit'])
         elif options['platform'] == PLATFORM_NEW:
             logger.info("get files for split from new platform")
+            self.platform = 'new'
             self._handle_new(options['limit'])
         else:
             logger.warning("unknown platform <{}>".format(options['platform']))
@@ -148,7 +150,7 @@ class Command(BaseCommand):
         return lines_total, lines_error
 
     def _detect_org(self, context, dirname):
-        if self.original_dir == settings.TRACKING_LOGS_ORIGINAL_DST:
+        if self.platform == 'old':
             try:
                 if context['org_id']:
                     organization = context['org_id']
