@@ -74,8 +74,8 @@ class Command(BaseCommand):
                     '--username', 'admin',
                     '--password', 'GtTD6ajkaSdzyHH8',
                     '--authenticationDatabase', 'admin',
-                    '--db', table.db_name,
-                    '--collection', o.name.lower() + '_' + table.name
+                    '--db', o.name.lower() + '_' + table.db_name,
+                    '--collection', table.name
                 ]
                 subprocess.run(cmd, shell=False, check=True, stdout=tf)
                 tf.close()
