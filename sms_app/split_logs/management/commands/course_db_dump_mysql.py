@@ -32,18 +32,18 @@ class Command(BaseCommand):
         organisations = Organisation.objects.filter(active=True)
         tables = CourseDumpTable.objects.all()
         for o in organisations:
-            logger.info("process organization %s", o.name)
+            logger.info("process organisation %s", o.name)
             for course in o.course_set.filter(active=ACTIVE):
                 for table in tables:
                     if table.db_type == DB_TYPE_MYSQL:
                         # check it we have processed it already
                         processed = CourseDump.objects.filter(course=course, table=table, date=datetime.datetime.now()).count()
                         if processed == 0:
-                            self._process_mysql_table(course, table)
+                            self._process_mysql_table(o, course, table)
 
-    def _process_mysql_table(self, course, table):
-        users = self._get_mysql_users(course)
-        data = self._dump_mysql_table(course, table, users)
+    def _process_mysql_table(self, organisation, course, table):
+        users = self._get_mysql_users(organisation, course)
+        data = self._dump_mysql_table(organisation, course, table, users)
         try:
             cd = CourseDump.objects.get(course=course, table=table, date=datetime.datetime.now())
         except CourseDump.DoesNotExist:
@@ -70,11 +70,12 @@ class Command(BaseCommand):
                     cursor.execute(sql)
                     TABLE_COLUMNS[table.id] = [str(row[0]) for row in cursor.fetchall()]
 
-    def _dump_mysql_table(self, course, table, users):
+    def _dump_mysql_table(self, organisation, course, table, users):
         logger.info("dump course %s table %s", course, table)
         with connections['edxapp_readonly'].cursor() as cursor:
             format_strings = ','.join(['%s'] * len(users))
-            sql = "SELECT `{columns}` FROM edxapp.{table_name} WHERE {pk} IN(%s)".format(
+            sql = "SELECT `{columns}` FROM {db_name}.{table_name} WHERE {pk} IN(%s)".format(
+                db_name='docker_' + organisation.name.lower() + '_edxapp',
                 columns="`,`".join(TABLE_COLUMNS[table.id]),
                 table_name=table.name,
                 pk=table.primary_key
@@ -92,7 +93,12 @@ class Command(BaseCommand):
             result.insert(0, TABLE_COLUMNS[table.id])
             return result
 
-    def _get_mysql_users(self, course):
+    def _get_mysql_users(self, organisation, course):
         with connections['edxapp_readonly'].cursor() as cursor:
-            cursor.execute("SELECT user_id FROM edxapp.student_courseenrollment WHERE course_id = %s", [course.name])
+            cursor.execute(
+                "SELECT user_id FROM {db_name}.student_courseenrollment WHERE course_id = %s".format(
+                    db_name='docker_' + organisation.name.lower() + '_edxapp'
+                ),
+                [course.name]
+            )
             return [row[0] for row in cursor.fetchall()]

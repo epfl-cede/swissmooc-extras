@@ -47,7 +47,7 @@ class Command(BaseCommand):
                             name=os.path.basename(zip_name),
                         ))
                         upload_file(
-                            settings.AWS_STORAGE_BUCKET_NAME_ANALYTICS,
+                            self._bucket(org),
                             org,
                             zip_name,
                             '{org}/dump-db/{name}'.format(
@@ -61,3 +61,6 @@ class Command(BaseCommand):
                         shutil.rmtree(folder_name)
                 else:
                     LOGGER.warning("Not all tables were dumped/encrypted, please check: organization=%s, date=%s", org.name, now)
+
+    def _bucket(self, organisation):
+        return '{}-{}'.format(settings.AWS_STORAGE_BUCKET_NAME_ANALYTICS, str(organisation).lower())
