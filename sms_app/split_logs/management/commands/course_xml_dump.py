@@ -113,7 +113,7 @@ class Command(BaseCommand):
             pass
 
         # create directory
-        os.mkdir(organisation_dir)
+        os.makedirs(organisation_dir)
 
     def _send_email(self, ok, ko):
         nok = sum([len(v) for v in ok.values()])
@@ -123,7 +123,7 @@ class Command(BaseCommand):
             nok,
             nok + nko
         )
-        if nok > 0:
+        if nko > 0:
             body += '\n\nERRORS IN THE COURSES:\n{}'.format(
                 '\n'.join(['\n' + k + ':\n' + '\n'.join(v) for k,v in ko.items()])
             )
