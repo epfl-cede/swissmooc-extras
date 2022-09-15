@@ -4,132 +4,96 @@ import logging
 import os
 import shutil
 import subprocess
+from collections import defaultdict
 
 from django.conf import settings
 from django.core.mail import send_mail
 from django.core.management.base import BaseCommand
+from split_logs.models import Organisation
+from split_logs.utils import dump_course
+from split_logs.utils import DumpCourseException
+from split_logs.utils import run_command
+
 
 logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
-    help = 'Course XML dump; running on one of the app server during the night'
+    help = 'Course XML dump; running on one of the swarm server during the night'
 
     def handle(self, *args, **options):
-        now = datetime.datetime.now().date()
-        cdir = '{}/{}/'.format(settings.DUMP_XML_PATH, now)
+        self.now = datetime.datetime.now().date()
+        self.import_dir = '/var/lib/docker/volumes/openedx-{}_openedx-data/_data/course_export'
 
-        # remove dir and all contents
+        course_data_for_email_ok = defaultdict(list)
+        course_data_for_email_ko = defaultdict(list)
+
+        organisations = Organisation.objects.filter(active=True)
+        for org in organisations:
+            logger.info("process organization %s", org.name)
+
+            self.import_dir = self.import_dir.format(org.name.lower())
+
+            # clean/create ogranigation destination directory
+            org_destination_dir = self._handle_org_dir(org)
+
+            for course_id in self._get_courses(org):
+                logger.info('process course_id %s', course_id)
+                try:
+                    dump_course(org, course_id, org_destination_dir)
+                    course_data_for_email_ok[org.name] += (course_id,)
+                except DumpCourseException as e:
+                    logger.error("Dump course exception: %s" % e)
+                    course_data_for_email_ko[org.name] += (course_id,)
+
+        self._send_email(course_data_for_email_ok, course_data_for_email_ko)
+
+    def _handle_org_dir(self, org):
+        org_destination_dir = '{}/{}/{}/'.format(
+            settings.DUMP_XML_PATH,
+            org.name.lower(),
+            self.now
+        )
         try:
-            shutil.rmtree(cdir)
+            shutil.rmtree(org_destination_dir)
         except FileNotFoundError:
             pass
 
         # create directory
-        os.mkdir(cdir)
-        os.chmod(cdir, 0o777);
+        os.mkdir(org_destination_dir)
 
-        # get list of courses
-        courses = self._get_courses()
-        course_data_for_email_ok = ()
-        course_data_for_email_ko = ()
-        for course_id in courses:
-            logger.info('process course_id %s', course_id)
-            course_dir = '{}{}/'.format(cdir, course_id[10:].replace('+', '-'))
-            os.mkdir(course_dir)
-            os.chmod(course_dir, 0o777);
+        return org_destination_dir
 
-            if self._course_dump(course_id, course_dir):
-                course_data_for_email_ok += (course_id,)
-            else:
-                course_data_for_email_ko += (course_id,)
-
-            zip_name = self._course_zip(course_id, course_dir)
-            self._course_copy(course_id, zip_name)
-
-            # remove course
-            os.remove(zip_name)
-
-        self._send_email(now, course_data_for_email_ok, course_data_for_email_ko)
-
-    def _send_email(self, now, ok, ko):
+    def _send_email(self, ok, ko):
+        nok = sum([len(v) for v in ok.values()])
+        nko = sum([len(v) for v in ko.values()])
+        body = 'Course XML dump results - {}:\n\nDumped {} courses out of {}\n\nERRORS IN THE COURSES:\n{}'.format(
+            self.now,
+            nok,
+            nok + nko
+        )
+        if nok > 0:
+            body += '\n\nERRORS IN THE COURSES:\n{}'.format(
+                '\n'.join(['\n' + k + ':\n' + '\n'.join(v) for k,v in ko.items()])
+            )
         send_mail(
             '[SMS-extras:{env}] Course XML dump result - {date}'.format(
-                env=settings.SMS_APP_ENV,
-                date=now
+                env = settings.SMS_APP_ENV,
+                date = self.now
             ),
-            'Course XML dump results - {}:\n\nDumped {} courses\nDumped with error {} courses\n\nDUMP WITH ERROR COURSES:\n{}\n\nCOURSES WITHOUT PROBLEMS:\n{}'.format(
-                now,
-                len(ok),
-                len(ko),
-                '\n'.join(ko),
-                '\n'.join(ok),
-            ),
+            boby,
             settings.EMAIL_FROM_ADDRESS,
             settings.EMAIL_TO_ADDRESSES,
             fail_silently=False,
         )
 
-    def _course_copy(self, course_id, zip_name):
-        cmd  = [
-            'rsync',
-            '-az',
-            os.path.dirname(zip_name),
-            'ubuntu@192.168.{}.191:{}/'.format(settings.DATABASES['edxapp_readonly']['HOST'].split('.')[2], settings.DUMP_XML_PATH)
-        ]
-        try:
-            with open(os.devnull, 'w') as devnull:
-                subprocess.run(cmd, shell=False, check=True, stderr=devnull, stdout=devnull)
-        except Exception as e:
-            logger.error('rsync course %s error: %s', course_id, e)
-            exit(1)
+    def _get_courses(self, org):
+        return_code, stdout, stderr = run_command([
+            'ssh', 'ubuntu@zh-%s-swarm-1' % settings.SMS_APP_ENV,
+            '/home/ubuntu/.local/bin/docker-run-command', 'openedx-%s_cms' % org.name.lower(),
+            'python', 'manage.py', 'cms', '--settings=tutor.production', 'dump_course_ids'
+        ])
+        if return_code != 0:
+            logger.error('get course list error: %s', stderr)
+            return []
 
-    def _course_zip(self, course_id, course_dir):
-        zip_name = shutil.make_archive(course_dir, 'zip', os.path.dirname(os.path.dirname(course_dir)), os.path.basename(course_dir[:-1]))
-        shutil.rmtree(course_dir)
-        return zip_name
-
-    def _course_dump(self, course_id, course_dir):
-        cmd = [
-            'sudo',
-            '-u',
-            'www-data',
-            '/edx/bin/python.edxapp',
-            '/edx/bin/manage.edxapp',
-            'cms',
-            'export',
-            '--settings',
-            'openstack',
-            course_id,
-            course_dir,
-        ]
-        result = True
-        try:
-            with open(os.devnull, 'w') as devnull:
-                subprocess.run(cmd, shell=False, check=True, stderr=devnull, stdout=devnull)
-        except Exception as e:
-            logger.error('dump course %s error: %s', course_id, e)
-            result = False
-
-        subprocess.run(['sudo', 'chown', '-R', 'ubuntu:ubuntu', course_dir])
-        return result
-
-    def _get_courses(self):
-        cmd = [
-            'sudo',
-            '-u',
-            'www-data',
-            '/edx/bin/python.edxapp',
-            '/edx/bin/manage.edxapp',
-            'lms',
-            'dump_course_ids',
-            '--settings',
-            'openstack',
-        ]
-        try:
-            with open(os.devnull, 'w') as devnull:
-                output = subprocess.check_output(cmd, stderr=devnull)
-        except Exception as e:
-            logger.error('get course list error: %s', e)
-            exit(1)
-
-        return output.decode().strip('\n').split('\n')
+        return stdout.decode().strip('\n').split('\n')[1:]

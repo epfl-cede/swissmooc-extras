@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 import logging
 import os
+import shutil
+import subprocess
+import tempfile
 
 import boto3
 import botocore
@@ -45,3 +48,100 @@ def upload_file(bucket, organisation, original_name, upload_name):
                 raise Exception("Can not upload file %s: %s", upload_name, e)
         else:
             LOGGER.error("File exists? (%s)", e)
+
+def run_command(cmd):
+    LOGGER.debug('Run command: {}'.format(cmd))
+    process = subprocess.Popen(
+        cmd,
+        shell = False,
+        stdout = subprocess.PIPE,
+        stderr = subprocess.PIPE
+    )
+    stdout, stderr = process.communicate()
+    return_code = process.returncode
+
+    return return_code, stdout, stderr
+
+
+class DumpCourseException(Exception):
+    """Base class for other exceptions"""
+    pass
+
+def dump_course(organization, course_id, destination_folder):
+    """
+    Creates zip archive of the exported course in the specified folder
+    """
+
+    organization_name = organization.name.lower()
+    container_name = 'openedx-%s_cms' % organization_name
+    container_host = 'ubuntu@zh-%s-swarm-1' % settings.SMS_APP_ENV
+    cmd = [
+        'ssh', container_host,
+    ]
+    cmd_container = cmd + [
+        '/home/ubuntu/.local/bin/docker-run-command', container_name
+    ]
+    import_folder_container = '/openedx/data/course_export/course'
+    import_folder = '/var/lib/docker/volumes/openedx-%s_openedx-data/_data/course_export' % organization_name
+
+    # Export course
+    return_code, stdout, stderr = run_command(cmd_container + [
+        'rm', '-rf', import_folder_container
+    ])
+    if return_code != 0:
+        raise DumpCourseException('clean course export directory error: %s', stderr)
+
+    return_code, stdout, stderr = run_command(cmd_container + [
+        'mkdir', '-p', import_folder_container
+    ])
+    if return_code != 0:
+        raise DumpCourseException('clean course export directory error: %s', stderr)
+
+    return_code, stdout, stderr = run_command(cmd_container + [
+        'python', 'manage.py', 'cms', '--settings=tutor.production', 'export', course_id, import_folder_container
+    ])
+    if return_code != 0:
+        raise DumpCourseException('course export error: %s', stderr)
+
+    # Move course to temporary folder
+    tmp_folder = '/tmp/course_export'
+    return_code, stdout, stderr = run_command(cmd + [
+        'sudo', 'rm', '-Rf', tmp_folder
+    ])
+    if return_code != 0:
+        raise DumpCourseException('remove tmp folder error: %s', stderr)
+
+    return_code, stdout, stderr = run_command(cmd + [
+        'mkdir', '-p', tmp_folder
+    ])
+    if return_code != 0:
+        raise DumpCourseException('make tmp folder error: %s', stderr)
+
+    return_code, stdout, stderr = run_command(cmd + [
+        'sudo', 'mv', import_folder, '/tmp/'
+    ])
+    if return_code != 0:
+        raise DumpCourseException('move course to tmp folder error: %s', stderr)
+
+    return_code, stdout, stderr = run_command(cmd + [
+        'sudo', 'chown', '-R', 'ubuntu:ubuntu', tmp_folder
+    ])
+    if return_code != 0:
+        raise DumpCourseException('chown tmp folder error: %s', stderr)
+
+    # Make archive & move course to the destination folder
+    course_destination_folder = destination_folder + course_id[10:]
+    os.makedirs(course_destination_folder, exist_ok=True)
+
+    return_code, stdout, stderr = run_command([
+        'rsync', '-avz', container_host + ':' + tmp_folder + '/', course_destination_folder
+    ])
+    if return_code != 0:
+        raise DumpCourseException('course rsync error: %s', stderr)
+
+    zip_name = shutil.make_archive(
+        course_destination_folder,
+        'gztar',
+        course_destination_folder
+    )
+    shutil.rmtree(course_destination_folder)
