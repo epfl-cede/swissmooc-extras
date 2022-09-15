@@ -132,7 +132,7 @@ class Command(BaseCommand):
                 env = settings.SMS_APP_ENV,
                 date = self.now
             ),
-            boby,
+            body,
             settings.EMAIL_FROM_ADDRESS,
             settings.EMAIL_TO_ADDRESSES,
             fail_silently=False,
