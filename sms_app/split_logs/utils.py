@@ -48,7 +48,7 @@ def upload_file(bucket, organisation, original_name, upload_name):
             LOGGER.error("File %s has different size(local = %d against remote = %d), remove it", original_name, fileinfo.st_size, head['ContentLength'])
             s3.delete_object(Bucket=bucket, Key=upload_name)
             # re-upload it
-            upload_file(organisation, original_name, upload_name)
+            upload_file(bucket, organisation, original_name, upload_name)
         else:
             os.remove(original_name)
     except botocore.exceptions.ClientError as e:
