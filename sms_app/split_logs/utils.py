@@ -4,6 +4,7 @@ import os
 import shutil
 import subprocess
 import tempfile
+from time import sleep
 
 import boto3
 import botocore
@@ -133,7 +134,13 @@ def dump_course(organization, course_id, destination_folder):
         'sudo', 'mv', import_folder, '/tmp/'
     ])
     if return_code != 0:
-        raise SplitLogsUtilsDumpCourseException('move course to tmp folder error: %s', stderr)
+        # try one more time, this is NFS folder
+        sleep(4)
+        return_code, stdout, stderr = run_command(cmd + [
+            'sudo', 'mv', import_folder, '/tmp/'
+        ])
+        if return_code != 0:
+            raise SplitLogsUtilsDumpCourseException('move course to tmp folder error: %s', stderr)
 
     return_code, stdout, stderr = run_command(cmd + [
         'sudo', 'chown', '-R', 'ubuntu:ubuntu', tmp_folder
