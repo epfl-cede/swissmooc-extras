@@ -9,6 +9,7 @@ from django.core.management.base import CommandError
 from split_logs.models import Organisation
 from split_logs.models import PLATFORM_NEW
 from split_logs.models import PLATFORM_OLD
+from split_logs.utils import backet_name
 from split_logs.utils import upload_file
 
 logger = logging.getLogger(__name__)
@@ -69,7 +70,7 @@ class Command(BaseCommand):
 
     def _bucket(self, organisation):
         if self.encrypted_dir == settings.TRACKING_LOGS_ENCRYPTED_DOCKER:
-            return '{}-{}'.format(settings.AWS_STORAGE_BUCKET_NAME_ANALYTICS, str(organisation).lower())
+            return backet_name(organisation)
         else:
             return settings.AWS_STORAGE_BUCKET_NAME_ANALYTICS
 

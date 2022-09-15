@@ -12,6 +12,7 @@ from split_logs.models import CourseDump
 from split_logs.models import CourseDumpTable
 from split_logs.models import Organisation
 from split_logs.models import YES
+from split_logs.utils import backet_name
 from split_logs.utils import upload_file
 
 LOGGER = logging.getLogger(__name__)
@@ -47,7 +48,7 @@ class Command(BaseCommand):
                             name=os.path.basename(zip_name),
                         ))
                         upload_file(
-                            self._bucket(org),
+                            bucket_name(org),
                             org,
                             zip_name,
                             '{org}/dump-db/{name}'.format(
@@ -61,6 +62,3 @@ class Command(BaseCommand):
                         shutil.rmtree(folder_name)
                 else:
                     LOGGER.warning("Not all tables were dumped/encrypted, please check: organization=%s, date=%s", org.name, now)
-
-    def _bucket(self, organisation):
-        return '{}-{}'.format(settings.AWS_STORAGE_BUCKET_NAME_ANALYTICS, str(organisation).lower())
