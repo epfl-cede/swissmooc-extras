@@ -11,6 +11,19 @@ from django.conf import settings
 
 LOGGER = logging.getLogger(__name__)
 
+
+class SplitLogsUtilsException(Exception):
+    """Base class for other exceptions"""
+    pass
+
+class SplitLogsUtilsDumpCourseException(SplitLogsUtilsException):
+    """Base class for other exceptions"""
+    pass
+
+class SplitLogsUtilsUploadFileException(SplitLogsUtilsException):
+    """Base class for other exceptions"""
+    pass
+
 def upload_file(bucket, organisation, original_name, upload_name):
     s3 = boto3.client('s3', endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL"))
     LOGGER.debug('Upload file %s to %s', original_name, upload_name)
@@ -44,10 +57,13 @@ def upload_file(bucket, organisation, original_name, upload_name):
                 s3.upload_file(original_name, bucket, upload_name)
                 os.remove(original_name)
                 LOGGER.info("file '%s' uploaded", original_name)
-            except Exception as e:
-                raise Exception("Can not upload file %s: %s", upload_name, e)
+            except botocore.exceptions.ClientError as error:
+                raise SplitLogsUtilsUploadFileException("Upload file exception <%s>: %s", upload_name, error)
         else:
             LOGGER.error("File exists? (%s)", e)
+
+def bucket_name(organisation):
+    return '{}-{}'.format(settings.AWS_STORAGE_BUCKET_NAME_ANALYTICS, str(organisation).lower())
 
 def run_command(cmd):
     LOGGER.debug('Run command: {}'.format(cmd))
@@ -62,10 +78,6 @@ def run_command(cmd):
 
     return return_code, stdout, stderr
 
-
-class DumpCourseException(Exception):
-    """Base class for other exceptions"""
-    pass
 
 def dump_course(organization, course_id, destination_folder):
     """
@@ -89,19 +101,19 @@ def dump_course(organization, course_id, destination_folder):
         'rm', '-rf', import_folder_container
     ])
     if return_code != 0:
-        raise DumpCourseException('clean course export directory error: %s', stderr)
+        raise SplitLogsUtilsDumpCourseException('clean course export directory error: %s', stderr)
 
     return_code, stdout, stderr = run_command(cmd_container + [
         'mkdir', '-p', import_folder_container
     ])
     if return_code != 0:
-        raise DumpCourseException('clean course export directory error: %s', stderr)
+        raise SplitLogsUtilsDumpCourseException('make directory error: %s', stderr)
 
     return_code, stdout, stderr = run_command(cmd_container + [
         'python', 'manage.py', 'cms', '--settings=tutor.production', 'export', course_id, import_folder_container
     ])
     if return_code != 0:
-        raise DumpCourseException('course export error: %s', stderr)
+        raise SplitLogsUtilsDumpCourseException('course export error: %s', stderr)
 
     # Move course to temporary folder
     tmp_folder = '/tmp/course_export'
@@ -109,25 +121,25 @@ def dump_course(organization, course_id, destination_folder):
         'sudo', 'rm', '-Rf', tmp_folder
     ])
     if return_code != 0:
-        raise DumpCourseException('remove tmp folder error: %s', stderr)
+        raise SplitLogsUtilsDumpCourseException('remove tmp folder error: %s', stderr)
 
     return_code, stdout, stderr = run_command(cmd + [
         'mkdir', '-p', tmp_folder
     ])
     if return_code != 0:
-        raise DumpCourseException('make tmp folder error: %s', stderr)
+        raise SplitLogsUtilsDumpCourseException('make tmp folder error: %s', stderr)
 
     return_code, stdout, stderr = run_command(cmd + [
         'sudo', 'mv', import_folder, '/tmp/'
     ])
     if return_code != 0:
-        raise DumpCourseException('move course to tmp folder error: %s', stderr)
+        raise SplitLogsUtilsDumpCourseException('move course to tmp folder error: %s', stderr)
 
     return_code, stdout, stderr = run_command(cmd + [
         'sudo', 'chown', '-R', 'ubuntu:ubuntu', tmp_folder
     ])
     if return_code != 0:
-        raise DumpCourseException('chown tmp folder error: %s', stderr)
+        raise SplitLogsUtilsDumpCourseException('chown tmp folder error: %s', stderr)
 
     # Make archive & move course to the destination folder
     course_destination_folder = destination_folder + course_id[10:]
@@ -137,7 +149,7 @@ def dump_course(organization, course_id, destination_folder):
         'rsync', '-avz', container_host + ':' + tmp_folder + '/', course_destination_folder
     ])
     if return_code != 0:
-        raise DumpCourseException('course rsync error: %s', stderr)
+        raise SplitLogsUtilsDumpCourseException('course rsync error: %s', stderr)
 
     zip_name = shutil.make_archive(
         course_destination_folder,
@@ -145,3 +157,5 @@ def dump_course(organization, course_id, destination_folder):
         course_destination_folder
     )
     shutil.rmtree(course_destination_folder)
+
+    return course_destination_folder + '.tar.gz'
