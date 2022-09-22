@@ -8,12 +8,13 @@ from collections import defaultdict
 
 import gnupg
 from django.conf import settings
-from django.core.mail import send_mail
 from django.core.management.base import BaseCommand
 from split_logs.models import Organisation
 from split_logs.utils import bucket_name
 from split_logs.utils import dump_course
+from split_logs.utils import handle_verbosity
 from split_logs.utils import run_command
+from split_logs.utils import sms_app_send_email
 from split_logs.utils import SplitLogsUtilsDumpCourseException
 from split_logs.utils import SplitLogsUtilsUploadFileException
 from split_logs.utils import upload_file
@@ -28,11 +29,11 @@ class CourseXmlDumpException(Exception):
 class Command(BaseCommand):
     help = 'Course XML dump; running on one of the swarm server during the night'
 
-    def add_arguments(self, parser):
-        parser.add_argument('--debug', action='store_true', help='Debug info')
+    message = []
+    now = datetime.datetime.now().date()
 
     def handle(self, *args, **options):
-        self.now = datetime.datetime.now().date()
+        handle_verbosity(options)
 
         course_data_for_email_ok = defaultdict(list)
         course_data_for_email_ko = defaultdict(list)
@@ -127,15 +128,9 @@ class Command(BaseCommand):
             body += '\n\nERRORS IN THE COURSES:\n{}'.format(
                 '\n'.join(['\n' + k + ':\n' + '\n'.join(v) for k,v in ko.items()])
             )
-        send_mail(
-            '[SMS-extras:{env}] Course XML dump result - {date}'.format(
-                env = settings.SMS_APP_ENV,
-                date = self.now
-            ),
+        sms_app_send_email(
+            f"Course XML dump result - {self.now}",
             body,
-            settings.EMAIL_FROM_ADDRESS,
-            settings.EMAIL_TO_ADDRESSES,
-            fail_silently=False,
         )
 
     def _get_courses(self, org):

@@ -23,7 +23,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'p@p8ac&7&5)v&=lv1(62#l)!6i7oko9lgtf-0nopdghhn3^njp'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = []
 
@@ -74,6 +74,8 @@ TEMPLATES = [
 WSGI_APPLICATION = 'sms_app.wsgi.application'
 
 INSTANCES = os.environ.get('INSTANCES', '').split(',')
+SWARMS = os.environ.get('SWARMS', '').split(',')
+BACKUP_SERVER = os.environ.get('BACKUP_SERVER')
 
 # Database
 # https://docs.djangoproject.com/en/2.2/ref/settings/#databases
@@ -252,7 +254,7 @@ LOGGING = {
     'formatters': {
         'console': {
             'format': '[%(asctime)s] %(name)-12s %(levelname)-8s %(message)s',
-            'datefmt': '%d/%b/%Y %H:%M:%S',
+            'datefmt': '%Y-%m-%d %H:%M:%S',
         },
     },
     'handlers': {
@@ -261,6 +263,18 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'console',
         },
+        'logfile': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(
+                '/var', 'log', 'sms-extras', 'django.log'
+            ),
+        },
+        'mail_admins': {
+            'level': 'ERROR',
+            'class': 'django.utils.log.AdminEmailHandler',
+            # 'filters': ['special']
+        }
     },
     'loggers': {
         # Redefining the logger for the `django` module
@@ -270,13 +284,20 @@ LOGGING = {
             'level': 'WARNING',
         },
         '': {
-            'handlers': ['console'],
+            'handlers': ['logfile'],
+            'propagate': True,
             'level': 'INFO',
         },
-        #'split_logs.utils': {
-        #    'handlers': ['console'],
-        #    'level': 'DEBUG',
-        #},
+        'split_logs': {
+            'handlers': ['console'],
+            'propagate': False,
+            'level': 'WARNING',
+        },
+        # 'split_logs.management.commands': {
+        #     'handlers': ['mail_admins'],
+        #     'propagate': False,
+        #     'level': 'ERROR',
+        # },
     }
 }
 

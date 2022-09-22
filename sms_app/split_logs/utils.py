@@ -77,7 +77,7 @@ def run_command(cmd):
     stdout, stderr = process.communicate()
     return_code = process.returncode
 
-    return return_code, stdout, stderr
+    return return_code, stdout.strip().decode("utf-8"), stderr.strip().decode("utf-8")
 
 
 def dump_course(organization, course_id, destination_folder):
