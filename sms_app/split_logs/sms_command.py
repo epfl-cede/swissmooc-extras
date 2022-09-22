@@ -16,9 +16,9 @@ class SMSCommand(BaseCommand):
         logger = logging.getLogger("split_logs")
 
         if verbosity > 1:
-            self.logger.setLevel(logging.DEBUG)
+            logger.setLevel(logging.DEBUG)
         elif verbosity > 0:
-            self.logger.setLevel(logging.INFO)
+            logger.setLevel(logging.INFO)
 
     def send_email(self, subject):
         send_mail(
