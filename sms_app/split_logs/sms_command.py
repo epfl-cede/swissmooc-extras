@@ -22,7 +22,7 @@ class SMSCommand(BaseCommand):
 
     def send_email(self, subject):
         send_mail(
-            f"[SMS-extras:{settings.SMS_APP_ENV}] - {subject} - {'OK' if self.is_error == False else 'ERROR'} - {self.now}",
+            f"[SMS-extras/{settings.SMS_APP_ENV}] - {subject} - {'OK' if self.is_error == False else 'ERROR'} - {self.now}",
             "\n".join(self.message),
             settings.EMAIL_FROM_ADDRESS,
             #settings.EMAIL_TO_ADDRESSES,
