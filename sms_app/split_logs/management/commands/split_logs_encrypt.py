@@ -8,32 +8,34 @@ import pathlib
 import gnupg
 from dateutil import parser
 from django.conf import settings
-from django.core.management.base import BaseCommand
 from split_logs.models import Organisation
 from split_logs.models import PLATFORM_NEW
 from split_logs.models import PLATFORM_OLD
+from split_logs.sms_command import SMSCommand
 
-logger = logging.getLogger(__name__)
 
 MTIME_LESS_DAYS_AGO = 2
 MTIME_GREATER_DAYS_AGO = 30
 
-class Command(BaseCommand):
+class Command(SMSCommand):
     help = 'Encrypt files with organization keys and put it on SWITCH Drive'
+    logger = logging.getLogger(__name__)
 
     def add_arguments(self, parser):
         parser.add_argument('--limit', type=int, default=3)
         parser.add_argument('--platform', type=str, default=PLATFORM_OLD)
 
     def handle(self, *args, **options):
+        self.handle_verbosity(options)
+
         if options['platform'] == PLATFORM_OLD:
-            logger.info("get files for split from old platform")
+            self.info("get files for split from old platform")
             self._handle_old(options['limit'])
         elif options['platform'] == PLATFORM_NEW:
-            logger.info("get files for split from new platform")
+            self.info("get files for split from new platform")
             self._handle_new(options['limit'])
         else:
-            logger.warning("unknown platform <{}>".format(options['platform']))
+            self.warning(f"unknown platform <{options['platform']}>")
 
     def _handle_old(self, limit):
         self.splitted_dir = settings.TRACKING_LOGS_SPLITTED
@@ -51,7 +53,7 @@ class Command(BaseCommand):
         cnt = 0
         organisations = Organisation.objects.filter(active=True)
         for o in organisations:
-            logger.info("process organisation {}".format(o.name))
+            self.info(f"process organisation {o.name}")
 
             files_for_process = self._get_files_for_process(o)
 
@@ -61,7 +63,9 @@ class Command(BaseCommand):
             gpg.trust_keys(importres.fingerprints, 'TRUST_ULTIMATE')
 
             for file_name, alias_list in files_for_process.items():
-                logger.info("process file %s for organization %s with aliases %s", file_name, alias_list[0][0], list(map(lambda a: a[1], alias_list)))
+                self.info(
+                    f"process file <{file_name}> for organization <{alias_list[0][0]}> with aliases <{list(map(lambda a: a[1], alias_list))}>"
+                )
 
                 # collect data into temporary file
                 buff = b''
@@ -70,15 +74,16 @@ class Command(BaseCommand):
                     with open(orig_file_full_path, 'rb') as f:
                         buff += f.read()
 
-                status = gpg.encrypt(buff,
-                                          armor=True,
-                                          recipients=[o.public_key.recipient],
-                                          output=self._get_encrypted_file_full_path(o, file_name)
+                status = gpg.encrypt(
+                    buff,
+                    armor=True,
+                    recipients=[o.public_key.recipient],
+                    output=self._get_encrypted_file_full_path(o, file_name)
                 )
                 if status.ok:
-                    logger.info("success encrypt file %s", self._get_encrypted_file_full_path(o, file_name))
+                    self.info(f"success encrypt file <{self._get_encrypted_file_full_path(o, file_name)}>")
                 else:
-                    logger.error("error: %s", status.status)
+                    self.error(f"error: {status.status}")
 
                 cnt += 1
                 if cnt >= limit: break
@@ -116,5 +121,5 @@ class Command(BaseCommand):
             path = "{}/{}".format(self.splitted_dir, org)
             files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
         except FileNotFoundError:
-            logger.warning("folder for organisation alias %s does not exist", org)
+            self.warning(f"folder for organisation alias <{org}> does not exist")
         return files
