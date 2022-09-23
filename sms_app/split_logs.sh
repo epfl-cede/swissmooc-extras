@@ -1,5 +1,4 @@
 #!/bin/bash
-set -ex
 
 logger run /home/ubuntu/sms-extras/sms_app.sh
 source /home/ubuntu/sms_app.env >> /dev/null 2>&1

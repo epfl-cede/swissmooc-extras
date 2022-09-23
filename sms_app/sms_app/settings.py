@@ -293,6 +293,11 @@ LOGGING = {
             'propagate': False,
             'level': 'WARNING',
         },
+        'check_ssl': {
+            'handlers': ['console'],
+            'propagate': False,
+            'level': 'WARNING',
+        },
         # 'split_logs.management.commands': {
         #     'handlers': ['mail_admins'],
         #     'propagate': False,

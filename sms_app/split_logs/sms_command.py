@@ -13,7 +13,11 @@ class SMSCommand(BaseCommand):
 
     def handle_verbosity(self, options):
         verbosity = int(options["verbosity"])
-        logger = logging.getLogger("split_logs")
+        self._handle_verbosity('split_logs', verbosity)
+        self._handle_verbosity('check_ssl', verbosity)
+
+    def _handle_verbosity(self, app, verbosity):
+        logger = logging.getLogger(app)
 
         if verbosity > 1:
             logger.setLevel(logging.DEBUG)
