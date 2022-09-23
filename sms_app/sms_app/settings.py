@@ -23,9 +23,9 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'p@p8ac&7&5)v&=lv1(62#l)!6i7oko9lgtf-0nopdghhn3^njp'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
-ALLOWED_HOSTS = ['matomo.swissmooc.ch', 'matomo.test-swissmooc.ch', 'localhost']
+ALLOWED_HOSTS = []
 
 
 # Application definition

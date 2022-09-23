@@ -67,7 +67,7 @@ def bucket_name(organisation):
     return '{}-{}'.format(settings.AWS_STORAGE_BUCKET_NAME_ANALYTICS, str(organisation).lower())
 
 def run_command(cmd):
-    LOGGER.debug('Run command: {}'.format(cmd))
+    LOGGER.debug(f"Run command: <{' '.join(cmd)}>")
     process = subprocess.Popen(
         cmd,
         shell = False,

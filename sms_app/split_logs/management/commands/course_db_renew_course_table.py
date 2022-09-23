@@ -2,33 +2,35 @@
 import logging
 
 from django.core.exceptions import ObjectDoesNotExist
-from django.core.management.base import BaseCommand
 from django.db import connections
 from split_logs.models import ACTIVE
 from split_logs.models import Course
 from split_logs.models import NOT_ACTIVE
 from split_logs.models import Organisation
+from split_logs.sms_command import SMSCommand
 
-logger = logging.getLogger(__name__)
 
-class Command(BaseCommand):
-    help = 'Renew table Course: remove outdated courses and add new'
+class Command(SMSCommand):
+    help = "Renew table Course: remove outdated courses and add new"
+    logger = logging.getLogger(__name__)
 
     def handle(self, *args, **options):
+        self.handle_verbosity(options)
+
         organisations = Organisation.objects.filter(active=True)
         for o in organisations:
-            logger.info("process organization %s", o.name)
+            self.info(f"process organization {o.name}")
             Course.objects.filter(organisation=o).update(active=NOT_ACTIVE)
 
-            with connections['edxapp_readonly_' + o.name.lower()].cursor() as cursor:
+            with connections["edxapp_readonly_" + o.name.lower()].cursor() as cursor:
                 cursor.execute("SELECT course_id FROM student_courseenrollment GROUP BY course_id")
                 for row in cursor.fetchall():
                     name = row[0]
                     try:
-                        logger.info("Set course %s as active", name)
+                        self.info(f"Set course {name} as active")
                         course = Course.objects.get(name=name, organisation=o)
                         course.active = ACTIVE
                         course.save()
                     except ObjectDoesNotExist:
-                        logger.info("Insert new course %s", name)
+                        self.info(f"Insert new course <{name}>")
                         Course.objects.create(name=row[0], organisation=o, active=ACTIVE)
