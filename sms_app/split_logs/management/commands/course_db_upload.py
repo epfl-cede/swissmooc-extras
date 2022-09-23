@@ -12,7 +12,7 @@ from split_logs.models import CourseDump
 from split_logs.models import CourseDumpTable
 from split_logs.models import Organisation
 from split_logs.models import YES
-from split_logs.utils import backet_name
+from split_logs.utils import bucket_name
 from split_logs.utils import upload_file
 
 LOGGER = logging.getLogger(__name__)
