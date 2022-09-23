@@ -120,9 +120,9 @@ class Command(SMSCommand):
         if nko > 0:
             result_message.append("There are errors in the courses below:")
             for org, courses in ko.items():
-                result_message.append("{org}")
+                result_message.append(f"{org}")
                 for course in courses:
-                    result_message.append("{course}")
+                    result_message.append(f"{course}")
 
         result_message.append("")
         result_message.append("Detailed log:")
