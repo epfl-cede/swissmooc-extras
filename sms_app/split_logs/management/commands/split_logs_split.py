@@ -6,7 +6,6 @@ import os
 
 from dateutil import parser
 from django.conf import settings
-from django.core.management.base import BaseCommand
 from django.db.models import F
 from django.db.models import Q
 from django.db.models import Value
@@ -16,27 +15,30 @@ from split_logs.models import FileOriginal
 from split_logs.models import FileOriginalDocker
 from split_logs.models import PLATFORM_NEW
 from split_logs.models import PLATFORM_OLD
+from split_logs.sms_command import SMSCommand
 
-logger = logging.getLogger(__name__)
 
-class Command(BaseCommand):
+class Command(SMSCommand):
     help = 'Split tracking logs by organizations'
+    logger = logging.getLogger(__name__)
 
     def add_arguments(self, parser):
         parser.add_argument('--limit', type=int, default=3)
         parser.add_argument('--platform', type=str, default=PLATFORM_OLD)
 
     def handle(self, *args, **options):
+        self.handle_verbosity(options)
+
         if options['platform'] == PLATFORM_OLD:
-            logger.info("get files for split from old platform")
+            self.info("get files for split from old platform")
             self.platform = 'old'
             self._handle_old(options['limit'])
         elif options['platform'] == PLATFORM_NEW:
-            logger.info("get files for split from new platform")
+            self.info("get files for split from new platform")
             self.platform = 'new'
             self._handle_new(options['limit'])
         else:
-            logger.warning("unknown platform <{}>".format(options['platform']))
+            self.warning(f"unknown platform <{options['platform']}>")
 
     def _handle_old(self, limit):
         self.original_dir = settings.TRACKING_LOGS_ORIGINAL_DST
@@ -72,7 +74,7 @@ class Command(BaseCommand):
             for filename in files:
                 filename_full = "{}/{}".format(dirname, filename)
                 if filename_full in processed:
-                    logger.debug("file already processed")
+                    self.debug(f"file <{filename_full}> already processed")
                 else:
                     # create dir row if not exists
                     dir_original, created = DirOriginal.objects.update_or_create(name=dirname)
@@ -85,9 +87,9 @@ class Command(BaseCommand):
                 if cnt >= limit: break
             if cnt >= limit: break
         if cnt == 0:
-            logger.info("all files were processed before this run")
+            self.info("all files were processed before this run")
         else:
-            logger.info("{} files were processed".format(cnt))
+            self.info(f"{cnt} files were processed")
 
     def _get_processed(self):
         return list(
@@ -98,7 +100,7 @@ class Command(BaseCommand):
         )
 
     def _process_file(self, dirname, filename):
-        logger.info("process file {}/{}".format(dirname, filename))
+        self.info(f"process file {dirname}/{filename}")
 
         # reset counters
         lines_total = 0
@@ -121,8 +123,7 @@ class Command(BaseCommand):
                     # detect orzanization string
                     organization = self._detect_org(data['context'], dirname)
 
-                    #logger.debug("line for organization %s", organization)
-                    #logger.debug("line '%s'", data)
+                    self.debug(f"line for organization <{organization}>")
 
                     # create dir
                     splited_dir = '{}/{}'.format(self.splitted_dir, organization)
@@ -146,7 +147,7 @@ class Command(BaseCommand):
                 splited_file = gzip.open(splited_filename, 'ab+')
                 splited_file.write(b''.join(lines_for_add[organization][date]))
 
-        logger.info("error lines {} of {}".format(lines_error, lines_total))
+        self.info(f"error lines {lines_error} of {lines_total}")
         return lines_total, lines_error
 
     def _detect_org(self, context, dirname):

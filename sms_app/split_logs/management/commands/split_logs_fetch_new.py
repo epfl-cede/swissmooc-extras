@@ -9,7 +9,6 @@ from split_logs.utils import run_command
 
 class Command(SMSCommand):
     help = 'Fetch new tracking logs files'
-
     logger = logging.getLogger(__name__)
 
     def handle(self, *args, **options):

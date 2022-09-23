@@ -30,6 +30,11 @@ class SMSCommand(BaseCommand):
             fail_silently=False,
         )
 
+    def debug(self, message):
+        self.logger.debug(message)
+        now = datetime.datetime.now()
+        self.message.append(f"[{now:%Y-%m-%d %H:%M}] DEBUG {message}")
+
     def info(self, message):
         self.logger.info(message)
         now = datetime.datetime.now()
