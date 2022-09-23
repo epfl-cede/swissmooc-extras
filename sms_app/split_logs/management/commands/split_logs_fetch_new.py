@@ -3,23 +3,25 @@ import logging
 import subprocess
 
 from django.conf import settings
-from django.core.management.base import BaseCommand
+from split_logs.sms_command import SMSCommand
+from split_logs.utils import run_command
 
-logger = logging.getLogger(__name__)
 
-class Command(BaseCommand):
+class Command(SMSCommand):
     help = 'Fetch new tracking logs files'
 
+    logger = logging.getLogger(__name__)
+
     def handle(self, *args, **options):
-        # copy tracking logs files from new docker-based platform
-        cmd = [
+        self.handle_verbosity(options)
+
+        self.info(f"sync files from {settings.BACKUP_SERVER}")
+        return_code, stdout, stderr = run_command([
             "rsync",
-            "-e",
-            "ssh -i '/home/ubuntu/.ssh/id_rsa_backup'",
             "-av",
             "--exclude=*.log",
-            settings.TRACKING_LOGS_ORIGINAL_DOCKER_SRC,
+            f"ubuntu@{settings.BACKUP_SERVER}:{settings.TRACKING_LOGS_ORIGINAL_DOCKER_SRC}",
             settings.TRACKING_LOGS_ORIGINAL_DOCKER_DST
-        ]
-        logger.info("run command: {}".format(" ".join(cmd)))
-        subprocess.run(cmd, shell=False, check=True)
+        ])
+        if return_code != 0:
+            self.error(f"rsync error: <{stderr}>")
