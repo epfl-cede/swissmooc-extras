@@ -4,32 +4,35 @@ import os
 
 from dateutil import parser
 from django.conf import settings
-from django.core.management.base import BaseCommand
 from django.core.management.base import CommandError
 from split_logs.models import Organisation
 from split_logs.models import PLATFORM_NEW
 from split_logs.models import PLATFORM_OLD
+from split_logs.sms_command import SMSCommand
 from split_logs.utils import bucket_name
 from split_logs.utils import upload_file
 
-logger = logging.getLogger(__name__)
 
-class Command(BaseCommand):
+class Command(SMSCommand):
     help = 'Encrypt files with organization keys and put it on SWITCH Drive'
+
+    logger = logging.getLogger(__name__)
 
     def add_arguments(self, parser):
         parser.add_argument('--limit', type=int, default=3)
         parser.add_argument('--platform', type=str, default=PLATFORM_OLD)
 
     def handle(self, *args, **options):
+        self.handle_verbosity(options)
+
         if options['platform'] == PLATFORM_OLD:
-            logger.info("get files for split from old platform")
+            self.info("get files for split from old platform")
             self._handle_old(options['limit'])
         elif options['platform'] == PLATFORM_NEW:
-            logger.info("get files for split from new platform")
+            self.info("get files for split from new platform")
             self._handle_new(options['limit'])
         else:
-            logger.warning("unknown platform <{}>".format(options['platform']))
+            self.warning(f"unknown platform <{options['platform']}>")
 
     def _handle_old(self, limit):
         self.remote_dir = 'tracking-logs'
@@ -52,7 +55,7 @@ class Command(BaseCommand):
             aliases = o.aliases.split(',')
             for a in aliases:
                 org = a.strip()
-                logger.info("process organisation alias '{}'".format(org))
+                self.info(f"process organisation alias <{org}>")
                 filelist = self._get_list(org)
                 for encripted_file in filelist:
                     upload_file(
@@ -80,5 +83,5 @@ class Command(BaseCommand):
             path = "{}/{}".format(self.encrypted_dir, org)
             files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
         except FileNotFoundError:
-            logger.warning("organisation '%s' folder does not exist", org)
+            self.warning(f"folder for organisation <{org}> does not exist")
         return files

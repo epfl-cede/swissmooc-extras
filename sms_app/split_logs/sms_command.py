@@ -35,6 +35,11 @@ class SMSCommand(BaseCommand):
         now = datetime.datetime.now()
         self.message.append(f"[{now:%Y-%m-%d %H:%M}] INFO {message}")
 
+    def warning(self, message):
+        self.logger.warning(message)
+        now = datetime.datetime.now()
+        self.message.append(f"[{now:%Y-%m-%d %H:%M}] WARNING {message}")
+
     def error(self, message):
         self.is_error = True
         self.logger.error(message)

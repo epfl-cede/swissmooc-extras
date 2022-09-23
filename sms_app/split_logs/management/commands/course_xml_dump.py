@@ -8,7 +8,6 @@ from collections import defaultdict
 
 import gnupg
 from django.conf import settings
-from django.core.management.base import BaseCommand
 from split_logs.models import Organisation
 from split_logs.sms_command import SMSCommand
 from split_logs.utils import bucket_name
