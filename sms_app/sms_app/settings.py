@@ -25,7 +25,7 @@ SECRET_KEY = 'p@p8ac&7&5)v&=lv1(62#l)!6i7oko9lgtf-0nopdghhn3^njp'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['matomo.swissmooc.ch', 'matomo.test-swissmooc.ch', 'localhost']
 
 
 # Application definition
