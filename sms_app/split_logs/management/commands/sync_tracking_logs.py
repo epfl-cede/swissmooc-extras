@@ -55,6 +55,17 @@ class Command(SMSCommand):
                     self.error(f"sync error: <{stderr}>")
                     continue
 
+            return_code, stdout, stderr = run_command([
+                "ssh", f"ubuntu@zh-{swarm_host}",
+                "find", "/home/ubuntu/stacks/openedx-*/logs/tracking/",
+                "-mtime", "+30",
+                "-type", "f",
+                "-name", "\*.gz",
+                "-delete"
+            ])
+            if return_code != 0:
+                self.error(f"delete files error: <{stderr}>")
+
         return_code, stdout, stderr = run_command([
             "ssh", f"ubuntu@{settings.BACKUP_SERVER}",
             "find", f"/backup/{settings.SMS_APP_ENV}/tracking-docker/",
