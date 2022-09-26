@@ -34,6 +34,8 @@ class Command(SMSCommand):
         self.handle_verbosity(options)
 
         organisations = Organisation.objects.filter(active=True)
+        self.debug(f"Select <{len(organisations)}> organisations")
+
         tables = CourseDumpTable.objects.all()
         for o in organisations:
             self.info(f"process organization <{o.name}>")
