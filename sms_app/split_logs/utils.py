@@ -86,11 +86,22 @@ def dump_course(organization, course_id, destination_folder):
     """
 
     organization_name = organization.name.lower()
-    container_name = 'openedx-%s_cms' % organization_name
-    container_host = 'ubuntu@zh-%s-swarm-1' % settings.SMS_APP_ENV
-    cmd = [
-        'ssh', container_host,
-    ]
+    container_name = 'openedx-%s_cms-worker' % organization_name
+
+    # find swarm server where cms-worker is located
+    return_code, stdout, stderr = run_command([
+        'ssh', 'ubuntu@zh-%s-swarm-1' % settings.SMS_APP_ENV,
+        'docker', 'service', 'ps', container_name, '--filter', 'desired-state=running'
+    ])
+    if return_code != 0:
+        raise SplitLogsUtilsDumpCourseException('could not get VM with %s service: %s', container_name, stderr)
+
+    try:
+        container_host = 'ubuntu@%s' % stdout.split('\n')[1].split()[3]
+    except IndexError:
+        raise SplitLogsUtilsDumpCourseException('failed to parse VM fom the string: %s', stdout)
+
+    cmd = ['ssh', container_host]
     cmd_container = cmd + [
         '/home/ubuntu/.local/bin/docker-run-command', container_name
     ]
@@ -134,13 +145,7 @@ def dump_course(organization, course_id, destination_folder):
         'sudo', 'mv', import_folder, '/tmp/'
     ])
     if return_code != 0:
-        # try one more time, this is NFS folder
-        sleep(4)
-        return_code, stdout, stderr = run_command(cmd + [
-            'sudo', 'mv', import_folder, '/tmp/'
-        ])
-        if return_code != 0:
-            raise SplitLogsUtilsDumpCourseException('move course to tmp folder error: %s', stderr)
+        raise SplitLogsUtilsDumpCourseException('move course to tmp folder error: %s', stderr)
 
     return_code, stdout, stderr = run_command(cmd + [
         'sudo', 'chown', '-R', 'ubuntu:ubuntu', tmp_folder
