@@ -98,7 +98,6 @@ class Command(SMSCommand):
         gpg = gnupg.GPG()
         gpg.encoding = "utf-8"
         importres = gpg.import_keys(org.public_key.value)
-        gpg.trust_keys(importres.fingerprints, "TRUST_ULTIMATE")
         fname_encrypted = "{}.gpg".format(fname)
         with open(fname, "rb") as f:
             status = gpg.encrypt_file(

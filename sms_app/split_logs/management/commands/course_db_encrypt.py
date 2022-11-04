@@ -38,7 +38,6 @@ class Command(SMSCommand):
 
             if cd.course.organisation.name not in org_processed:
                 importres = gpg.import_keys(cd.course.organisation.public_key.value)
-                gpg.trust_keys(importres.fingerprints, "TRUST_ULTIMATE")
                 org_processed[cd.course.organisation.name] = True
 
             with open(cd.dump_file_name(), "rb") as f:
