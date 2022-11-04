@@ -27,19 +27,37 @@ class Command(SMSCommand):
 
     logger = logging.getLogger(__name__)
 
+    def add_arguments(self, parser):
+        parser.add_argument('--course_id', type=str, default="")
+
     def handle(self, *args, **options):
         self.handle_verbosity(options)
 
+        if options['course_id'] == "":
+            self.handle_all_courses()
+        else:
+            self.handle_course(options['course_id'])
+
+    def handle_course(self, course_id):
+        organisations = Organisation.objects.filter(active=True)
+        for org in organisations:
+            self.info(f"organisation: {org.name}")
+
+            # clean/create ogranigation destination directory
+            org_destination_dir = self._organisation_dir(org)
+            self._create_org_dir(org_destination_dir)
+
+            course_file = dump_course(org, course_id, org_destination_dir)
+            self.info(f"course: {course_id}")
+            self.info(f"see: {course_file}")
+
+    def handle_all_courses(self):
         course_data_for_email_ok = defaultdict(list)
         course_data_for_email_ko = defaultdict(list)
 
         organisations = Organisation.objects.filter(active=True)
         for org in organisations:
             self.info(f"organisation: {org.name}")
-
-            self.import_dir = "/var/lib/docker/volumes/openedx-{}_openedx-data/_data/course_export".format(
-                org.name.lower()
-            )
 
             # clean/create ogranigation destination directory
             org_destination_dir = self._organisation_dir(org)
