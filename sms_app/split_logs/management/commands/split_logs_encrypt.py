@@ -60,10 +60,10 @@ class Command(SMSCommand):
             gpg = gnupg.GPG()
             gpg.encoding = 'utf-8'
             importres = gpg.import_keys(o.public_key.value)
-            gpg.trust_keys(importres.fingerprints, 'TRUST_ULTIMATE')
+            #gpg.trust_keys(importres.fingerprints, 'TRUST_ULTIMATE')
 
             for file_name, alias_list in files_for_process.items():
-                self.info(
+                self.debug(
                     f"process file <{file_name}> for organization <{alias_list[0][0]}> with aliases <{list(map(lambda a: a[1], alias_list))}>"
                 )
 
