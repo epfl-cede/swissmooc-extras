@@ -9,4 +9,4 @@ cd /home/ubuntu/sms-extras/sms_app
 python manage.py split_logs_fetch_new
 python manage.py split_logs_split --platform new --limit 100
 python manage.py split_logs_encrypt --platform new --limit 100
-python manage.py split_logs_upload --platform new
+python manage.py split_logs_upload --platform new --limit 100

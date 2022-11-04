@@ -14,7 +14,7 @@ from split_logs.utils import upload_file
 
 
 class Command(SMSCommand):
-    help = 'Encrypt files with organization keys and put it on SWITCH Drive'
+    help = 'Upload files to SWITCH Drive'
 
     logger = logging.getLogger(__name__)
 
