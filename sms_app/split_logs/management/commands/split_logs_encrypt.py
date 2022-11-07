@@ -60,7 +60,6 @@ class Command(SMSCommand):
             gpg = gnupg.GPG()
             gpg.encoding = 'utf-8'
             importres = gpg.import_keys(o.public_key.value)
-            #gpg.trust_keys(importres.fingerprints, 'TRUST_ULTIMATE')
 
             for file_name, alias_list in files_for_process.items():
                 self.debug(
