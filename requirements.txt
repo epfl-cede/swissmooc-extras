@@ -10,6 +10,7 @@ identify==2.5.1
 jmespath==0.10.0
 mysqlclient==2.1.0
 nodeenv==1.7.0
+git+https://github.com/epfl-cede/openedx-course-structure.git#egg=openedx-course-structure
 platformdirs==2.5.2
 pre-commit==2.20.0
 psutil==5.9.0
