@@ -1,5 +1,4 @@
 asgiref==3.5.2
-backports.zoneinfo==0.2.1
 boto3==1.26.3
 botocore==1.29.3
 cfgv==3.3.1
@@ -12,6 +11,7 @@ identify==2.5.8
 jmespath==1.0.1
 mysqlclient==2.1.1
 nodeenv==1.7.0
+openedx_course_structure @ git+https://github.com/epfl-cede/openedx-course-structure.git@409b5d1b6001a61800c0f797b7e18d12c99a51d0
 platformdirs==2.5.3
 pre-commit==2.20.0
 psutil==5.9.3

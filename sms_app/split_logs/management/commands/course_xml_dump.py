@@ -8,6 +8,7 @@ from collections import defaultdict
 
 import gnupg
 from django.conf import settings
+from openedx_course_structure import course_structure
 from split_logs.models import Organisation
 from split_logs.sms_command import SMSCommand
 from split_logs.utils import bucket_name
@@ -29,16 +30,22 @@ class Command(SMSCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--course_id', type=str, default="")
+        parser.add_argument(
+            '--structure-only',
+            action='store_true',
+            default=False,
+            help='Grab course structure only'
+        )
 
     def handle(self, *args, **options):
         self.handle_verbosity(options)
 
         if options['course_id'] == "":
-            self.handle_all_courses()
+            self.handle_all_courses(options['structure_only'])
         else:
-            self.handle_course(options['course_id'])
+            self.handle_course(options['course_id'], options['structure_only'])
 
-    def handle_course(self, course_id):
+    def handle_course(self, course_id, structure_only):
         organisations = Organisation.objects.filter(active=True)
         for org in organisations:
             self.info(f"organisation: {org.name}")
@@ -48,10 +55,13 @@ class Command(SMSCommand):
             self._create_org_dir(org_destination_dir)
 
             course_file = dump_course(org, course_id, org_destination_dir)
-            self.info(f"course: {course_id}")
-            self.info(f"see: {course_file}")
+            if structure_only:
+                self._structure(course_file)
+            else:
+                self.info(f"course: {course_id}")
+                self.info(f"see: {course_file}")
 
-    def handle_all_courses(self):
+    def handle_all_courses(self, structure_only):
         course_data_for_email_ok = defaultdict(list)
         course_data_for_email_ko = defaultdict(list)
 
@@ -67,9 +77,12 @@ class Command(SMSCommand):
                 self.info(f"course: {course_id}")
                 try:
                     course_file = dump_course(org, course_id, org_destination_dir)
-                    course_file_encrypted = self._encrypt(org, course_file)
-                    self._upload(org, course_file_encrypted)
-                    course_data_for_email_ok[org.name] += (course_id,)
+                    if structure_only:
+                        self._structure(course_file)
+                    else:
+                        course_file_encrypted = self._encrypt(org, course_file)
+                        self._upload(org, course_file_encrypted)
+                        course_data_for_email_ok[org.name] += (course_id,)
                 except SplitLogsUtilsDumpCourseException as error:
                     self.error(f"dump course: <{error}>")
                     course_data_for_email_ko[org.name] += (course_id,)
@@ -80,7 +93,13 @@ class Command(SMSCommand):
                     self.error(f"encrypt: <{error}>")
                     course_data_for_email_ko[org.name] += (course_id,)
 
-        self._send_email(course_data_for_email_ok, course_data_for_email_ko)
+        if not structure_only:
+            self._send_email(course_data_for_email_ok, course_data_for_email_ko)
+
+    def _structure(self, course_file):
+        structure = course_structure.structure(course_file)
+        print(structure)
+        exit(1)
 
     def _upload(self, org, fname):
         upload_file(
