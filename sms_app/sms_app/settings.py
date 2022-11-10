@@ -83,6 +83,8 @@ BACKUP_SERVER = os.environ.get('BACKUP_SERVER')
 
 DATABASES = {
     'default': {
+        #'ENGINE': 'django.db.backends.sqlite3',
+        #'NAME': os.path.join(BASE_DIR, '..', 'db.sqlite3'),
         'NAME': 'sms_extras',
         'ENGINE': 'django.db.backends.mysql',
         'USER': os.environ.get('SMSEXTRAS_MYSQL_USER', ''),
@@ -90,128 +92,17 @@ DATABASES = {
         'HOST': 'localhost',
         'PORT': '3306',
     },
-    'edxapp_readonly': {
-        'NAME': 'edxapp',
-        'ENGINE': 'django.db.backends.mysql',
-        'USER': os.environ.get('EDXAPP_MYSQL_USER', ''),
-        'PASSWORD': os.environ.get('EDXAPP_MYSQL_PASSWORD', ''),
-        'HOST': os.environ.get('EDXAPP_MYSQL_HOST', ''),
-        'PORT': '3306',
+}
+
+EDXAPP_DATABASES = {
+    'readonly': {
+        'host': os.environ.get("EDXAPP_MYSQL_HOST"),
+        'user': os.environ.get("EDXAPP_MYSQL_USER"),
+        'password': os.environ.get("EDXAPP_MYSQL_PASSWORD"),
+        'db': 'edxapp',
     }
 }
 
-# fill up all the INSTANSES read_only accounts
-for instance in INSTANCES:
-    DATABASES['edxapp_readonly_' + instance] = {
-        'NAME': 'docker_' + instance + '_edxapp',
-        'ENGINE': 'django.db.backends.mysql',
-        'USER': os.environ.get('EDXAPP_MYSQL_USER', ''),
-        'PASSWORD': os.environ.get('EDXAPP_MYSQL_PASSWORD', ''),
-        'HOST': os.environ.get('EDXAPP_MYSQL_HOST', ''),
-        'PORT': '3306',
-    }
-
-
-# REMOVE AFTER MIGRATION
-if os.environ.get('UNIVERISTY_EDXAPP_MYSQL_USER', ''):
-    DATABASES['edxapp_university'] = {
-        'NAME': 'docker_university_edxapp',
-        'ENGINE': 'django.db.backends.mysql',
-        'USER': os.environ.get('UNIVERISTY_EDXAPP_MYSQL_USER', ''),
-        'PASSWORD': os.environ.get('UNIVERISTY_EDXAPP_MYSQL_PASSWORD', ''),
-        'HOST': os.environ.get('EDXAPP_MYSQL_HOST', ''),
-        'PORT': '3306',
-    }
-
-if os.environ.get('ID_EDXAPP_MYSQL_USER', ''):
-    DATABASES['edxapp_id'] = {
-        'NAME': 'docker_id_edxapp',
-        'ENGINE': 'django.db.backends.mysql',
-        'USER': os.environ.get('ID_EDXAPP_MYSQL_USER', ''),
-        'PASSWORD': os.environ.get('ID_EDXAPP_MYSQL_PASSWORD', ''),
-        'HOST': os.environ.get('EDXAPP_MYSQL_HOST', ''),
-        'PORT': '3306',
-    }
-
-if os.environ.get('SMS_EDXAPP_MYSQL_USER', ''):
-    DATABASES['edxapp_sms'] = {
-        'NAME': 'docker_sms_edxapp',
-        'ENGINE': 'django.db.backends.mysql',
-        'USER': os.environ.get('SMS_EDXAPP_MYSQL_USER', ''),
-        'PASSWORD': os.environ.get('SMS_EDXAPP_MYSQL_PASSWORD', ''),
-        'HOST': os.environ.get('EDXAPP_MYSQL_HOST', ''),
-        'PORT': '3306',
-    }
-
-if os.environ.get('ZHAW_EDXAPP_MYSQL_USER', ''):
-    DATABASES['edxapp_zhaw'] = {
-        'NAME': 'docker_zhaw_edxapp',
-        'ENGINE': 'django.db.backends.mysql',
-        'USER': os.environ.get('ZHAW_EDXAPP_MYSQL_USER', ''),
-        'PASSWORD': os.environ.get('ZHAW_EDXAPP_MYSQL_PASSWORD', ''),
-        'HOST': os.environ.get('EDXAPP_MYSQL_HOST', ''),
-        'PORT': '3306',
-    }
-
-if os.environ.get('FFHS_EDXAPP_MYSQL_USER', ''):
-    DATABASES['edxapp_ffhs'] = {
-        'NAME': 'docker_ffhs_edxapp',
-        'ENGINE': 'django.db.backends.mysql',
-        'USER': os.environ.get('FFHS_EDXAPP_MYSQL_USER', ''),
-        'PASSWORD': os.environ.get('FFHS_EDXAPP_MYSQL_PASSWORD', ''),
-        'HOST': os.environ.get('EDXAPP_MYSQL_HOST', ''),
-        'PORT': '3306',
-    }
-
-if os.environ.get('UNILI_EDXAPP_MYSQL_USER', ''):
-    DATABASES['edxapp_unili'] = {
-        'NAME': 'docker_unili_edxapp',
-        'ENGINE': 'django.db.backends.mysql',
-        'USER': os.environ.get('UNILI_EDXAPP_MYSQL_USER', ''),
-        'PASSWORD': os.environ.get('UNILI_EDXAPP_MYSQL_PASSWORD', ''),
-        'HOST': os.environ.get('EDXAPP_MYSQL_HOST', ''),
-        'PORT': '3306',
-    }
-
-if os.environ.get('ETHZ_EDXAPP_MYSQL_USER', ''):
-    DATABASES['edxapp_ethz'] = {
-        'NAME': 'docker_ethz_edxapp',
-        'ENGINE': 'django.db.backends.mysql',
-        'USER': os.environ.get('ETHZ_EDXAPP_MYSQL_USER', ''),
-        'PASSWORD': os.environ.get('ETHZ_EDXAPP_MYSQL_PASSWORD', ''),
-        'HOST': os.environ.get('EDXAPP_MYSQL_HOST', ''),
-        'PORT': '3306',
-    }
-
-if os.environ.get('EPFL_EDXAPP_MYSQL_USER', ''):
-    DATABASES['edxapp_epfl'] = {
-        'NAME': 'docker_epfl_edxapp',
-        'ENGINE': 'django.db.backends.mysql',
-        'USER': os.environ.get('EPFL_EDXAPP_MYSQL_USER', ''),
-        'PASSWORD': os.environ.get('EPFL_EDXAPP_MYSQL_PASSWORD', ''),
-        'HOST': os.environ.get('EDXAPP_MYSQL_HOST', ''),
-        'PORT': '3306',
-    }
-
-if os.environ.get('UNIGE_EDXAPP_MYSQL_USER', ''):
-    DATABASES['edxapp_unige'] = {
-        'NAME': 'docker_unige_edxapp',
-        'ENGINE': 'django.db.backends.mysql',
-        'USER': os.environ.get('UNIGE_EDXAPP_MYSQL_USER', ''),
-        'PASSWORD': os.environ.get('UNIGE_EDXAPP_MYSQL_PASSWORD', ''),
-        'HOST': os.environ.get('EDXAPP_MYSQL_HOST', ''),
-        'PORT': '3306',
-    }
-
-if os.environ.get('TDR_EDXAPP_MYSQL_USER', ''):
-    DATABASES['edxapp_tdr'] = {
-        'NAME': 'docker_tdr_edxapp',
-        'ENGINE': 'django.db.backends.mysql',
-        'USER': os.environ.get('TDR_EDXAPP_MYSQL_USER', ''),
-        'PASSWORD': os.environ.get('TDR_EDXAPP_MYSQL_PASSWORD', ''),
-        'HOST': os.environ.get('EDXAPP_MYSQL_HOST', ''),
-        'PORT': '3306',
-    }
 
 # Password validation
 # https://docs.djangoproject.com/en/2.2/ref/settings/#auth-password-validators
@@ -327,10 +218,6 @@ STATS_FILE_PATH=os.environ.get("STATS_FILE_PATH")
 SMS_APP_ENV=os.environ.get("SMS_APP_ENV")
 
 AWS_STORAGE_BUCKET_NAME_ANALYTICS='{env}-analytics'.format(env=SMS_APP_ENV)
-
-#EDXAPP_MYSQL_HOST=os.environ.get("EDXAPP_MYSQL_HOST")
-#EDXAPP_MYSQL_USER=os.environ.get("EDXAPP_MYSQL_USER")
-#EDXAPP_MYSQL_PASSWORD=os.environ.get("EDXAPP_MYSQL_PASSWORD")
 
 EMAIL_FROM_ADDRESS = 'noreply@epfl.ch'
 EMAIL_TO_ADDRESSES = ['edx-monitor@groupes.epfl.ch']

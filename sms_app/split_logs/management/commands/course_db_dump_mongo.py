@@ -74,7 +74,7 @@ class Command(SMSCommand):
                 tf = tempfile.NamedTemporaryFile(delete=False)
                 cmd = [
                     "mongoexport",
-                    "--host", settings.DATABASES["edxapp_readonly"]["HOST"],
+                    "--host", settings.EDXAPP_DATABASES["readonly"]["host"],
                     "--username", "admin",
                     "--password", "GtTD6ajkaSdzyHH8",
                     "--authenticationDatabase", "admin",

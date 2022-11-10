@@ -6,9 +6,6 @@ import pathlib
 import subprocess
 import tempfile
 
-from django.conf import settings
-from django.core.exceptions import ObjectDoesNotExist
-from django.db import connections
 from split_logs.models import ACTIVE
 from split_logs.models import Course
 from split_logs.models import CourseDump
@@ -62,45 +59,46 @@ class Command(SMSCommand):
         cd.save()
 
     def _fill_mysql_tables_columns(self):
-        with connections["edxapp_readonly"].cursor() as cursor:
-            for table in CourseDumpTable.objects.all():
-                if table.db_type == DB_TYPE_MYSQL:
-                    sql = "SHOW COLUMNS FROM {table_db_name}.{table_name}".format(
-                        table_db_name=table.db_name,
-                        table_name=table.name,
-                    )
-                    cursor.execute(sql)
-                    TABLE_COLUMNS[table.id] = [str(row[0]) for row in cursor.fetchall()]
+        cursor = self.edxapp_cursor()
+        for table in CourseDumpTable.objects.all():
+            if table.db_type == DB_TYPE_MYSQL:
+                sql = "SHOW COLUMNS FROM {table_db_name}.{table_name}".format(
+                    table_db_name=table.db_name,
+                    table_name=table.name,
+                )
+                cursor.execute(sql)
+                TABLE_COLUMNS[table.id] = [str(row[0]) for row in cursor.fetchall()]
 
     def _dump_mysql_table(self, organisation, course, table, users):
+        if users == []: users = [0]
         self.info(f"dump course <{course}> table <{table}>")
-        with connections["edxapp_readonly"].cursor() as cursor:
-            format_strings = ",".join(["%s"] * len(users))
-            sql = "SELECT `{columns}` FROM {db_name}.{table_name} WHERE {pk} IN(%s)".format(
-                db_name="docker_" + organisation.name.lower() + "_edxapp",
-                columns="`,`".join(TABLE_COLUMNS[table.id]),
-                table_name=table.name,
-                pk=table.primary_key
-            )
-            cursor.execute(sql % format_strings, tuple(users))
-            result = [list(row) for row in cursor.fetchall()]
+        sql = "SELECT `{columns}` FROM {db_name}.{table_name} WHERE {pk} IN(%s)".format(
+            db_name="docker_" + organisation.name.lower() + "_edxapp",
+            columns="`,`".join(TABLE_COLUMNS[table.id]),
+            table_name=table.name,
+            pk=table.primary_key
+        )
+        cursor = self.edxapp_cursor()
+        format_strings = ",".join(["%s"] * len(users))
+        cursor.execute(sql % format_strings, tuple(users))
+        result = [list(row) for row in cursor.fetchall()]
 
-            # remove passwords
-            if "password" in TABLE_COLUMNS[table.id]:
-                index = TABLE_COLUMNS[table.id].index("password")
-                for i in range(len(result)):
-                    result[i][index] = "NULL"
+        # remove passwords
+        if "password" in TABLE_COLUMNS[table.id]:
+            index = TABLE_COLUMNS[table.id].index("password")
+            for i in range(len(result)):
+                result[i][index] = "NULL"
 
-            # table header
-            result.insert(0, TABLE_COLUMNS[table.id])
-            return result
+        # table header
+        result.insert(0, TABLE_COLUMNS[table.id])
+        return result
 
     def _get_mysql_users(self, organisation, course):
-        with connections["edxapp_readonly"].cursor() as cursor:
-            cursor.execute(
-                "SELECT user_id FROM {db_name}.student_courseenrollment WHERE course_id = %s".format(
-                    db_name="docker_" + organisation.name.lower() + "_edxapp"
-                ),
-                [course.name]
-            )
-            return [row[0] for row in cursor.fetchall()]
+        cursor = self.edxapp_cursor()
+        cursor.execute(
+            "SELECT user_id FROM {db_name}.student_courseenrollment WHERE course_id = %s".format(
+                db_name="docker_" + organisation.name.lower() + "_edxapp"
+            ),
+            (course.name,)
+        )
+        return [row[0] for row in cursor.fetchall()]

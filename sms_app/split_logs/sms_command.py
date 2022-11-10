@@ -2,6 +2,7 @@
 import datetime
 import logging
 
+import MySQLdb
 from django.conf import settings
 from django.core.mail import send_mail
 from django.core.management.base import BaseCommand
@@ -23,6 +24,10 @@ class SMSCommand(BaseCommand):
             logger.setLevel(logging.DEBUG)
         elif verbosity > 0:
             logger.setLevel(logging.INFO)
+
+    def edxapp_cursor(self):
+        db = MySQLdb.connect(**settings.EDXAPP_DATABASES['readonly'])
+        return db.cursor()
 
     def send_email(self, subject):
         send_mail(
