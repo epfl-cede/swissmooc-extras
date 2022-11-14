@@ -154,7 +154,7 @@ def dump_course(organization, course_id, destination_folder):
         raise SplitLogsUtilsDumpCourseException('chown tmp folder error: %s', stderr)
 
     # Make archive & move course to the destination folder
-    course_destination_folder = destination_folder + course_id[10:]
+    course_destination_folder = destination_folder + '/' + course_id[10:]
     os.makedirs(course_destination_folder, exist_ok=True)
 
     return_code, stdout, stderr = run_command([

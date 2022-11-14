@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import datetime
+import json
 import logging
 import os
 import shutil
@@ -30,38 +31,34 @@ class Command(SMSCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--course_id', type=str, default="")
-        parser.add_argument(
-            '--structure-only',
-            action='store_true',
-            default=False,
-            help='Grab course structure only'
-        )
 
     def handle(self, *args, **options):
         self.handle_verbosity(options)
 
         if options['course_id'] == "":
-            self.handle_all_courses(options['structure_only'])
+            self.handle_all_courses()
         else:
-            self.handle_course(options['course_id'], options['structure_only'])
+            self.handle_course(options['course_id'])
 
-    def handle_course(self, course_id, structure_only):
+    def handle_course(self, course_id):
         organisations = Organisation.objects.filter(active=True)
         for org in organisations:
             self.info(f"organisation: {org.name}")
 
             # clean/create ogranigation destination directory
-            org_destination_dir = self._organisation_dir(org)
+            org_destination_dir = self._dump_dir(org)
             self._create_org_dir(org_destination_dir)
 
-            course_file = dump_course(org, course_id, org_destination_dir)
-            if structure_only:
-                self._structure(course_file)
-            else:
+            try:
+                course_file = dump_course(org, course_id, org_destination_dir)
+                structure_file = self._structure(org, course_id, course_file)
                 self.info(f"course: {course_id}")
+                self.info(f"structure: {structure_file}")
                 self.info(f"see: {course_file}")
+            except SplitLogsUtilsDumpCourseException:
+                self.warning(f"Course not found: {course_id}")
 
-    def handle_all_courses(self, structure_only):
+    def handle_all_courses(self):
         course_data_for_email_ok = defaultdict(list)
         course_data_for_email_ko = defaultdict(list)
 
@@ -70,19 +67,17 @@ class Command(SMSCommand):
             self.info(f"organisation: {org.name}")
 
             # clean/create ogranigation destination directory
-            org_destination_dir = self._organisation_dir(org)
+            org_destination_dir = self._dump_dir(org)
             self._create_org_dir(org_destination_dir)
 
             for course_id in self._get_courses(org):
                 self.info(f"course: {course_id}")
                 try:
                     course_file = dump_course(org, course_id, org_destination_dir)
-                    if structure_only:
-                        self._structure(course_file)
-                    else:
-                        course_file_encrypted = self._encrypt(org, course_file)
-                        self._upload(org, course_file_encrypted)
-                        course_data_for_email_ok[org.name] += (course_id,)
+                    structure_file = self._structure(org, course_id, course_file)
+                    course_file_encrypted = self._encrypt(org, course_file)
+                    self._upload(org, course_file_encrypted)
+                    course_data_for_email_ok[org.name] += (course_id,)
                 except SplitLogsUtilsDumpCourseException as error:
                     self.error(f"dump course: <{error}>")
                     course_data_for_email_ko[org.name] += (course_id,)
@@ -93,13 +88,16 @@ class Command(SMSCommand):
                     self.error(f"encrypt: <{error}>")
                     course_data_for_email_ko[org.name] += (course_id,)
 
-        if not structure_only:
-            self._send_email(course_data_for_email_ok, course_data_for_email_ko)
+        self._send_email(course_data_for_email_ok, course_data_for_email_ko)
 
-    def _structure(self, course_file):
+    def _structure(self, org, course_id, course_file):
         structure = course_structure.structure(course_file)
-        print(structure)
-        exit(1)
+        structure_dir = self._structure_dir(org)
+        os.makedirs(structure_dir, exist_ok=True)
+        structure_file = '{}/{}.json'.format(structure_dir, course_id)
+        with open(structure_file, 'w') as f:
+            f.write(json.dumps(structure))
+        return structure_file
 
     def _upload(self, org, fname):
         upload_file(
@@ -131,11 +129,20 @@ class Command(SMSCommand):
                 raise CourseXmlDumpException("Encrypt file error")
         return fname_encrypted
 
+    def _dump_dir(self, organisation):
+        return "{}/{}".format(
+            self._organisation_dir(organisation),
+            self.now
+        )
+    def _structure_dir(self, organisation):
+        return "{}/{}".format(
+            self._organisation_dir(organisation),
+            'structure'
+        )
     def _organisation_dir(self, organisation):
-        return "{}/{}/{}/".format(
+        return "{}/{}".format(
             settings.DUMP_XML_PATH,
             organisation.name.lower(),
-            self.now
         )
 
     def _create_org_dir(self, organisation_dir):
