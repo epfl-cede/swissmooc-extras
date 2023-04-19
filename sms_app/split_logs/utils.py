@@ -105,8 +105,8 @@ def dump_course(organization, course_id, destination_folder):
     cmd_container = cmd + [
         '/home/ubuntu/.local/bin/docker-run-command', container_name
     ]
-    import_folder_container = '/openedx/data/course_export/course'
-    import_folder = '/var/lib/docker/volumes/openedx-%s_openedx-data/_data/course_export' % organization_name
+    import_folder_container = '/openedx/data/export/course_export/course'
+    import_folder = '/var/lib/docker/volumes/openedx-%s_openedx-data/_data/export/course_export' % organization_name
 
     # Export course
     return_code, stdout, stderr = run_command(cmd_container + [
