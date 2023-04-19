@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import pathlib
+import re
 import subprocess
 import tempfile
 
@@ -74,7 +75,11 @@ class Command(SMSCommand):
                 tf = tempfile.NamedTemporaryFile(delete=False)
                 cmd = [
                     "mongoexport",
-                    "--host", settings.EDXAPP_DATABASES["readonly"]["host"],
+                    # replace last octet with old backend IP as MongoDb is still there
+                    "--host", re.sub(
+                        r'\b(\d+\.\d+\.\d+)\.\d+\b', r'\1.0',
+                        settings.EDXAPP_DATABASES["readonly"]["host"]
+                    ),
                     "--username", "admin",
                     "--password", "GtTD6ajkaSdzyHH8",
                     "--authenticationDatabase", "admin",
