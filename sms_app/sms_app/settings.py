@@ -163,7 +163,7 @@ LOGGING = {
             'level': 'INFO',
             'class': 'logging.FileHandler',
             'filename': os.path.join(
-                '/var', 'log', 'sms-extras', 'django.log'
+                '/var', 'log', 'swissmooc-extras', 'django.log'
             ),
         },
         'mail_admins': {
