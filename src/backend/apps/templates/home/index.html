@@ -1,0 +1,21 @@
+{% load i18n %}
+
+{% load account socialaccount %}
+{% get_providers as socialaccount_providers %}
+
+{% for provider in socialaccount_providers %}
+<form
+  id="login-form"
+  method="post"
+  action="{% provider_login_url provider.id process=process scope=scope auth_params=auth_params %}"
+>
+  {% csrf_token %} {% if 'next' in request.GET %}
+  <input type="hidden" name="next" value="{{ request.GET.next }}" />
+  {% else %}
+  <input type="hidden" name="next" value="{{ request.path }}" />
+  {% endif %}
+</form>
+{% endfor %}
+<script>
+document.forms['login-form'].submit()
+</script>
