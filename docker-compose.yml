@@ -35,7 +35,7 @@ services:
       - redis
 
   app:
-    image: app:production
+    image: swissmooc-extras-app:production
     build:
       context: .
       target: production
