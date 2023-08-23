@@ -42,16 +42,15 @@ build: ## build all containers
 deploy: ## deploy app
 	$(eval DATE := $(shell date +%Y%m%d%H%M%S))
 	$(eval PWD := $(shell pwd))
-	rm -Rf $(PWD)/data-new/*
-	docker run -v $(PWD)/data-new:/opt/tmp --rm --entrypoint cp swissmooc-extras-nginx:production -r /data /opt/tmp/
-	rm -Rf data-new/data/static/swissmooc-extras-staging
-	mv data-new/data/static data-new/data/static-$(DATE)
-	tar -C data-new/data -czf static-$(DATE).tgz static-$(DATE)
-	scp -r static-$(DATE).tgz ubuntu@zh-staging-matomo:/data/
-	ssh ubuntu@zh-staging-matomo tar -C /data -xzf /data/static-$(DATE).tgz
-	ssh ubuntu@zh-staging-matomo git -C /data/swissmooc-extras-app pull
-	ssh ubuntu@zh-staging-matomo unlink /data/static
-	ssh ubuntu@zh-staging-matomo ln -s /data/static-$(DATE) /data/static
+	rm -Rf $(PWD)/data/static/*
+	docker run -v $(PWD)/data/static:/opt/tmp --rm --entrypoint cp swissmooc-extras-nginx:production -r /data /opt/tmp/
+	mv data/static/data/static data/static/data/static-$(DATE)
+	tar -C data/static/data -czf static-$(DATE).tgz static-$(DATE)
+	scp static-$(DATE).tgz ubuntu@zh-staging-matomo:/data/swissmooc-extras-static/
+	ssh ubuntu@zh-staging-matomo tar -C /data/swissmooc-extras-static -xzf /data/swissmooc-extras-static/static-$(DATE).tgz
+	ssh ubuntu@zh-staging-matomo git -C /data/swissmooc-extras pull
+	ssh ubuntu@zh-staging-matomo unlink /data/swissmooc-extras-static/static
+	ssh ubuntu@zh-staging-matomo ln -s /data/swissmooc-extras-static/static-$(DATE) /data/swissmooc-extras-static/static
 	ssh ubuntu@zh-staging-matomo sudo systemctl restart swissmooc-extras.service
 	ssh ubuntu@zh-staging-matomo sudo systemctl restart nginx.service
 .PHONY: deploy
