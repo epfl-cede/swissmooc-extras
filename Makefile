@@ -103,19 +103,23 @@ create-version-json-file:
 	@git push origin master
 .PHONY: create-version-json-file
 
-tag:
+tag-and-push:
 	@git tag $(NEXT_TAG)
 	@echo tag image epflcede/swissmooc-extras-app:$(NEXT_TAG) and epflcede/swissmooc-extras-nginx:$(NEXT_TAG)
 	@docker image tag swissmooc-extras-app:production epflcede/swissmooc-extras-app:$(NEXT_TAG)
 	@docker image tag swissmooc-extras-nginx:production epflcede/swissmooc-extras-nginx:$(NEXT_TAG)
-.PHONY: tag
+	@docker image tag swissmooc-extras-app:production epflcede/swissmooc-insights-app:$(NEXT_TAG) && \
+	docker image tag swissmooc-extras-nginx:production epflcede/swissmooc-extras-nginx:$(NEXT_TAG) && \
+	docker image push epflcede/swissmooc-extras-app:$(NEXT_TAG) && \
+	docker image push epflcede/swissmooc-extras-nginx:$(NEXT_TAG)
+.PHONY: tag-and-push
 
 release: ## get latest tag for the site, increment minor version, tag Docker images, push them to Docker Hub
 release: \
 	ensure-repo-is-clean \
 	create-version-json-file \
 	build \
-	tag
+	tag-and-push
 .PHONY: release
 
 help:
