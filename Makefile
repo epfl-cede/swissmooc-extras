@@ -24,6 +24,16 @@ UNTRACKED := $(shell git status --untracked-files=no --porcelain)
 # -- Rules
 default: help
 
+staging:
+	$(eval ENV := staging)
+	@:
+campus:
+	$(eval ENV := campus)
+	@:
+ensure-env:
+	@if [ -z $(ENV) ]; then echo ERROR: specify environment with make staging\|campus.; exit 1; fi
+.PHONY: ensure-env
+
 bootstrap: \
   stop \
   build-dev \
@@ -39,20 +49,20 @@ build: ## build all containers
 	$(COMPOSE_BUILD) nginx
 .PHONY: build
 
-deploy: ## deploy app
+deploy: ensure-env ## deploy app
 	$(eval DATE := $(shell date +%Y%m%d%H%M%S))
 	$(eval PWD := $(shell pwd))
 	rm -Rf $(PWD)/data/static/*
 	docker run -v $(PWD)/data/static:/opt/tmp --rm --entrypoint cp swissmooc-extras-nginx:production -r /data /opt/tmp/
 	mv data/static/data/static data/static/data/static-$(DATE)
 	tar -C data/static/data -czf static-$(DATE).tgz static-$(DATE)
-	scp static-$(DATE).tgz ubuntu@zh-staging-matomo:/data/swissmooc-extras-static/
-	ssh ubuntu@zh-staging-matomo tar -C /data/swissmooc-extras-static -xzf /data/swissmooc-extras-static/static-$(DATE).tgz
-	ssh ubuntu@zh-staging-matomo git -C /data/swissmooc-extras pull
-	ssh ubuntu@zh-staging-matomo unlink /data/swissmooc-extras-static/static
-	ssh ubuntu@zh-staging-matomo ln -s /data/swissmooc-extras-static/static-$(DATE) /data/swissmooc-extras-static/static
-	ssh ubuntu@zh-staging-matomo sudo systemctl restart swissmooc-extras.service
-	ssh ubuntu@zh-staging-matomo sudo systemctl restart nginx.service
+	scp static-$(DATE).tgz ubuntu@zh-$(ENV)-matomo:/data/swissmooc-extras-static/
+	ssh ubuntu@zh-$(ENV)-matomo tar -C /data/swissmooc-extras-static -xzf /data/swissmooc-extras-static/static-$(DATE).tgz
+	ssh ubuntu@zh-$(ENV)-matomo git -C /data/swissmooc-extras pull
+	ssh ubuntu@zh-$(ENV)-matomo unlink /data/swissmooc-extras-static/static
+	ssh ubuntu@zh-$(ENV)-matomo ln -s /data/swissmooc-extras-static/static-$(DATE) /data/swissmooc-extras-static/static
+	ssh ubuntu@zh-$(ENV)-matomo sudo systemctl restart swissmooc-extras.service
+	ssh ubuntu@zh-$(ENV)-matomo sudo systemctl restart nginx.service
 .PHONY: deploy
 
 build-dev: ## build all containers
