@@ -1,9 +1,6 @@
 #!/bin/bash
 
-logger run /data/swissmooc-extras/course_xml_dump.sh
-source /data/swissmooc-extras.env >> /dev/null 2>&1
+logger run /data/swissmooc-extras/src/backend/scripts/course_xml_dump.sh
+
 source /data/swissmooc-extras/venv/bin/activate
-
-cd /data/swissmooc-extras/sms_app
-
-python manage.py course_xml_dump
+python /data/swissmooc-extras/src/backend/manage.py course_xml_dump

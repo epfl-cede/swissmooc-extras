@@ -1,9 +1,6 @@
 #!/bin/bash
 
-logger run /data/swissmooc-extras/sync_tracking.logs.sh
-source /data/swissmooc-extras.env >> /dev/null 2>&1
+logger run /data/swissmooc-extras/src/backend/scripts/sync_tracking_logs.sh
+
 source /data/swissmooc-extras/venv/bin/activate
-
-cd /data/swissmooc-extras/sms_app
-
-python manage.py sync_tracking_logs
+python /data/swissmooc-extras/src/backend/manage.py sync_tracking_logs
