@@ -124,7 +124,6 @@ EDXAPP_DATABASES = {
         'host': config("EDXAPP_MYSQL_HOST"),
         'user': config("EDXAPP_MYSQL_USER"),
         'password': config("EDXAPP_MYSQL_PASSWORD"),
-        'db': 'edxapp',
     }
 }
 
