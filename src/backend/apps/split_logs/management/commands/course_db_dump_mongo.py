@@ -76,12 +76,9 @@ class Command(SMSCommand):
                 cmd = [
                     "mongoexport",
                     # replace last octet with old backend IP as MongoDb is still there
-                    "--host", re.sub(
-                        r'\b(\d+\.\d+\.\d+)\.\d+\b', r'\1.0',
-                        settings.EDXAPP_DATABASES["readonly"]["host"]
-                    ),
-                    "--username", "admin",
-                    "--password", "GtTD6ajkaSdzyHH8",
+                    "--host", settings.MONGODB_HOST,
+                    "--username", settings.MONGODB_USER,
+                    "--password", settings.MONGODB_PASSWORD,
                     "--authenticationDatabase", "admin",
                     "--db", o.name.lower() + "_" + table.db_name,
                     "--collection", table.name

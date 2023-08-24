@@ -267,3 +267,7 @@ AWS_STORAGE_BUCKET_NAME_ANALYTICS='{env}-analytics'.format(env=SMS_APP_ENV)
 
 EMAIL_FROM_ADDRESS = 'noreply@epfl.ch'
 EMAIL_TO_ADDRESSES = ['edx-monitor@groupes.epfl.ch']
+
+MONGODB_HOST = config("MONGODB_HOST")
+MONGODB_USER = config("MNGODB_USER", "admin")
+MONGODB_PASSWORD = config("MONGODB_PASSWORD")
