@@ -273,7 +273,7 @@ AWS_S3_CUSTOM_DOMAIN = config("AWS_S3_CUSTOM_DOMAIN")
 AWS_S3_ENDPOINT_URL = config("AWS_S3_ENDPOINT_URL")
 AWS_STORAGE_BUCKET_NAME_ANALYTICS='{env}-analytics'.format(env=SMS_APP_ENV)
 
-EMAIL_FROM_ADDRESS = 'noreply@epfl.ch'
+EMAIL_FROM_ADDRESS = 'noreply-courseware@epfl.ch'
 EMAIL_TO_ADDRESSES = ['edx-monitor@groupes.epfl.ch']
 
 MONGODB_HOST = config("MONGODB_HOST")
