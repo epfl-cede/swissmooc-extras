@@ -8,6 +8,7 @@ import subprocess
 from collections import defaultdict
 
 import gnupg
+from apps.split_logs.models import Course
 from apps.split_logs.models import Organisation
 from apps.split_logs.sms_command import SMSCommand
 from apps.split_logs.utils import bucket_name
@@ -17,12 +18,14 @@ from apps.split_logs.utils import SplitLogsUtilsDumpCourseException
 from apps.split_logs.utils import SplitLogsUtilsUploadFileException
 from apps.split_logs.utils import upload_file
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from openedx_course_structure import course_structure
 
 
 class CourseXmlDumpException(Exception):
     """Base class for other exceptions"""
     pass
+
 
 class Command(SMSCommand):
     help = "Course XML dump; running on one of the swarm server during the night"
@@ -51,9 +54,8 @@ class Command(SMSCommand):
 
             try:
                 course_file = dump_course(org, course_id, org_destination_dir)
-                structure_file = self._structure(org, course_id, course_file)
+                self._updateCourseStructure(org, course_id, course_file)
                 self.info(f"course: {course_id}")
-                self.info(f"structure: {structure_file}")
                 self.info(f"see: {course_file}")
             except SplitLogsUtilsDumpCourseException:
                 self.warning(f"Course not found: {course_id}")
@@ -74,7 +76,7 @@ class Command(SMSCommand):
                 self.info(f"course: {course_id}")
                 try:
                     course_file = dump_course(org, course_id, org_destination_dir)
-                    structure_file = self._structure(org, course_id, course_file)
+                    self._updateCourseStructure(org, course_id, course_file)
                     course_file_encrypted = self._encrypt(org, course_file)
                     self._upload(org, course_file_encrypted)
                     course_data_for_email_ok[org.name] += (course_id,)
@@ -85,19 +87,18 @@ class Command(SMSCommand):
                     self.error(f"upload: <{error}>")
                     course_data_for_email_ko[org.name] += (course_id,)
                 except CourseXmlDumpException as error:
-                    self.error(f"encrypt: <{error}>")
+                    self.error(f"script exception: <{error}>")
                     course_data_for_email_ko[org.name] += (course_id,)
 
         self._send_email(course_data_for_email_ok, course_data_for_email_ko)
 
-    def _structure(self, org, course_id, course_file):
-        structure = course_structure.structure(course_file)
-        structure_dir = self._structure_dir(org)
-        os.makedirs(structure_dir, exist_ok=True)
-        structure_file = '{}/{}.json'.format(structure_dir, course_id)
-        with open(structure_file, 'w') as f:
-            f.write(json.dumps(structure))
-        return structure_file
+    def _updateCourseStructure(self, org, course_id, course_file):
+        try:
+            course = Course.objects.get(organisation=org, name=course_id)
+            course.structure = course_structure.structure(course_file)
+            course.save()
+        except ObjectDoesNotExist:
+            raise CourseXmlDumpException(f"Course {course_id=} doesn't exists")
 
     def _upload(self, org, fname):
         upload_file(
@@ -114,7 +115,7 @@ class Command(SMSCommand):
     def _encrypt(self, org, fname):
         gpg = gnupg.GPG()
         gpg.encoding = "utf-8"
-        importres = gpg.import_keys(org.public_key.value)
+        gpg.import_keys(org.public_key.value)
         fname_encrypted = "{}.gpg".format(fname)
         with open(fname, "rb") as f:
             status = gpg.encrypt_file(
@@ -134,11 +135,13 @@ class Command(SMSCommand):
             self._organisation_dir(organisation),
             self.now
         )
+
     def _structure_dir(self, organisation):
         return "{}/{}".format(
             self._organisation_dir(organisation),
             'structure'
         )
+
     def _organisation_dir(self, organisation):
         return "{}/{}".format(
             settings.DUMP_XML_PATH,
@@ -171,7 +174,7 @@ class Command(SMSCommand):
 
         self.message = result_message + self.message
 
-        self.send_email(f"Course XML dump")
+        self.send_email("Course XML dump")
 
     def _get_courses(self, org):
         return_code, stdout, stderr = run_command([
