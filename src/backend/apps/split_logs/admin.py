@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# import json
 from django.contrib import admin
 
 from .models import Course
@@ -30,7 +31,12 @@ class FileOriginalDockerAdmin(admin.ModelAdmin):
 class CourseAdmin(admin.ModelAdmin):
     list_display = ("course_id", "organisation", "active", "created", "updated")
     search_fields = ["course_id", "organisation__name"]
+    list_filter = ["organisation"]
+    readonly_fields = ["course_id", "structure"]
 
+    # def structure_my(self, obj):
+    #     return json.JSONEncoder(indent=1).encode(obj.structure)
+    # structure_my.short_description = 'Structure'
 
 class CourseDumpAdmin(admin.ModelAdmin):
     list_display = ("course", "table", "date", "is_encypted", "created", "updated")
