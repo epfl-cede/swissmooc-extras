@@ -21,7 +21,6 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from openedx_course_structure import course_structure
 
-
 class CourseXmlDumpException(Exception):
     """Base class for other exceptions"""
     pass
@@ -97,6 +96,8 @@ class Command(SMSCommand):
             course = Course.objects.get(organisation=org, course_id=course_id)
             course.structure = course_structure.structure(course_file)
             course.save()
+        except course_structure.OpenEdxCourseStructureException as error:
+            raise CourseXmlDumpException(f"Course {course_id=} structure exception {error=}")
         except ObjectDoesNotExist:
             raise CourseXmlDumpException(f"Course {course_id=} doesn't exists")
 
