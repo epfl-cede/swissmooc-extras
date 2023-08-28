@@ -13,4 +13,4 @@ class OrganisationSerializer(HyperlinkedModelSerializer):
 class CourseSerializer(HyperlinkedModelSerializer):
     class Meta:
         model = Course
-        fields = ("id", "name", "structure", )
+        fields = ("id", "course_id", "structure", )

@@ -94,7 +94,7 @@ class Command(SMSCommand):
 
     def _updateCourseStructure(self, org, course_id, course_file):
         try:
-            course = Course.objects.get(organisation=org, name=course_id)
+            course = Course.objects.get(organisation=org, course_id=course_id)
             course.structure = course_structure.structure(course_file)
             course.save()
         except ObjectDoesNotExist:

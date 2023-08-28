@@ -28,8 +28,8 @@ class FileOriginalDockerAdmin(admin.ModelAdmin):
 
 
 class CourseAdmin(admin.ModelAdmin):
-    list_display = ("name", "organisation", "active", "created", "updated")
-    search_fields = ["name", "organisation__name"]
+    list_display = ("course_id", "organisation", "active", "created", "updated")
+    search_fields = ["course_id", "organisation__name"]
 
 
 class CourseDumpAdmin(admin.ModelAdmin):

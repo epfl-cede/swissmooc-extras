@@ -26,16 +26,19 @@ class Command(SMSCommand):
                 )
             )
             for row in cursor.fetchall():
-                name = row[0]
+                course_id = row[0]
                 try:
-                    self.info(f"Set course {name} as active")
-                    course = Course.objects.get(name=name, organisation=organisation)
+                    self.info(f"Set course {course_id=} as active")
+                    course = Course.objects.get(
+                        course_id=course_id,
+                        organisation=organisation
+                    )
                     course.active = True
                     course.save()
                 except ObjectDoesNotExist:
-                    self.info(f"Insert new course <{name}>")
+                    self.info(f"Insert new course <{course_id}>")
                     Course.objects.create(
-                        name=row[0],
+                        course_id=row[0],
                         organisation=organisation,
                         active=True
                     )

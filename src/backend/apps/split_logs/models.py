@@ -87,7 +87,7 @@ class Organisation(models.Model):
 
 
 class Course(models.Model):
-    name = models.CharField(max_length=255)
+    course_id = models.CharField(max_length=255)
     organisation = models.ForeignKey(Organisation, on_delete=models.CASCADE)
     active = models.BooleanField(default=True)
     structure = models.JSONField(default=dict, blank=True)
@@ -99,10 +99,10 @@ class Course(models.Model):
         return self.name.replace('+', '-').replace('course-v1:', '')
 
     def __str__(self):
-        return self.name
+        return self.course_id
 
     class Meta:
-        unique_together = (('name', 'organisation'),)
+        unique_together = (('course_id', 'organisation'),)
 
 
 class CourseDumpTable(models.Model):
