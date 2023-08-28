@@ -3,13 +3,9 @@ import logging
 import os
 
 import gnupg
-from apps.split_logs.models import ACTIVE
 from apps.split_logs.models import Course
 from apps.split_logs.models import CourseDump
-from apps.split_logs.models import NO
-from apps.split_logs.models import NOT_ACTIVE
 from apps.split_logs.models import Organisation
-from apps.split_logs.models import YES
 from apps.split_logs.sms_command import SMSCommand
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
@@ -32,7 +28,7 @@ class Command(SMSCommand):
 
         gpg = gnupg.GPG()
         gpg.encoding = "utf-8"
-        files = CourseDump.objects.filter(is_encypted=NO)
+        files = CourseDump.objects.filter(is_encypted=False)
         for cd in files:
             self.info(f"encrypt file for course <{cd.course.name}> table <{cd.table.name}>")
 
@@ -50,7 +46,7 @@ class Command(SMSCommand):
                 if status.ok:
                     self.info("OK")
                     os.remove(cd.dump_file_name())
-                    cd.is_encypted = YES
+                    cd.is_encypted = True
                     cd.save()
                 else:
                     self.error(f"Encrypt file error: <{status.status}>")

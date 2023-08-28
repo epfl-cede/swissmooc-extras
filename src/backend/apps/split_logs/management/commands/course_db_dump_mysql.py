@@ -6,15 +6,11 @@ import pathlib
 import subprocess
 import tempfile
 
-from apps.split_logs.models import ACTIVE
 from apps.split_logs.models import Course
 from apps.split_logs.models import CourseDump
 from apps.split_logs.models import CourseDumpTable
 from apps.split_logs.models import DB_TYPE_MYSQL
-from apps.split_logs.models import NO
-from apps.split_logs.models import NOT_ACTIVE
 from apps.split_logs.models import Organisation
-from apps.split_logs.models import YES
 from apps.split_logs.sms_command import SMSCommand
 
 
@@ -32,7 +28,7 @@ class Command(SMSCommand):
         tables = CourseDumpTable.objects.all()
         for o in organisations:
             self.info(f"process organisation <{o.name}>")
-            for course in o.course_set.filter(active=ACTIVE):
+            for course in o.course_set.filter(active=True):
                 for table in tables:
                     if table.db_type == DB_TYPE_MYSQL:
                         # check it we have processed it already

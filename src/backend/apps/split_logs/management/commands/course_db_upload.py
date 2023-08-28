@@ -5,11 +5,9 @@ import os
 import shutil
 
 import gnupg
-from apps.split_logs.models import ACTIVE
 from apps.split_logs.models import CourseDump
 from apps.split_logs.models import CourseDumpTable
 from apps.split_logs.models import Organisation
-from apps.split_logs.models import YES
 from apps.split_logs.sms_command import SMSCommand
 from apps.split_logs.utils import bucket_name
 from apps.split_logs.utils import upload_file
@@ -29,11 +27,15 @@ class Command(SMSCommand):
         tables = CourseDumpTable.objects.all()
         for org in organisations:
             self.info(f"Process organisation <{org}>")
-            cd = CourseDump.objects.filter(course__organisation=org, is_encypted=YES, date=self.now)
+            cd = CourseDump.objects.filter(
+                course__organisation=org,
+                is_encypted=True,
+                date=self.now
+            )
             if len(cd) == 0:
                 self.warning("No course dumps")
             else:
-                courses = org.course_set.filter(active=ACTIVE)
+                courses = org.course_set.filter(active=True)
                 if len(cd) == len(courses) * len(tables):
                     folder_name = cd[0].dump_folder_name()
                     if os.path.isdir(folder_name):

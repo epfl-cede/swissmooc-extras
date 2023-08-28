@@ -53,9 +53,10 @@ INSTALLED_APPS = [
     "allauth.account",
     "allauth.socialaccount",
     "allauth.socialaccount.providers.edx",
+    "rest_framework",
     "apps.home",
-    'apps.check_ssl',
-    'apps.split_logs',
+    "apps.check_ssl",
+    "apps.split_logs",
 ]
 
 MIDDLEWARE = [

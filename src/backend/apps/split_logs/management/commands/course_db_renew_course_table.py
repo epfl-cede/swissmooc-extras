@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
 
-from apps.split_logs.models import ACTIVE
 from apps.split_logs.models import Course
-from apps.split_logs.models import NOT_ACTIVE
 from apps.split_logs.models import Organisation
 from apps.split_logs.sms_command import SMSCommand
 from django.core.exceptions import ObjectDoesNotExist
@@ -19,7 +17,7 @@ class Command(SMSCommand):
 
         for organisation in Organisation.objects.filter(active=True):
             self.info(f"process organization {organisation.name}")
-            Course.objects.filter(organisation=organisation).update(active=NOT_ACTIVE)
+            Course.objects.filter(organisation=organisation).update(active=False)
 
             cursor = self.edxapp_cursor()
             cursor.execute(
@@ -32,8 +30,12 @@ class Command(SMSCommand):
                 try:
                     self.info(f"Set course {name} as active")
                     course = Course.objects.get(name=name, organisation=organisation)
-                    course.active = ACTIVE
+                    course.active = True
                     course.save()
                 except ObjectDoesNotExist:
                     self.info(f"Insert new course <{name}>")
-                    Course.objects.create(name=row[0], organisation=organisation, active=ACTIVE)
+                    Course.objects.create(
+                        name=row[0],
+                        organisation=organisation,
+                        active=True
+                    )
