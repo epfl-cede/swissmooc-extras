@@ -17,10 +17,10 @@ logger = logging.getLogger(__name__)
 class OrganisationsList(ReadOnlyModelViewSet):
     queryset = Organisation.objects.filter(active=True)
     serializer_class = OrganisationSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    # permission_classes = [permissions.IsAuthenticated]
 
 
 class CoursesList(ReadOnlyModelViewSet):
     queryset = Course.objects.filter(active=True)
     serializer_class = CourseSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    # permission_classes = [permissions.IsAuthenticated]
