@@ -9,6 +9,10 @@ class OrganisationSerializer(HyperlinkedModelSerializer):
         model = Organisation
         fields = ("id", "name", )
 
+class CourseListSerializer(HyperlinkedModelSerializer):
+    class Meta:
+        model = Course
+        fields = ("id", "course_id", )
 
 class CourseSerializer(HyperlinkedModelSerializer):
     class Meta:
