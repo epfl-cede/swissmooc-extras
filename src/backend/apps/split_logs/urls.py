@@ -6,9 +6,22 @@ from django.urls import path
 from rest_framework.urlpatterns import format_suffix_patterns
 
 urlpatterns = [
-    path("api/organisations/", OrganisationsList.as_view({"get": "list"})),
-    path("api/courses/<int:organisation_id>/", CoursesList.as_view({"get": "list"})),
-    path("api/course/<int:pk>/", CourseDetails.as_view({"get": "retrieve"})),
+    path(
+        "api/organisations/",
+        OrganisationsList.as_view({"get": "list"})
+    ),
+    path(
+        "api/courses/<int:organisation_id>/",
+        CoursesList.as_view({"get": "list"})
+    ),
+    path(
+        "api/course/<int:pk>/",
+        CourseDetails.as_view({"get": "retrieve"})
+    ),
+    path(
+        "api/course/<str:course_id>/",
+        CourseDetails.as_view({"get": "retrieve"})
+    ),
 ]
 
 urlpatterns = format_suffix_patterns(urlpatterns)

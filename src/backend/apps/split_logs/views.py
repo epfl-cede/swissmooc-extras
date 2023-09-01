@@ -37,8 +37,11 @@ class CourseDetails(ReadOnlyModelViewSet):
     serializer_class = CourseSerializer
     # permission_classes = [permissions.IsAuthenticated]
 
-    def retrieve(self, request, pk=None):
+    def retrieve(self, request, pk=None, course_id=None):
         queryset = Course.objects.all()
-        course = get_object_or_404(queryset, pk=pk)
+        if pk:
+            course = get_object_or_404(queryset, pk=pk)
+        else:
+            course = get_object_or_404(queryset, course_id=course_id)
         serializer = CourseSerializer(course)
         return Response(serializer.data)
