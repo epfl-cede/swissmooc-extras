@@ -45,10 +45,10 @@ class Command(SMSCommand):
 
                 return_code, stdout, stderr = run_command([
                     "ssh", f"ubuntu@zh-{swarm_host}",
-                    "rsync", "--chmod=D755,F644", "-avz",
+                    "rsync", "--chmod=D755,F644", "-av",
                     "-e", "'ssh -o StrictHostKeyChecking=no'",
                     "--exclude=tracking.log",
-                    f"/home/ubuntu/stacks/openedx-{instance}/logs/tracking/",
+                    f"/home/ubuntu/stacks/openedx-{instance}/logs/tracking/*.gz",
                     f"ubuntu@{settings.BACKUP_SERVER}" + ":" + remote_dir
                 ])
                 if return_code != 0:
