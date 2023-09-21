@@ -13,6 +13,12 @@ from django.conf import settings  # type: ignore
 
 class Command(SMSCommand):
     help = "Feed ClickHouse database with tracking log files"
+    "This command clean the logs and prepare it for inserting"
+    "to Clickhouse"
+
+    # command to inset data
+    # cat /data/tracking/original-docker/epfl/campus-zh-swarm-node-21{6,7}/tracking.log-2023*.cleaned | \
+    # clickhouse-client -h zh-campus-clickhouse -d insights --query="INSERT INTO epfl_tracking FORMAT JSONEachRow"
 
     logger = logging.getLogger(__name__)
 
@@ -34,7 +40,9 @@ class Command(SMSCommand):
         new_f = open(new_f_name, "w")
         with gzip.open(file_gz, "rb") as f_in:
             for line in f_in.readlines():
-                j = json.loads(line.strip())
+                line = line.decode('utf-8').strip()
+                line = line[line.index('{}'):]
+                j = json.loads(line)
                 try:
                     course_id = j['context']['course_id']
                     del j['context']['course_id']
