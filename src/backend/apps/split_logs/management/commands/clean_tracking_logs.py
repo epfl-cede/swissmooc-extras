@@ -1,0 +1,101 @@
+# -*- coding: utf-8 -*-
+import glob
+import gzip
+import json
+import logging
+from datetime import datetime
+from datetime import timezone
+
+from apps.split_logs.sms_command import SMSCommand  # type: ignore
+from dateutil.parser import parse
+from django.conf import settings  # type: ignore
+
+
+class Command(SMSCommand):
+    help = "Feed ClickHouse database with tracking log files"
+
+    logger = logging.getLogger(__name__)
+
+    def add_arguments(self, parser) -> None:
+        parser.add_argument('--instance', type=str, default="epfl")
+
+    def handle(self, *args, **options):
+        self.handle_verbosity(options)
+
+        self.info(f"{options['instance']=}")
+
+        for file_gz in sorted(glob.glob(f"/data/tracking/original-docker/{options['instance']}/*/*.gz")):
+            self.clean_file(file_gz)
+
+    def clean_file(self, file_gz: str) -> None:
+        # end_time = datetime(2023, 9, 21, 6, 0, 18, 0, tzinfo=timezone.utc)
+        errors = 0
+        new_f_name = f"{file_gz[:-3]}.cleaned"
+        new_f = open(new_f_name, "w")
+        with gzip.open(file_gz, "rb") as f_in:
+            for line in f_in.readlines():
+                j = json.loads(line.strip())
+                try:
+                    course_id = j['context']['course_id']
+                    del j['context']['course_id']
+                    org_id = j['context']['org_id']
+                    del j['context']['org_id']
+                except KeyError:
+                    course_id = ''
+                    org_id = ''
+
+                if course_id == '' or org_id == '':
+                    continue
+
+                j['course_id'] = course_id
+                j['org_id'] = org_id
+
+                t = parse(j['time'])
+                j['time'] = int(t.timestamp())
+
+                # skip recordes already in database
+                # if t > end_time: continue
+
+                if 'event' in j:
+                    if type(j['event']) is list:
+                        j['event_array'] = j['event']
+                    if type(j['event']) is str:
+                        if j['event'][0] == '{':
+                            try:
+                                event_hash = json.loads(j['event'])
+                                if 'POST' in event_hash:
+                                    del event_hash['POST']
+                                j['event_hash'] = event_hash
+                            except json.decoder.JSONDecodeError:
+                                errors += 1
+                        else:
+                            j['event_string'] = j['event']
+
+                    del j['event']
+                    # delete all other usless keys
+                    for k in [
+                            'source',
+                            'container_id',
+                            'container_name',
+                            'swarm_node',
+                            'service_type',
+                            'service_name',
+                            'instance_type',
+                            'ip',
+                            'filename',
+                            'request_id',
+                            'session',
+                            'agent',
+                            'host',
+                            'referer',
+                            'accept_language',
+                            'page'
+                    ]:
+                        try:
+                            del j[k]
+                        except KeyError:
+                            pass
+
+                new_f.write(json.dumps(j) + "\n")
+
+        print(f"{new_f_name=} {errors=}")
