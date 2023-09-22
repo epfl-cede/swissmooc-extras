@@ -34,7 +34,7 @@ class Command(SMSCommand):
             self.clean_file(file_gz)
 
     def clean_file(self, file_gz: str) -> None:
-        # end_time = datetime(2023, 9, 21, 6, 0, 18, 0, tzinfo=timezone.utc)
+        end_time = datetime(2023, 9, 21, 6, 0, 18, 0, tzinfo=timezone.utc)
         errors = 0
         new_f_name = f"{file_gz[:-3]}.cleaned"
         new_f = open(new_f_name, "w")
@@ -62,7 +62,7 @@ class Command(SMSCommand):
                 j['time'] = int(t.timestamp())
 
                 # skip recordes already in database
-                # if t > end_time: continue
+                if t > end_time: continue
 
                 if 'event' in j:
                     if type(j['event']) is list:
@@ -73,6 +73,8 @@ class Command(SMSCommand):
                                 event_hash = json.loads(j['event'])
                                 if 'POST' in event_hash:
                                     del event_hash['POST']
+                                if 'GET' in event_hash:
+                                    del event_hash['GET']
                                 j['event_hash'] = event_hash
                             except json.decoder.JSONDecodeError:
                                 errors += 1
@@ -97,7 +99,6 @@ class Command(SMSCommand):
                             'host',
                             'referer',
                             'accept_language',
-                            'page'
                     ]:
                         try:
                             del j[k]
