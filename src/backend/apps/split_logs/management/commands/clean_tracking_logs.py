@@ -41,7 +41,7 @@ class Command(SMSCommand):
         with gzip.open(file_gz, "rb") as f_in:
             for line in f_in.readlines():
                 line = line.decode('utf-8').strip()
-                line = line[line.index('{}'):]
+                line = line[line.index('{'):]
                 j = json.loads(line)
                 try:
                     course_id = j['context']['course_id']
