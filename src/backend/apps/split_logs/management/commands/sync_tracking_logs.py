@@ -48,6 +48,7 @@ class Command(SMSCommand):
                     "rsync", "--chmod=D755,F644", "-av",
                     "-e", "'ssh -o StrictHostKeyChecking=no'",
                     "--exclude=tracking.log",
+                    "--ignore-missing-args",
                     f"/home/ubuntu/stacks/openedx-{instance}/logs/tracking/*.gz",
                     f"ubuntu@{settings.BACKUP_SERVER}" + ":" + remote_dir
                 ])

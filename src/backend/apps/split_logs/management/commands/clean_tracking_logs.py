@@ -8,7 +8,6 @@ from datetime import timezone
 
 from apps.split_logs.sms_command import SMSCommand  # type: ignore
 from dateutil.parser import parse
-from django.conf import settings  # type: ignore
 
 
 class Command(SMSCommand):
