@@ -58,7 +58,7 @@ class Command(SMSCommand):
                 j['org_id'] = org_id
 
                 t = parse(j['time'])
-                j['time'] = int(t.timestamp())
+                j['time'] = t.replace(tzinfo=None).isoformat()
 
                 # skip recordes already in database
                 if t > end_time: continue
