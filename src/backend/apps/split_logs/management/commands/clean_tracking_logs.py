@@ -54,6 +54,12 @@ class Command(SMSCommand):
                 if course_id == '' or org_id == '':
                     continue
 
+                # skip garbage course_id field, usually comes with garbage queries from home-made hackers
+                try:
+                    course_id.index('course-v1:')
+                except ValueError:
+                    continue
+
                 j['course_id'] = course_id
                 j['org_id'] = org_id
 
