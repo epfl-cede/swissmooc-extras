@@ -47,11 +47,14 @@ class Command(SMSCommand):
                     del j['context']['course_id']
                     org_id = j['context']['org_id']
                     del j['context']['org_id']
+                    org_id = j['username']
                 except KeyError:
                     course_id = ''
                     org_id = ''
+                    username = ''
 
-                if course_id == '' or org_id == '':
+                # skip rows without org_id, course_id or username
+                if course_id == '' or org_id == '' or username == '':
                     continue
 
                 # skip garbage course_id field, usually comes with garbage queries from home-made hackers
