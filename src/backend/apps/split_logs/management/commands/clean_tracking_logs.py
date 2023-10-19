@@ -47,7 +47,7 @@ class Command(SMSCommand):
                     del j['context']['course_id']
                     org_id = j['context']['org_id']
                     del j['context']['org_id']
-                    org_id = j['username']
+                    username = j['username']
                 except KeyError:
                     course_id = ''
                     org_id = ''
