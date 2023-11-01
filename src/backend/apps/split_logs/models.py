@@ -96,7 +96,7 @@ class Course(models.Model):
 
     @property
     def folder(self):
-        return self.name.replace('+', '-').replace('course-v1:', '')
+        return self.course_id.replace('+', '-').replace('course-v1:', '')
 
     def __str__(self):
         return self.course_id

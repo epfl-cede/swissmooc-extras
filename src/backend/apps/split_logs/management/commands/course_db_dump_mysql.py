@@ -110,6 +110,6 @@ class Command(SMSCommand):
             "SELECT user_id FROM {db_name}.student_courseenrollment WHERE course_id = %s".format(
                 db_name="docker_" + organisation.name.lower() + "_edxapp"
             ),
-            (course.name,)
+            (course.course_id,)
         )
         return [row[0] for row in cursor.fetchall()]
