@@ -13,32 +13,32 @@ from apps.split_logs.sms_command import SMSCommand
 from dateutil import parser
 from django.conf import settings
 from django.db.models import F
-from django.db.models import Q
 from django.db.models import Value
 from django.db.models.functions import Concat
+
+logger = logging.getLogger(__name__)
 
 
 class Command(SMSCommand):
     help = 'Split tracking logs by organizations'
-    logger = logging.getLogger(__name__)
 
     def add_arguments(self, parser):
         parser.add_argument('--limit', type=int, default=3)
         parser.add_argument('--platform', type=str, default=PLATFORM_OLD)
 
     def handle(self, *args, **options):
-        self.handle_verbosity(options)
+        self.setOptions(**options)
 
         if options['platform'] == PLATFORM_OLD:
-            self.info("get files for split from old platform")
+            logger.info("get files for split from old platform")
             self.platform = 'old'
             self._handle_old(options['limit'])
         elif options['platform'] == PLATFORM_NEW:
-            self.info("get files for split from new platform")
+            logger.info("get files for split from new platform")
             self.platform = 'new'
             self._handle_new(options['limit'])
         else:
-            self.warning(f"unknown platform <{options['platform']}>")
+            logger.warning(f"unknown platform <{options['platform']}>")
 
     def _handle_old(self, limit):
         self.original_dir = settings.TRACKING_LOGS_ORIGINAL_DST
@@ -74,7 +74,7 @@ class Command(SMSCommand):
             for filename in files:
                 filename_full = "{}/{}".format(dirname, filename)
                 if filename_full in processed:
-                    self.debug(f"file <{filename_full}> already processed")
+                    logger.debug(f"file <{filename_full}> already processed")
                 else:
                     # create dir row if not exists
                     dir_original, created = DirOriginal.objects.update_or_create(name=dirname)
@@ -87,9 +87,9 @@ class Command(SMSCommand):
                 if cnt >= limit: break
             if cnt >= limit: break
         if cnt == 0:
-            self.info("all files were processed before this run")
+            logger.info("all files were processed before this run")
         else:
-            self.info(f"{cnt} files were processed")
+            logger.info(f"{cnt} files were processed")
 
     def _get_processed(self):
         return list(
@@ -100,7 +100,7 @@ class Command(SMSCommand):
         )
 
     def _process_file(self, dirname, filename):
-        self.info(f"process file {dirname}/{filename}")
+        logger.info(f"process file {dirname}/{filename}")
 
         # reset counters
         lines_total = 0
@@ -113,9 +113,9 @@ class Command(SMSCommand):
                 lines_total += 1
                 try:
                     data = json.loads(line.decode('utf-8'))
-                except json.decoder.JSONDecodeError as e:
+                except json.decoder.JSONDecodeError:
                     lines_error += 1
-                except UnicodeDecodeError as e:
+                except UnicodeDecodeError:
                     lines_error += 1
                 else:
                     time = parser.parse(data['time'])
@@ -123,13 +123,13 @@ class Command(SMSCommand):
                     # detect orzanization string
                     organization = self._detect_org(data['context'], dirname)
 
-                    self.debug(f"line for organization <{organization}>")
+                    logger.debug(f"line for organization <{organization}>")
 
                     # create dir
                     splited_dir = '{}/{}'.format(self.splitted_dir, organization)
                     try:
                         os.mkdir(splited_dir)
-                    except FileExistsError as e:
+                    except FileExistsError:
                         pass
 
                     # put line to corresponding files
@@ -147,7 +147,7 @@ class Command(SMSCommand):
                 splited_file = gzip.open(splited_filename, 'ab+')
                 splited_file.write(b''.join(lines_for_add[organization][date]))
 
-        self.info(f"error lines {lines_error} of {lines_total}")
+        logger.info(f"error lines {lines_error} of {lines_total}")
         return lines_total, lines_error
 
     def _detect_org(self, context, dirname):
@@ -167,7 +167,7 @@ class Command(SMSCommand):
     def _get_list(self):
         dirs = {}
         for (dirpath, dirnames, filenames) in os.walk(self.original_dir):
-            files = [ fi for fi in filenames if fi.endswith(".gz") ]
+            files = [fi for fi in filenames if fi.endswith(".gz")]
             if len(files):
                 files.sort()
                 dirs[dirpath[len(self.original_dir)+1:]] = files

@@ -3,8 +3,6 @@ import logging
 import os
 import shutil
 import subprocess
-import tempfile
-from time import sleep
 
 import boto3
 import botocore
@@ -17,13 +15,16 @@ class SplitLogsUtilsException(Exception):
     """Base class for other exceptions"""
     pass
 
+
 class SplitLogsUtilsDumpCourseException(SplitLogsUtilsException):
     """Base class for other exceptions"""
     pass
 
+
 class SplitLogsUtilsUploadFileException(SplitLogsUtilsException):
     """Base class for other exceptions"""
     pass
+
 
 def upload_file(bucket, organisation, original_name, upload_name):
     s3 = boto3.client('s3', endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL"))
@@ -31,12 +32,12 @@ def upload_file(bucket, organisation, original_name, upload_name):
 
     # don't need to check it before copy each file
     #
-    #try:
-    #    response = s3.list_buckets()
-    #except Exception as e:
-    #    raise Exception("SWICH Containers error: '%s'", e)
-    #if settings.AWS_STORAGE_BUCKET_NAME_ANALYTICS not in map(lambda i: i['Name'], response['Buckets']):
-    #    raise Exception("Can not fine bucket %s", settings.AWS_STORAGE_BUCKET_NAME_ANALYTICS)
+    # try:
+    #     response = s3.list_buckets()
+    # except Exception as e:
+    #     raise Exception("SWICH Containers error: '%s'", e)
+    # if settings.AWS_STORAGE_BUCKET_NAME_ANALYTICS not in map(lambda i: i['Name'], response['Buckets']):
+    #     raise Exception("Can not fine bucket %s", settings.AWS_STORAGE_BUCKET_NAME_ANALYTICS)
 
     fileinfo = os.stat(original_name)
     try:
@@ -45,8 +46,17 @@ def upload_file(bucket, organisation, original_name, upload_name):
         # this is real example local = 237996, remote = 238000
         # s3.head_object sometime returns slightly different filesize,
         # though downloaded file has exactly the same as local file size.
-        if  max(fileinfo.st_size, head['ContentLength']) - min(fileinfo.st_size, head['ContentLength']) > 10:
-            LOGGER.error("File %s has different size(local = %d against remote = %d), remove it", original_name, fileinfo.st_size, head['ContentLength'])
+        diff = max(
+            fileinfo.st_size, head['ContentLength']
+        ) - min(
+            fileinfo.st_size, head['ContentLength']
+        )
+        if diff > 10:
+            LOGGER.error(
+                f"File {original_name=} has different size"
+                f"(local = {fileinfo.st_size}"
+                f"remote = {head['ContentLength']}), remove it"
+            )
             s3.delete_object(Bucket=bucket, Key=upload_name)
             # re-upload it
             upload_file(bucket, organisation, original_name, upload_name)
@@ -59,25 +69,32 @@ def upload_file(bucket, organisation, original_name, upload_name):
                 os.remove(original_name)
                 LOGGER.info("file '%s' uploaded", original_name)
             except botocore.exceptions.ClientError as error:
-                raise SplitLogsUtilsUploadFileException("Upload file exception <%s>: %s", upload_name, error)
+                raise SplitLogsUtilsUploadFileException(
+                    f"Upload file exception <{upload_name=}>: {error=}"
+                )
         else:
             LOGGER.error("File exists? (%s)", e)
 
+
 def bucket_name(organisation):
-    return '{}-{}'.format(settings.AWS_STORAGE_BUCKET_NAME_ANALYTICS, str(organisation).lower())
+    org = str(organisation).lower()
+    return f"{settings.AWS_STORAGE_BUCKET_NAME_ANALYTICS}-{org}"
+
 
 def run_command(cmd):
     LOGGER.debug(f"Run command: <{' '.join(cmd)}>")
     process = subprocess.Popen(
         cmd,
-        shell = False,
-        stdout = subprocess.PIPE,
-        stderr = subprocess.PIPE
+        shell=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
     )
     stdout, stderr = process.communicate()
     return_code = process.returncode
 
-    return return_code, stdout.strip().decode("utf-8"), stderr.strip().decode("utf-8")
+    stdout = stdout.strip().decode("utf-8")
+    stderr = stderr.strip().decode("utf-8")
+    return return_code, stdout, stderr
 
 
 def dump_course(organization, course_id, destination_folder):
@@ -94,19 +111,21 @@ def dump_course(organization, course_id, destination_folder):
         'docker', 'service', 'ps', container_name, '--filter', 'desired-state=running'
     ])
     if return_code != 0:
-        raise SplitLogsUtilsDumpCourseException('could not get VM with %s service: %s', container_name, stderr)
+        raise SplitLogsUtilsDumpCourseException(
+            f"could not get VM with {container_name=} service: {stderr=}"
+        )
 
     try:
         container_host = 'ubuntu@%s' % stdout.split('\n')[1].split()[3]
     except IndexError:
-        raise SplitLogsUtilsDumpCourseException('failed to parse VM fom the string: %s', stdout)
+        raise SplitLogsUtilsDumpCourseException(f"failed to parse VM from the string: {stdout=}")
 
     cmd = ['ssh', container_host]
     cmd_container = cmd + [
         '/home/ubuntu/.local/bin/docker-run-command', container_name
     ]
     import_folder_container = '/openedx/data/export/course_export/course'
-    import_folder = '/var/lib/docker/volumes/openedx-%s_openedx-data/_data/export/course_export' % organization_name
+    import_folder = f"/var/lib/docker/volumes/openedx-{organization_name}_openedx-data/_data/export/course_export"
 
     # Export course
     return_code, stdout, stderr = run_command(cmd_container + [
@@ -151,7 +170,10 @@ def dump_course(organization, course_id, destination_folder):
         'sudo', 'chown', '-R', 'ubuntu:ubuntu', tmp_folder
     ])
     if return_code != 0:
-        raise SplitLogsUtilsDumpCourseException('chown tmp folder error: %s', stderr)
+        raise SplitLogsUtilsDumpCourseException(
+            'chown tmp folder error: %s',
+            stderr
+        )
 
     # Make archive & move course to the destination folder
     course_destination_folder = destination_folder + '/' + course_id[10:]
@@ -161,7 +183,10 @@ def dump_course(organization, course_id, destination_folder):
         'rsync', '-avz', container_host + ':' + tmp_folder + '/', course_destination_folder
     ])
     if return_code != 0:
-        raise SplitLogsUtilsDumpCourseException('course rsync error: %s', stderr)
+        raise SplitLogsUtilsDumpCourseException(
+            'course rsync error: %s',
+            stderr
+        )
 
     zip_name = shutil.make_archive(
         course_destination_folder,

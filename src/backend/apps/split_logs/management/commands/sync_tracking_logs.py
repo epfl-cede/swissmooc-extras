@@ -1,46 +1,43 @@
 # -*- coding: utf-8 -*-
-import datetime
 import logging
-import os
-import shutil
-import socket
-import subprocess
-from collections import defaultdict
 
 from apps.split_logs.sms_command import SMSCommand
 from apps.split_logs.utils import run_command
 from django.conf import settings
 
+logger = logging.getLogger(__name__)
+
+
 class Command(SMSCommand):
     help = "Sync tracking logs files from swarm VMs to backup server"
 
-    logger = logging.getLogger(__name__)
-
     def handle(self, *args, **options):
-        self.handle_verbosity(options)
+        self.setOptions(**options)
 
         for swarm in settings.SWARMS:
             swarm_host = f"{settings.SMS_APP_ENV}-swarm-{swarm}"
-            self.info(f"swarm node: {swarm_host}")
+            logger.info(f"process {swarm_host=}")
             return_code, stdout, stderr = run_command([
-                "ssh", f"ubuntu@zh-{swarm_host}",
+                "ssh", "-o", "StrictHostKeyChecking=no",
+                f"ubuntu@zh-{swarm_host}",
                 "hostname",
             ])
             if return_code != 0:
-                self.error(f"get hostname error: <{stderr}>")
+                logger.error(f"remote command {stderr=}")
                 continue
 
             swarm_hostname = stdout
             for instance in settings.INSTANCES:
-                remote_dir = str(f"/backup/{settings.SMS_APP_ENV}/tracking-docker/{instance}/{swarm_hostname}/")
-                self.info(f"instance: {instance}")
+                logger.info(f"process {instance=}")
+                remote_dir = f"/backup/{settings.SMS_APP_ENV}/tracking-docker/{instance}/{swarm_hostname}/"
                 return_code, stdout, stderr = run_command([
-                    "ssh", f"ubuntu@{settings.BACKUP_SERVER}",
+                    "ssh", "-o", "StrictHostKeyChecking=no",
+                    f"ubuntu@{settings.BACKUP_SERVER}",
                     "mkdir", "-p",
                     remote_dir,
                 ])
                 if return_code != 0:
-                    self.error(f"make directory error: <{stderr}>")
+                    logger.error(f"remote command {stderr=}")
                     continue
 
                 return_code, stdout, stderr = run_command([
@@ -53,7 +50,7 @@ class Command(SMSCommand):
                     f"ubuntu@{settings.BACKUP_SERVER}" + ":" + remote_dir
                 ])
                 if return_code != 0:
-                    self.error(f"sync error: <{stderr}>")
+                    logger.error(f"remote command {stderr=}")
                     continue
 
             return_code, stdout, stderr = run_command([
@@ -65,7 +62,7 @@ class Command(SMSCommand):
                 "-delete"
             ])
             if return_code != 0:
-                self.error(f"delete files error: <{stderr}>")
+                logger.error(f"remote command {stderr=}")
 
         return_code, stdout, stderr = run_command([
             "ssh", f"ubuntu@{settings.BACKUP_SERVER}",
@@ -74,13 +71,15 @@ class Command(SMSCommand):
             "-type", "f"
         ])
         if return_code != 0:
-            self.error(f"find files error: <{stderr}>")
+            logger.error(f"remote command {stderr=}")
         else:
             files = stdout.split("\n")
             result_message = []
-            result_message.append("%d files were synced in last 24 hours:" % len(files))
+            result_message.append(
+                f"{len(files)} files were synced in last 24 hours:"
+            )
             for _file in files:
-                result_message.append(" %s" % _file)
+                result_message.append(f" {_file}")
             result_message.append("")
             result_message.append("Detailed log:")
 

@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
-import datetime
-import json
 import logging
 import os
 import shutil
-import subprocess
 from collections import defaultdict
 
 import gnupg
@@ -21,43 +18,47 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from openedx_course_structure import course_structure
 
+
+logger = logging.getLogger(__name__)
+
+
 class CourseXmlDumpException(Exception):
     """Base class for other exceptions"""
     pass
 
 
 class Command(SMSCommand):
-    help = "Course XML dump; running on one of the swarm server during the night"
-
-    logger = logging.getLogger(__name__)
+    help = "Course XML dump, save it to S3, extract course structure"
 
     def add_arguments(self, parser):
+        parser.add_argument('--org', type=str, default="")
         parser.add_argument('--course_id', type=str, default="")
 
     def handle(self, *args, **options):
-        self.handle_verbosity(options)
+        self.setOptions(**options)
 
-        if options['course_id'] == "":
-            self.handle_all_courses()
+        if options['org'] and options['course_id']:
+            self.handle_course(options['org'], options['course_id'])
+        elif options['org']:
+            self.handle_org(options['org'])
         else:
-            self.handle_course(options['course_id'])
+            self.handle_all_courses()
 
-    def handle_course(self, course_id):
-        organisations = Organisation.objects.filter(active=True)
-        for org in organisations:
-            self.info(f"organisation: {org.name}")
+    def handle_course(self, org: str, course_id: str):
+        org = Organisation.objects.get(active=True, name=org)
+        logger.info(f"organisation: {org.name}")
 
-            # clean/create ogranigation destination directory
-            org_destination_dir = self._dump_dir(org)
-            self._create_org_dir(org_destination_dir)
+        # clean/create ogranigation destination directory
+        org_destination_dir = self._dump_dir(org)
+        self._create_org_dir(org_destination_dir)
 
-            try:
-                course_file = dump_course(org, course_id, org_destination_dir)
-                self._updateCourseStructure(org, course_id, course_file)
-                self.info(f"course: {course_id}")
-                self.info(f"see: {course_file}")
-            except SplitLogsUtilsDumpCourseException:
-                self.warning(f"Course not found: {course_id}")
+        try:
+            course_file = dump_course(org, course_id, org_destination_dir)
+            self._updateCourseStructure(org, course_id, course_file)
+            logger.info(f"course: {course_id}")
+            logger.info(f"see: {course_file}")
+        except SplitLogsUtilsDumpCourseException:
+            logger.warning(f"Course not found: {course_id}")
 
     def handle_all_courses(self):
         course_data_for_email_ok = defaultdict(list)
@@ -65,14 +66,14 @@ class Command(SMSCommand):
 
         organisations = Organisation.objects.filter(active=True)
         for org in organisations:
-            self.info(f"organisation: {org.name}")
+            logger.info(f"organisation: {org.name}")
 
             # clean/create ogranigation destination directory
             org_destination_dir = self._dump_dir(org)
             self._create_org_dir(org_destination_dir)
 
             for course_id in self._get_courses(org):
-                self.info(f"course: {course_id}")
+                logger.info(f"course: {course_id}")
                 try:
                     course_file = dump_course(org, course_id, org_destination_dir)
                     self._updateCourseStructure(org, course_id, course_file)
@@ -80,13 +81,13 @@ class Command(SMSCommand):
                     self._upload(org, course_file_encrypted)
                     course_data_for_email_ok[org.name] += (course_id,)
                 except SplitLogsUtilsDumpCourseException as error:
-                    self.error(f"dump course: <{error}>")
+                    logger.error(f"dump course: <{error}>")
                     course_data_for_email_ko[org.name] += (course_id,)
                 except SplitLogsUtilsUploadFileException as error:
-                    self.error(f"upload: <{error}>")
+                    logger.error(f"upload: <{error}>")
                     course_data_for_email_ko[org.name] += (course_id,)
                 except CourseXmlDumpException as error:
-                    self.error(f"script exception: <{error}>")
+                    logger.error(f"script exception: <{error}>")
                     course_data_for_email_ko[org.name] += (course_id,)
 
         self._send_email(course_data_for_email_ok, course_data_for_email_ko)
@@ -184,7 +185,7 @@ class Command(SMSCommand):
             "python", "manage.py", "cms", "--settings=tutor.production", "dump_course_ids"
         ])
         if return_code != 0:
-            self.error(f"get course list error: <{stderr}>")
+            logger.error(f"get course list error: <{stderr}>")
             return []
 
         return stdout.strip("\n").split("\n")[1:]

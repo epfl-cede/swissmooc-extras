@@ -8,31 +8,29 @@ from apps.split_logs.models import PLATFORM_OLD
 from apps.split_logs.sms_command import SMSCommand
 from apps.split_logs.utils import bucket_name
 from apps.split_logs.utils import upload_file
-from dateutil import parser
 from django.conf import settings
-from django.core.management.base import CommandError
+
+logger = logging.getLogger(__name__)
 
 
 class Command(SMSCommand):
     help = 'Upload files to SWITCH Drive'
-
-    logger = logging.getLogger(__name__)
 
     def add_arguments(self, parser):
         parser.add_argument('--limit', type=int, default=3)
         parser.add_argument('--platform', type=str, default=PLATFORM_OLD)
 
     def handle(self, *args, **options):
-        self.handle_verbosity(options)
+        self.setOptions(**options)
 
         if options['platform'] == PLATFORM_OLD:
-            self.info("get files for split from old platform")
+            logger.info("get files for split from old platform")
             self._handle_old(options['limit'])
         elif options['platform'] == PLATFORM_NEW:
-            self.info("get files for split from new platform")
+            logger.info("get files for split from new platform")
             self._handle_new(options['limit'])
         else:
-            self.warning(f"unknown platform <{options['platform']}>")
+            logger.warning(f"unknown platform <{options['platform']}>")
 
     def _handle_old(self, limit):
         self.remote_dir = 'tracking-logs'
@@ -55,7 +53,7 @@ class Command(SMSCommand):
             aliases = o.aliases.split(',')
             for a in aliases:
                 org = a.strip()
-                self.info(f"process organisation alias <{org}>")
+                logger.info(f"process organisation alias <{org}>")
                 filelist = self._get_list(org)
                 for encripted_file in filelist:
                     upload_file(
@@ -83,5 +81,5 @@ class Command(SMSCommand):
             path = "{}/{}".format(self.encrypted_dir, org)
             files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
         except FileNotFoundError:
-            self.warning(f"folder for organisation <{org}> does not exist")
+            logger.warning(f"folder for organisation <{org}> does not exist")
         return files

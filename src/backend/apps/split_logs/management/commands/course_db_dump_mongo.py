@@ -4,56 +4,67 @@ import json
 import logging
 import os
 import pathlib
-import re
 import subprocess
 import tempfile
 
-from apps.split_logs.models import Course
 from apps.split_logs.models import CourseDump
 from apps.split_logs.models import CourseDumpTable
 from apps.split_logs.models import DB_TYPE_MONGO
-from apps.split_logs.models import DB_TYPE_MYSQL
 from apps.split_logs.models import Organisation
 from apps.split_logs.sms_command import SMSCommand
 from django.conf import settings
-from django.core.exceptions import ObjectDoesNotExist
-from django.db import connections
 
 
 TABLE_COLUMNS = {}
+logger = logging.getLogger(__name__)
+
 
 class Command(SMSCommand):
     help = "Course DB dump mongo tables"
     data_files = {}
-    logger = logging.getLogger(__name__)
 
     def handle(self, *args, **options):
-        self.handle_verbosity(options)
+        self.setOptions(**options)
 
         organisations = Organisation.objects.filter(active=True)
-        self.debug(f"Select <{len(organisations)}> organisations")
+        logger.debug(f"Select <{len(organisations)}> organisations")
 
         tables = CourseDumpTable.objects.all()
         for o in organisations:
-            self.info(f"process organization <{o.name}>")
+            logger.info(f"process organization <{o.name}>")
             self._dump_mongo_tabes(o)
             for course in o.course_set.filter(active=True):
                 for table in tables:
                     if table.db_type == DB_TYPE_MONGO:
                         # check it we have processed it already
-                        processed = CourseDump.objects.filter(course=course, table=table, date=datetime.datetime.now()).count()
+                        processed = CourseDump.objects.filter(
+                            course=course,
+                            table=table,
+                            date=datetime.datetime.now()
+                        ).count()
                         if processed == 0:
                             self._process_mongo_table(course, table)
 
     def _process_mongo_table(self, course, table):
         try:
-            cd = CourseDump.objects.get(course=course, table=table, date=datetime.datetime.now())
+            cd = CourseDump.objects.get(
+                course=course,
+                table=table,
+                date=datetime.datetime.now()
+            )
         except CourseDump.DoesNotExist:
-            cd = CourseDump(course=course, table=table, date=datetime.datetime.now())
+            cd = CourseDump(
+                course=course,
+                table=table,
+                date=datetime.datetime.now()
+            )
 
         dump_file_name = cd.dump_file_name()
-        pathlib.Path(os.path.dirname(dump_file_name)).mkdir(parents=True, exist_ok=True)
-        self.info(f"dump <{table.name}> table into <{dump_file_name}>")
+        pathlib.Path(os.path.dirname(dump_file_name)).mkdir(
+            parents=True,
+            exist_ok=True
+        )
+        logger.info(f"dump <{table.name}> table into <{dump_file_name}>")
         with open(dump_file_name, "w") as f:
             with open(self.data_files[table.name], "r") as data:
                 for line in data:

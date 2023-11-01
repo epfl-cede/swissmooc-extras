@@ -12,18 +12,17 @@ class SMSCommand(BaseCommand):
     now = datetime.datetime.now().date()
     is_error = False
 
-    def handle_verbosity(self, options):
-        verbosity = int(options["verbosity"])
-        self._handle_verbosity('split_logs', verbosity)
-        self._handle_verbosity('check_ssl', verbosity)
+    def setOptions(self, **options):
+        if "verbosity" in options:
+            verbosity = int(options["verbosity"])
+            root_logger = logging.getLogger("")
+            if verbosity == 3:
+                root_logger.setLevel(logging.DEBUG)
+            elif verbosity == 2:
+                root_logger.setLevel(logging.INFO)
+            else:
+                root_logger.setLevel(logging.WARNING)
 
-    def _handle_verbosity(self, app, verbosity):
-        logger = logging.getLogger(app)
-
-        if verbosity > 1:
-            logger.setLevel(logging.DEBUG)
-        elif verbosity > 0:
-            logger.setLevel(logging.INFO)
 
     def edxapp_cursor(self):
         db = MySQLdb.connect(**settings.EDXAPP_DATABASES['readonly'])
@@ -38,24 +37,3 @@ class SMSCommand(BaseCommand):
             ('oleg.demakov@epfl.ch',),
             fail_silently=False,
         )
-
-    def debug(self, message):
-        self.logger.debug(message)
-        now = datetime.datetime.now()
-        self.message.append(f"[{now:%Y-%m-%d %H:%M}] DEBUG {message}")
-
-    def info(self, message):
-        self.logger.info(message)
-        now = datetime.datetime.now()
-        self.message.append(f"[{now:%Y-%m-%d %H:%M}] INFO {message}")
-
-    def warning(self, message):
-        self.logger.warning(message)
-        now = datetime.datetime.now()
-        self.message.append(f"[{now:%Y-%m-%d %H:%M}] WARNING {message}")
-
-    def error(self, message):
-        self.is_error = True
-        self.logger.error(message)
-        now = datetime.datetime.now()
-        self.message.append(f"[{now:%Y-%m-%d %H:%M}] ERROR {message}")

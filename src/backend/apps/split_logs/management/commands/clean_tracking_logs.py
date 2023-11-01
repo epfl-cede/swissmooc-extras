@@ -9,6 +9,8 @@ from datetime import timezone
 from apps.split_logs.sms_command import SMSCommand  # type: ignore
 from dateutil.parser import parse
 
+logger = logging.getLogger(__name__)
+
 
 class Command(SMSCommand):
     help = "Feed ClickHouse database with tracking log files"
@@ -19,15 +21,13 @@ class Command(SMSCommand):
     # cat /data/tracking/original-docker/epfl/campus-zh-swarm-node-21{6,7}/tracking.log-2023*.cleaned | \
     # clickhouse-client -h zh-campus-clickhouse -d insights --query="INSERT INTO epfl_tracking FORMAT JSONEachRow"
 
-    logger = logging.getLogger(__name__)
-
     def add_arguments(self, parser) -> None:
         parser.add_argument('--instance', type=str, default="epfl")
 
     def handle(self, *args, **options):
-        self.handle_verbosity(options)
+        self.setOptions(**options)
 
-        self.info(f"{options['instance']=}")
+        logger.info(f"{options['instance']=}")
 
         for file_gz in sorted(glob.glob(f"/data/tracking/original-docker/{options['instance']}/*/*.gz")):
             self.clean_file(file_gz)

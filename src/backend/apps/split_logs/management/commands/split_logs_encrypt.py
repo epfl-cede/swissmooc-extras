@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import datetime
-import gzip
 import logging
 import os
 import pathlib
@@ -10,16 +9,16 @@ from apps.split_logs.models import Organisation
 from apps.split_logs.models import PLATFORM_NEW
 from apps.split_logs.models import PLATFORM_OLD
 from apps.split_logs.sms_command import SMSCommand
-from dateutil import parser
 from django.conf import settings
 
+logger = logging.getLogger(__name__)
 
 MTIME_LESS_DAYS_AGO = 2
 MTIME_GREATER_DAYS_AGO = 30
 
+
 class Command(SMSCommand):
     help = 'Encrypt files with organization keys and put it on SWITCH Drive'
-    logger = logging.getLogger(__name__)
 
     def add_arguments(self, parser):
         parser.add_argument('--limit', type=int, default=3)
@@ -29,13 +28,13 @@ class Command(SMSCommand):
         self.handle_verbosity(options)
 
         if options['platform'] == PLATFORM_OLD:
-            self.info("get files for split from old platform")
+            logger.info("get files for split from old platform")
             self._handle_old(options['limit'])
         elif options['platform'] == PLATFORM_NEW:
-            self.info("get files for split from new platform")
+            logger.info("get files for split from new platform")
             self._handle_new(options['limit'])
         else:
-            self.warning(f"unknown platform <{options['platform']}>")
+            logger.warning(f"unknown platform <{options['platform']}>")
 
     def _handle_old(self, limit):
         self.splitted_dir = settings.TRACKING_LOGS_SPLITTED
@@ -53,23 +52,25 @@ class Command(SMSCommand):
         cnt = 0
         organisations = Organisation.objects.filter(active=True)
         for o in organisations:
-            self.info(f"process organisation {o.name}")
+            logger.info(f"process organisation {o.name}")
 
             files_for_process = self._get_files_for_process(o)
 
             gpg = gnupg.GPG()
             gpg.encoding = 'utf-8'
-            importres = gpg.import_keys(o.public_key.value)
+            gpg.import_keys(o.public_key.value)
 
             for file_name, alias_list in files_for_process.items():
-                self.debug(
-                    f"process file <{file_name}> for organization <{alias_list[0][0]}> with aliases <{list(map(lambda a: a[1], alias_list))}>"
+                org = alias_list[0][0]
+                aliases = list(map(lambda a: a[1], alias_list))
+                logger.debug(
+                    f"process {file_name=} for {org=} with {aliases=}"
                 )
 
                 # collect data into temporary file
                 buff = b''
                 for org in alias_list:
-                    orig_file_full_path = "{}/{}/{}".format(self.splitted_dir, org[1], file_name)
+                    orig_file_full_path = f"{self.splitted_dir}/{org[1]}/{file_name}"
                     with open(orig_file_full_path, 'rb') as f:
                         buff += f.read()
 
@@ -80,9 +81,10 @@ class Command(SMSCommand):
                     output=self._get_encrypted_file_full_path(o, file_name)
                 )
                 if status.ok:
-                    self.info(f"success encrypt file <{self._get_encrypted_file_full_path(o, file_name)}>")
+                    file_path = self._get_encrypted_file_full_path(o, file_name)
+                    logger.info(f"success encrypt {file_path=}")
                 else:
-                    self.error(f"error: {status.status}")
+                    logger.error(f"error: {status.status}")
 
                 cnt += 1
                 if cnt >= limit: break
@@ -120,5 +122,5 @@ class Command(SMSCommand):
             path = "{}/{}".format(self.splitted_dir, org)
             files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
         except FileNotFoundError:
-            self.warning(f"folder for organisation alias <{org}> does not exist")
+            logger.warning(f"folder for organisation alias <{org}> does not exist")
         return files

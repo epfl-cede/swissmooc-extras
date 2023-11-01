@@ -13,27 +13,28 @@ from apps.split_logs.utils import bucket_name
 from apps.split_logs.utils import upload_file
 from django.conf import settings
 
+logger = logging.getLogger(__name__)
+
 
 class Command(SMSCommand):
     help = "Course DB encrypt files"
-    logger = logging.getLogger(__name__)
 
     def handle(self, *args, **options):
-        self.handle_verbosity(options)
+        self.setOptions(**options)
 
         gpg = gnupg.GPG()
         gpg.encoding = "utf-8"
         organisations = Organisation.objects.filter(active=True)
         tables = CourseDumpTable.objects.all()
         for org in organisations:
-            self.info(f"Process organisation <{org}>")
+            logger.info(f"Process organisation <{org}>")
             cd = CourseDump.objects.filter(
                 course__organisation=org,
                 is_encypted=True,
                 date=self.now
             )
             if len(cd) == 0:
-                self.warning("No course dumps")
+                logger.warning("No course dumps")
             else:
                 courses = org.course_set.filter(active=True)
                 if len(cd) == len(courses) * len(tables):
@@ -50,7 +51,7 @@ class Command(SMSCommand):
 
                     if os.path.exists(zip_name):
                         bucker_filename = f"{org.name}/dump-db/{os.path.basename(zip_name)}"
-                        self.info(f"Upload file <{zip_name}> to <{bucker_filename}>")
+                        logger.info(f"Upload file <{zip_name}> to <{bucker_filename}>")
                         upload_file(
                             bucket_name(org),
                             org,
@@ -62,6 +63,6 @@ class Command(SMSCommand):
                         # remove original folder
                         shutil.rmtree(folder_name)
                 else:
-                    self.warning(
+                    logger.warning(
                         f"Not all tables were dumped/encrypted, please check: organization <{org.name}>, date=<{self.now}>"
                     )

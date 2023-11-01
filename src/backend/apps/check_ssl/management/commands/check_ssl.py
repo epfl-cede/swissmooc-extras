@@ -10,39 +10,41 @@ from apps.split_logs.sms_command import SMSCommand
 from django.conf import settings
 from django.core.mail import send_mail
 
+logger = logging.getLogger(__name__)
+
 WARNING_DELTA = datetime.timedelta(days=7)
+
 
 class Command(SMSCommand):
     help = "Check SSL expiration dates and set it to the database"
-    logger = logging.getLogger(__name__)
 
     def handle(self, *args, **options):
-        self.handle_verbosity(options)
+        self.setOptions(**options)
 
         time = datetime.datetime.now()
         sites = Site.objects.all()
-        self.info(f"Get {len(sites)} for check")
+        logger.info(f"Get {len(sites)} for check")
 
         for site in sites:
             try:
                 expires = self._ssl_expiry_datetime(site.hostname)
             except ssl.CertificateError as e:
                 site.error = "cert error {}".format(e)
-                self.error(f"{site.hostname}: {site.error}")
+                logger.error(f"{site.hostname}: {site.error}")
             except ssl.SSLError as e:
                 site.error = "cert error {}".format(e)
-                self.error(f"{site.hostname}: {site.error}")
-            except socket.timeout as e:
+                logger.error(f"{site.hostname}: {site.error}")
+            except socket.timeout:
                 site.error = "could not connect"
-                self.error(f"{site.hostname}: {site.error}")
-            except socket.gaierror as e:
+                logger.error(f"{site.hostname}: {site.error}")
+            except socket.gaierror:
                 site.error = "not accessable"
-                self.error(f"{site.hostname}: {site.error}")
+                logger.error(f"{site.hostname}: {site.error}")
             else:
                 site.expires = expires
                 site.error = ""
                 if expires - time < WARNING_DELTA:
-                    self.info(f"{site.hostname} cert will expire at {expires}, have to update cert")
+                    logger.info(f"{site.hostname} cert will expire at {expires}, have to update cert")
 
             site.save()
 
@@ -60,7 +62,7 @@ class Command(SMSCommand):
         # 3 second timeout because Lambda has runtime limitations
         conn.settimeout(3.0)
 
-        self.info(f"Connect to {hostname}")
+        logger.info(f"Connect to {hostname}")
         conn.connect((hostname, 443))
         ssl_info = conn.getpeercert()
 
