@@ -3,6 +3,7 @@ import logging
 import os
 import shutil
 from collections import defaultdict
+from datetime import datetime
 
 import gnupg
 from apps.split_logs.models import Course
@@ -46,7 +47,7 @@ class Command(SMSCommand):
 
     def handle_course(self, org: str, course_id: str):
         org = Organisation.objects.get(active=True, name=org)
-        logger.info(f"organisation: {org.name}")
+        self._info(f"organisation: {org.name}")
 
         # clean/create ogranigation destination directory
         org_destination_dir = self._dump_dir(org)
@@ -55,10 +56,10 @@ class Command(SMSCommand):
         try:
             course_file = dump_course(org, course_id, org_destination_dir)
             self._updateCourseStructure(org, course_id, course_file)
-            logger.info(f"course: {course_id}")
-            logger.info(f"see: {course_file}")
+            self._info(f"course: {course_id}")
+            self._info(f"see: {course_file}")
         except SplitLogsUtilsDumpCourseException:
-            logger.warning(f"Course not found: {course_id}")
+            self._warning(f"Course not found: {course_id}")
 
     def handle_org(self, org: str):
         try:
@@ -84,7 +85,7 @@ class Command(SMSCommand):
         self._send_email(course_data_for_email_ok, course_data_for_email_ko)
 
     def _process_org(self, org: Organisation):
-        logger.info(f"organisation: {org.name}")
+        self._info(f"organisation: {org.name}")
 
         # clean/create ogranigation destination directory
         org_destination_dir = self._dump_dir(org)
@@ -92,7 +93,7 @@ class Command(SMSCommand):
 
         ok, ko = defaultdict(list), defaultdict(list)
         for course_id in self._get_courses(org):
-            logger.info(f"course: {course_id}")
+            self._info(f"course: {course_id}")
             try:
                 course_file = dump_course(
                     org,
@@ -104,13 +105,13 @@ class Command(SMSCommand):
                 self._upload(org, course_file_encrypted)
                 ok[org.name] += (course_id,)
             except SplitLogsUtilsDumpCourseException as error:
-                logger.error(f"dump course: <{error}>")
+                self._error(f"dump course: <{error}>")
                 ko[org.name] += (course_id,)
             except SplitLogsUtilsUploadFileException as error:
-                logger.error(f"upload: <{error}>")
+                self._error(f"upload: <{error}>")
                 ko[org.name] += (course_id,)
             except CourseXmlDumpException as error:
-                logger.error(f"script exception: <{error}>")
+                self._error(f"script exception: <{error}>")
                 ko[org.name] += (course_id,)
         return ok, ko
 
@@ -207,7 +208,27 @@ class Command(SMSCommand):
             "python", "manage.py", "cms", "--settings=tutor.production", "dump_course_ids"
         ])
         if return_code != 0:
-            logger.error(f"get course list error: <{stderr}>")
+            self._error(f"get course list error: <{stderr}>")
             return []
 
         return stdout.strip("\n").split("\n")[1:]
+
+    def _message(self, message, level):
+        now = datetime.now()
+        self.message.append(f"[{now:%Y-%m-%d %H:%M}] {level} {message}")
+
+    def _debug(self, message):
+        logger.debug(message)
+        self._message(message, 'DEBUG')
+
+    def _info(self, message):
+        logger.info(message)
+        self._message(message, 'INFO')
+
+    def _warning(self, message):
+        logger.warning(message)
+        self._message(message, 'WARNING')
+
+    def _error(self, message):
+        logger.error(message)
+        self._message(message, 'ERROR')
