@@ -77,7 +77,12 @@ class PublicKey(models.Model):
 class Organisation(models.Model):
     name = models.CharField(max_length=255, unique=True)
     aliases = models.CharField(max_length=1024)
-    public_key = models.ForeignKey(PublicKey, on_delete=models.CASCADE)
+    public_key = models.ForeignKey(
+        PublicKey,
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True,
+    )
     active = models.BooleanField(default=True)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)

@@ -48,6 +48,7 @@ class Command(SMSCommand):
     def handle_course(self, org: str, course_id: str):
         org = Organisation.objects.get(active=True, name=org)
         self._info(f"organisation: {org.name}")
+        self._info(f"course: {course_id}")
 
         # clean/create ogranigation destination directory
         org_destination_dir = self._dump_dir(org)
@@ -62,13 +63,11 @@ class Command(SMSCommand):
 
     def handle_org(self, org: str):
         try:
-            org = Organisation.objects.get(active=True, name=org)
+            Org = Organisation.objects.get(active=True, name=org)
         except ObjectDoesNotExist:
             raise CourseXmlDumpException(f"Organisation {org=} doesn't exists")
 
-        ok, ko = self._process_org(
-            Organisation.objects.get(active=True, name=org)
-        )
+        ok, ko = self._process_org(Org)
         self._send_email(ok, ko)
 
     def handle_all_courses(self):
@@ -100,8 +99,11 @@ class Command(SMSCommand):
                     org_destination_dir
                 )
                 self._updateCourseStructure(org, course_id, course_file)
-                course_file_encrypted = self._encrypt(org, course_file)
-                self._upload(org, course_file_encrypted)
+                if org.public_key.value:
+                    course_file_encrypted = self._encrypt(org, course_file)
+                    self._upload(org, course_file_encrypted)
+                else:
+                    self._upload(org, course_file)
                 ok[org.name] += (course_id,)
             except SplitLogsUtilsDumpCourseException as error:
                 self._error(f"dump course: <{error}>")
