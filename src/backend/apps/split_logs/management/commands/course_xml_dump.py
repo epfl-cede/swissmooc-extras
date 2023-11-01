@@ -99,7 +99,7 @@ class Command(SMSCommand):
                     org_destination_dir
                 )
                 self._updateCourseStructure(org, course_id, course_file)
-                if org.public_key.value:
+                if org.public_key:
                     course_file_encrypted = self._encrypt(org, course_file)
                     self._upload(org, course_file_encrypted)
                 else:

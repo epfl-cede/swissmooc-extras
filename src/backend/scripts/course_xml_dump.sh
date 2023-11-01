@@ -3,4 +3,5 @@
 logger run /data/swissmooc-extras/src/backend/scripts/course_xml_dump.sh
 
 source /data/swissmooc-extras/venv/bin/activate
+python /data/swissmooc-extras/src/backend/manage.py course_db_renew_course_table -v 2
 python /data/swissmooc-extras/src/backend/manage.py course_xml_dump -v 2
