@@ -56,10 +56,9 @@ class Command(SMSCommand):
         try:
             course_file = dump_course(org, course_id, org_destination_dir)
             self._updateCourseStructure(org, course_id, course_file)
-            self._info(f"course: {course_id}")
-            self._info(f"see: {course_file}")
+            self._info(f"{course_id=} {course_file=}")
         except SplitLogsUtilsDumpCourseException:
-            self._warning(f"Course not found: {course_id}")
+            self._warning(f"{course_id=} not found")
 
     def handle_org(self, org: str):
         try:
