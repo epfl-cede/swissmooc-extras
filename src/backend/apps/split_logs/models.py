@@ -136,7 +136,7 @@ class CourseDump(models.Model):
     updated = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.course.name
+        return self.course.course_id
 
     def dump_folder_name(self):
         return '{path}/{org_name_lower}-{date}'.format(

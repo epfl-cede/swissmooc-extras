@@ -24,7 +24,7 @@ class Command(SMSCommand):
 
         files = CourseDump.objects.filter(is_encypted=False)
         for cd in files:
-            logger.info(f"encrypt file for course <{cd.course.name}> table <{cd.table.name}>")
+            logger.info(f"encrypt file for course <{cd.course.course_id}> table <{cd.table.name}>")
 
             if cd.course.organisation.name not in org_processed:
                 gpg.import_keys(cd.course.organisation.public_key.value)

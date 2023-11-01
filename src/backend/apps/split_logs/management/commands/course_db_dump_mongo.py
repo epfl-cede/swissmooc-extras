@@ -72,7 +72,7 @@ class Command(SMSCommand):
             with open(self.data_files[table.name], "r") as data:
                 for line in data:
                     json_data = json.loads(line)
-                    if json_data["course_id"] == course.name:
+                    if json_data["course_id"] == course.course_id:
                         f.write(line)
             f.close()
 
