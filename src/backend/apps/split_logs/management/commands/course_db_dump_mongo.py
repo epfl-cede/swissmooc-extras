@@ -26,7 +26,10 @@ class Command(SMSCommand):
     def handle(self, *args, **options):
         self.setOptions(**options)
 
-        organisations = Organisation.objects.filter(active=True)
+        organisations = Organisation.objects.filter(
+            active=True,
+            public_key__isnull=False,
+        )
         logger.debug(f"Select <{len(organisations)}> organisations")
 
         tables = CourseDumpTable.objects.all()

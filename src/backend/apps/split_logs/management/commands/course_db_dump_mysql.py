@@ -24,7 +24,10 @@ class Command(SMSCommand):
         self.setOptions(**options)
 
         self._fill_mysql_tables_columns()
-        organisations = Organisation.objects.filter(active=True)
+        organisations = Organisation.objects.filter(
+            active=True,
+            public_key__isnull=False,
+        )
         tables = CourseDumpTable.objects.all()
         for o in organisations:
             logger.info(f"process organisation <{o.name}>")

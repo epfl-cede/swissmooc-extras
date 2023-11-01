@@ -25,7 +25,7 @@ class Command(SMSCommand):
         parser.add_argument('--platform', type=str, default=PLATFORM_OLD)
 
     def handle(self, *args, **options):
-        self.handle_verbosity(options)
+        self.setOptions(**options)
 
         if options['platform'] == PLATFORM_OLD:
             logger.info("get files for split from old platform")
@@ -50,7 +50,10 @@ class Command(SMSCommand):
 
     def _loop_organizations(self, limit):
         cnt = 0
-        organisations = Organisation.objects.filter(active=True)
+        organisations = Organisation.objects.filter(
+            active=True,
+            public_key__isnull=False,
+        )
         for o in organisations:
             logger.info(f"process organisation {o.name}")
 

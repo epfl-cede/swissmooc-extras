@@ -24,7 +24,10 @@ class Command(SMSCommand):
 
         gpg = gnupg.GPG()
         gpg.encoding = "utf-8"
-        organisations = Organisation.objects.filter(active=True)
+        organisations = Organisation.objects.filter(
+            active=True,
+            public_key__isnull=False,
+        )
         tables = CourseDumpTable.objects.all()
         for org in organisations:
             logger.info(f"Process organisation <{org}>")

@@ -47,7 +47,10 @@ class Command(SMSCommand):
     def _loop_organizations(self, limit):
         cnt = 0
 
-        organisations = Organisation.objects.filter(active=True)
+        organisations = Organisation.objects.filter(
+            active=True,
+            public_key__isnull=False,
+        )
         for o in organisations:
             # overwrite BUCKET for docker-based logs
             aliases = o.aliases.split(',')
