@@ -60,37 +60,59 @@ class Command(SMSCommand):
         except SplitLogsUtilsDumpCourseException:
             logger.warning(f"Course not found: {course_id}")
 
+    def handle_org(self, org: str):
+        try:
+            org = Organisation.objects.get(active=True, name=org)
+        except ObjectDoesNotExist:
+            raise CourseXmlDumpException(f"Organisation {org=} doesn't exists")
+
+        ok, ko = self._process_org(
+            Organisation.objects.get(active=True, name=org)
+        )
+        self._send_email(ok, ko)
+
     def handle_all_courses(self):
         course_data_for_email_ok = defaultdict(list)
         course_data_for_email_ko = defaultdict(list)
 
         organisations = Organisation.objects.filter(active=True)
         for org in organisations:
-            logger.info(f"organisation: {org.name}")
-
-            # clean/create ogranigation destination directory
-            org_destination_dir = self._dump_dir(org)
-            self._create_org_dir(org_destination_dir)
-
-            for course_id in self._get_courses(org):
-                logger.info(f"course: {course_id}")
-                try:
-                    course_file = dump_course(org, course_id, org_destination_dir)
-                    self._updateCourseStructure(org, course_id, course_file)
-                    course_file_encrypted = self._encrypt(org, course_file)
-                    self._upload(org, course_file_encrypted)
-                    course_data_for_email_ok[org.name] += (course_id,)
-                except SplitLogsUtilsDumpCourseException as error:
-                    logger.error(f"dump course: <{error}>")
-                    course_data_for_email_ko[org.name] += (course_id,)
-                except SplitLogsUtilsUploadFileException as error:
-                    logger.error(f"upload: <{error}>")
-                    course_data_for_email_ko[org.name] += (course_id,)
-                except CourseXmlDumpException as error:
-                    logger.error(f"script exception: <{error}>")
-                    course_data_for_email_ko[org.name] += (course_id,)
+            ok, ko = self._process_org(org)
+            course_data_for_email_ok.update(ok)
+            course_data_for_email_ko.update(ko)
 
         self._send_email(course_data_for_email_ok, course_data_for_email_ko)
+
+    def _process_org(self, org: Organisation):
+        logger.info(f"organisation: {org.name}")
+
+        # clean/create ogranigation destination directory
+        org_destination_dir = self._dump_dir(org)
+        self._create_org_dir(org_destination_dir)
+
+        ok, ko = defaultdict(list), defaultdict(list)
+        for course_id in self._get_courses(org):
+            logger.info(f"course: {course_id}")
+            try:
+                course_file = dump_course(
+                    org,
+                    course_id,
+                    org_destination_dir
+                )
+                self._updateCourseStructure(org, course_id, course_file)
+                course_file_encrypted = self._encrypt(org, course_file)
+                self._upload(org, course_file_encrypted)
+                ok[org.name] += (course_id,)
+            except SplitLogsUtilsDumpCourseException as error:
+                logger.error(f"dump course: <{error}>")
+                ko[org.name] += (course_id,)
+            except SplitLogsUtilsUploadFileException as error:
+                logger.error(f"upload: <{error}>")
+                ko[org.name] += (course_id,)
+            except CourseXmlDumpException as error:
+                logger.error(f"script exception: <{error}>")
+                ko[org.name] += (course_id,)
+        return ok, ko
 
     def _updateCourseStructure(self, org, course_id, course_file):
         try:

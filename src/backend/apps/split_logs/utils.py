@@ -8,7 +8,7 @@ import boto3
 import botocore
 from django.conf import settings
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class SplitLogsUtilsException(Exception):
@@ -28,7 +28,7 @@ class SplitLogsUtilsUploadFileException(SplitLogsUtilsException):
 
 def upload_file(bucket, organisation, original_name, upload_name):
     s3 = boto3.client('s3', endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL"))
-    LOGGER.debug('Upload file %s to %s', original_name, upload_name)
+    logger.debug('Upload file %s to %s', original_name, upload_name)
 
     # don't need to check it before copy each file
     #
@@ -52,10 +52,10 @@ def upload_file(bucket, organisation, original_name, upload_name):
             fileinfo.st_size, head['ContentLength']
         )
         if diff > 10:
-            LOGGER.error(
+            logger.warning(
                 f"File {original_name=} has different size"
-                f"(local = {fileinfo.st_size}"
-                f"remote = {head['ContentLength']}), remove it"
+                f"(local={fileinfo.st_size}, "
+                f"remote={head['ContentLength']}), replace it"
             )
             s3.delete_object(Bucket=bucket, Key=upload_name)
             # re-upload it
@@ -67,13 +67,13 @@ def upload_file(bucket, organisation, original_name, upload_name):
             try:
                 s3.upload_file(original_name, bucket, upload_name)
                 os.remove(original_name)
-                LOGGER.info("file '%s' uploaded", original_name)
+                logger.info("file '%s' uploaded", original_name)
             except botocore.exceptions.ClientError as error:
                 raise SplitLogsUtilsUploadFileException(
                     f"Upload file exception <{upload_name=}>: {error=}"
                 )
         else:
-            LOGGER.error("File exists? (%s)", e)
+            logger.error("File exists? (%s)", e)
 
 
 def bucket_name(organisation):
@@ -82,7 +82,7 @@ def bucket_name(organisation):
 
 
 def run_command(cmd):
-    LOGGER.debug(f"Run command: <{' '.join(cmd)}>")
+    logger.debug(f"Run command: <{' '.join(cmd)}>")
     process = subprocess.Popen(
         cmd,
         shell=False,

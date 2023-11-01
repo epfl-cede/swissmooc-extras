@@ -5,7 +5,6 @@ from apps.split_logs.models import Course
 from apps.split_logs.models import Organisation
 from apps.split_logs.sms_command import SMSCommand
 from django.core.exceptions import ObjectDoesNotExist
-from django.db import connections
 
 logger = logging.getLogger(__name__)
 
