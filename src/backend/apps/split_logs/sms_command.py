@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-import datetime
 import logging
+from datetime import datetime
 
 import MySQLdb
 from django.conf import settings
@@ -11,8 +11,8 @@ logger = logging.getLogger(__name__)
 
 
 class SMSCommand(BaseCommand):
-    message: list[str] = []
-    now = datetime.datetime.now().date()
+    message = []
+    now = datetime.now().date()
     is_error: bool = False
 
     def setOptions(self, **options):
@@ -55,3 +55,7 @@ class SMSCommand(BaseCommand):
     def _error(self, message):
         logger.error(message)
         self._message(message, 'ERROR')
+
+    def _message(self, message, level):
+        now = datetime.now()
+        self.message.append(f"[{now:%Y-%m-%d %H:%M}] {level} {message}")

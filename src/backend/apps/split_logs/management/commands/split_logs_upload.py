@@ -6,7 +6,7 @@ from apps.split_logs.models import Organisation
 from apps.split_logs.models import PLATFORM_NEW
 from apps.split_logs.models import PLATFORM_OLD
 from apps.split_logs.sms_command import SMSCommand
-from apps.split_logs.utils import upload_file
+from apps.split_logs.utils import s3_upload_file
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
@@ -58,7 +58,7 @@ class Command(SMSCommand):
                 logger.info(f"process organisation alias <{org}>")
                 filelist = self._get_list(org)
                 for encripted_file in filelist:
-                    upload_file(
+                    s3_upload_file(
                         self._bucket(o),
                         o,
                         '{}/{}/{}'.format(

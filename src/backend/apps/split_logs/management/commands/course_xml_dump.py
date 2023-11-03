@@ -10,9 +10,9 @@ from apps.split_logs.models import Organisation
 from apps.split_logs.sms_command import SMSCommand
 from apps.split_logs.utils import dump_course
 from apps.split_logs.utils import run_command
+from apps.split_logs.utils import s3_upload_file
 from apps.split_logs.utils import SplitLogsUtilsDumpCourseException
 from apps.split_logs.utils import SplitLogsUtilsUploadFileException
-from apps.split_logs.utils import upload_file
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from openedx_course_structure import course_structure
@@ -122,7 +122,7 @@ class Command(SMSCommand):
             raise CourseXmlDumpException(f"Course {course_id=} doesn't exists")
 
     def _upload(self, org, fname):
-        upload_file(
+        s3_upload_file(
             org.bucket_name,
             org,
             fname,
@@ -208,7 +208,3 @@ class Command(SMSCommand):
             return []
 
         return stdout.strip("\n").split("\n")[1:]
-
-    def _message(self, message, level):
-        now = datetime.now()
-        self.message.append(f"[{now:%Y-%m-%d %H:%M}] {level} {message}")

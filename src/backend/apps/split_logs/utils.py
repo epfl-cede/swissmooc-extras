@@ -26,14 +26,20 @@ class SplitLogsUtilsUploadFileException(SplitLogsUtilsException):
     pass
 
 
-def list_files(bucket):
+def s3_list_files(bucket):
     s3 = boto3.client('s3', endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL"))
     logger.debug(f"List files in the {bucket=}")
     response = s3.list_objects_v2(Bucket=bucket)
     return response.get("Contents")
 
 
-def upload_file(bucket, organisation, original_name, upload_name):
+def s3_delete_file(bucket, fname):
+    s3 = boto3.client('s3', endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL"))
+    logger.debug(f"Delete {fname=} from the {bucket=}")
+    s3.delete_object(Bucket=bucket, Key=fname)
+
+
+def s3_upload_file(bucket, organisation, original_name, upload_name):
     s3 = boto3.client('s3', endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL"))
     logger.debug('Upload file %s to %s', original_name, upload_name)
 
@@ -57,7 +63,7 @@ def upload_file(bucket, organisation, original_name, upload_name):
             )
             s3.delete_object(Bucket=bucket, Key=upload_name)
             # re-upload it
-            upload_file(bucket, organisation, original_name, upload_name)
+            s3_upload_file(bucket, organisation, original_name, upload_name)
         else:
             os.remove(original_name)
     except botocore.exceptions.ClientError as e:

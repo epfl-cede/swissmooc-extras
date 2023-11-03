@@ -8,7 +8,7 @@ from apps.split_logs.models import CourseDump
 from apps.split_logs.models import CourseDumpTable
 from apps.split_logs.models import Organisation
 from apps.split_logs.sms_command import SMSCommand
-from apps.split_logs.utils import upload_file
+from apps.split_logs.utils import s3_upload_file
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
@@ -53,7 +53,7 @@ class Command(SMSCommand):
                     if os.path.exists(zip_name):
                         bucker_filename = f"{org.name}/dump-db/{os.path.basename(zip_name)}"
                         logger.info(f"Upload file <{zip_name}> to <{bucker_filename}>")
-                        upload_file(
+                        s3_upload_file(
                             org.bucket_name,
                             org,
                             zip_name,
