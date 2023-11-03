@@ -7,7 +7,8 @@ from apps.split_logs.sms_command import SMSCommand
 from apps.split_logs.utils import s3_delete_file
 from apps.split_logs.utils import s3_list_files
 
-OLDER_THAN = datetime.now() - timedelta(days=90)
+OLDER_THAN_DAYS = 90
+OLDER_THAN = datetime.now() - timedelta(days=OLDER_THAN_DAYS)
 FOLDERS = [
     'dump-xml',
     'dump-db',
@@ -20,12 +21,14 @@ class Command(SMSCommand):
     def handle(self, *args, **options):
         self.setOptions(**options)
 
+        self._info(f"Delete file older than {OLDER_THAN_DAYS} days ({OLDER_THAN})")
         organisations = Organisation.objects.filter(
             active=True,
             public_key__isnull=False,
         )
         cnt_deleted = 0
         for org in organisations:
+            self._info(f"Process organization {org}")
             for f in s3_list_files(org.bucket_name):
                 fname = f['Key']
                 fmdate = f['LastModified']
