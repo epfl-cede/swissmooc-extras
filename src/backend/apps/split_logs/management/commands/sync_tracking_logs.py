@@ -1,11 +1,7 @@
 # -*- coding: utf-8 -*-
-import logging
-
 from apps.split_logs.sms_command import SMSCommand
 from apps.split_logs.utils import run_command
 from django.conf import settings
-
-logger = logging.getLogger(__name__)
 
 
 class Command(SMSCommand):
@@ -16,19 +12,19 @@ class Command(SMSCommand):
 
         for swarm in settings.SWARMS:
             swarm_host = f"{settings.SMS_APP_ENV}-swarm-{swarm}"
-            logger.info(f"process {swarm_host=}")
+            self._info(f"process {swarm_host=}")
             return_code, stdout, stderr = run_command([
                 "ssh", "-o", "StrictHostKeyChecking=no",
                 f"ubuntu@zh-{swarm_host}",
                 "hostname",
             ])
             if return_code != 0:
-                logger.error(f"remote command {stderr=}")
+                self._error(f"remote command {stderr=}")
                 continue
 
             swarm_hostname = stdout
             for instance in settings.INSTANCES:
-                logger.info(f"process {instance=}")
+                self._info(f"process {instance=}")
                 remote_dir = f"/backup/{settings.SMS_APP_ENV}/tracking-docker/{instance}/{swarm_hostname}/"
                 return_code, stdout, stderr = run_command([
                     "ssh", "-o", "StrictHostKeyChecking=no",
@@ -37,7 +33,7 @@ class Command(SMSCommand):
                     remote_dir,
                 ])
                 if return_code != 0:
-                    logger.error(f"remote command {stderr=}")
+                    self._error(f"remote command {stderr=}")
                     continue
 
                 return_code, stdout, stderr = run_command([
@@ -50,7 +46,7 @@ class Command(SMSCommand):
                     f"ubuntu@{settings.BACKUP_SERVER}" + ":" + remote_dir
                 ])
                 if return_code != 0:
-                    logger.error(f"remote command {stderr=}")
+                    self._error(f"remote command {stderr=}")
                     continue
 
             return_code, stdout, stderr = run_command([
@@ -62,7 +58,7 @@ class Command(SMSCommand):
                 "-delete"
             ])
             if return_code != 0:
-                logger.error(f"remote command {stderr=}")
+                self._error(f"remote command {stderr=}")
 
         return_code, stdout, stderr = run_command([
             "ssh", f"ubuntu@{settings.BACKUP_SERVER}",
@@ -71,7 +67,7 @@ class Command(SMSCommand):
             "-type", "f"
         ])
         if return_code != 0:
-            logger.error(f"remote command {stderr=}")
+            self._error(f"remote command {stderr=}")
         else:
             files = stdout.split("\n")
             result_message = []

@@ -7,10 +7,13 @@ from django.conf import settings
 from django.core.mail import send_mail
 from django.core.management.base import BaseCommand
 
+logger = logging.getLogger(__name__)
+
+
 class SMSCommand(BaseCommand):
-    message = []
+    message: list[str] = []
     now = datetime.datetime.now().date()
-    is_error = False
+    is_error: bool = False
 
     def setOptions(self, **options):
         if "verbosity" in options:
@@ -22,7 +25,6 @@ class SMSCommand(BaseCommand):
                 root_logger.setLevel(logging.INFO)
             else:
                 root_logger.setLevel(logging.WARNING)
-
 
     def edxapp_cursor(self):
         db = MySQLdb.connect(**settings.EDXAPP_DATABASES['readonly'])
@@ -37,3 +39,19 @@ class SMSCommand(BaseCommand):
             ('oleg.demakov@epfl.ch',),
             fail_silently=False,
         )
+
+    def _debug(self, message):
+        logger.debug(message)
+        self._message(message, 'DEBUG')
+
+    def _info(self, message):
+        logger.info(message)
+        self._message(message, 'INFO')
+
+    def _warning(self, message):
+        logger.warning(message)
+        self._message(message, 'WARNING')
+
+    def _error(self, message):
+        logger.error(message)
+        self._message(message, 'ERROR')

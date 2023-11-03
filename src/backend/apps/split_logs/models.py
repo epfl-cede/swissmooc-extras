@@ -87,6 +87,10 @@ class Organisation(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
+    @property
+    def bucket_name(self):
+        return f"{settings.AWS_STORAGE_BUCKET_NAME_ANALYTICS}-{self.name.lower()}"
+
     def __str__(self):
         return self.name
 
@@ -124,7 +128,6 @@ class CourseDumpTable(models.Model):
 
     def __str__(self):
         return '{}/{}.{}'.format(self.db_type, self.db_name, self.name)
-
 
 
 class CourseDump(models.Model):

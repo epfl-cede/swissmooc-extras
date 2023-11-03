@@ -8,3 +8,4 @@ python /data/swissmooc-extras/src/backend/manage.py course_db_dump_mongo -v 2
 python /data/swissmooc-extras/src/backend/manage.py course_db_dump_mysql -v 2
 python /data/swissmooc-extras/src/backend/manage.py course_db_encrypt -v 2
 python /data/swissmooc-extras/src/backend/manage.py course_db_upload -v 2
+python /data/swissmooc-extras/src/backend/manage.py course_db_clean -v 2

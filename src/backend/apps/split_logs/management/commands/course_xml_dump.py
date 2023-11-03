@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import logging
 import os
 import shutil
 from collections import defaultdict
@@ -9,7 +8,6 @@ import gnupg
 from apps.split_logs.models import Course
 from apps.split_logs.models import Organisation
 from apps.split_logs.sms_command import SMSCommand
-from apps.split_logs.utils import bucket_name
 from apps.split_logs.utils import dump_course
 from apps.split_logs.utils import run_command
 from apps.split_logs.utils import SplitLogsUtilsDumpCourseException
@@ -18,9 +16,6 @@ from apps.split_logs.utils import upload_file
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from openedx_course_structure import course_structure
-
-
-logger = logging.getLogger(__name__)
 
 
 class CourseXmlDumpException(Exception):
@@ -128,7 +123,7 @@ class Command(SMSCommand):
 
     def _upload(self, org, fname):
         upload_file(
-            bucket_name(org),
+            org.bucket_name,
             org,
             fname,
             "{org}/dump-xml/{date}/{name}".format(
@@ -217,19 +212,3 @@ class Command(SMSCommand):
     def _message(self, message, level):
         now = datetime.now()
         self.message.append(f"[{now:%Y-%m-%d %H:%M}] {level} {message}")
-
-    def _debug(self, message):
-        logger.debug(message)
-        self._message(message, 'DEBUG')
-
-    def _info(self, message):
-        logger.info(message)
-        self._message(message, 'INFO')
-
-    def _warning(self, message):
-        logger.warning(message)
-        self._message(message, 'WARNING')
-
-    def _error(self, message):
-        logger.error(message)
-        self._message(message, 'ERROR')

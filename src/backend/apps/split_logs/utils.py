@@ -26,18 +26,16 @@ class SplitLogsUtilsUploadFileException(SplitLogsUtilsException):
     pass
 
 
+def list_files(bucket):
+    s3 = boto3.client('s3', endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL"))
+    logger.debug(f"List files in the {bucket=}")
+    response = s3.list_objects_v2(Bucket=bucket)
+    return response.get("Contents")
+
+
 def upload_file(bucket, organisation, original_name, upload_name):
     s3 = boto3.client('s3', endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL"))
     logger.debug('Upload file %s to %s', original_name, upload_name)
-
-    # don't need to check it before copy each file
-    #
-    # try:
-    #     response = s3.list_buckets()
-    # except Exception as e:
-    #     raise Exception("SWICH Containers error: '%s'", e)
-    # if settings.AWS_STORAGE_BUCKET_NAME_ANALYTICS not in map(lambda i: i['Name'], response['Buckets']):
-    #     raise Exception("Can not fine bucket %s", settings.AWS_STORAGE_BUCKET_NAME_ANALYTICS)
 
     fileinfo = os.stat(original_name)
     try:
@@ -74,11 +72,6 @@ def upload_file(bucket, organisation, original_name, upload_name):
                 )
         else:
             logger.error("File exists? (%s)", e)
-
-
-def bucket_name(organisation):
-    org = str(organisation).lower()
-    return f"{settings.AWS_STORAGE_BUCKET_NAME_ANALYTICS}-{org}"
 
 
 def run_command(cmd):
@@ -188,7 +181,7 @@ def dump_course(organization, course_id, destination_folder):
             stderr
         )
 
-    zip_name = shutil.make_archive(
+    shutil.make_archive(
         course_destination_folder,
         'gztar',
         course_destination_folder

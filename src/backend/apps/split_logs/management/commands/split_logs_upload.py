@@ -6,7 +6,6 @@ from apps.split_logs.models import Organisation
 from apps.split_logs.models import PLATFORM_NEW
 from apps.split_logs.models import PLATFORM_OLD
 from apps.split_logs.sms_command import SMSCommand
-from apps.split_logs.utils import bucket_name
 from apps.split_logs.utils import upload_file
 from django.conf import settings
 
@@ -74,7 +73,7 @@ class Command(SMSCommand):
 
     def _bucket(self, organisation):
         if self.encrypted_dir == settings.TRACKING_LOGS_ENCRYPTED_DOCKER:
-            return bucket_name(organisation)
+            return organisation.bucket_name
         else:
             return settings.AWS_STORAGE_BUCKET_NAME_ANALYTICS
 

@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import datetime
 import logging
 import os
 import shutil
@@ -9,7 +8,6 @@ from apps.split_logs.models import CourseDump
 from apps.split_logs.models import CourseDumpTable
 from apps.split_logs.models import Organisation
 from apps.split_logs.sms_command import SMSCommand
-from apps.split_logs.utils import bucket_name
 from apps.split_logs.utils import upload_file
 from django.conf import settings
 
@@ -56,7 +54,7 @@ class Command(SMSCommand):
                         bucker_filename = f"{org.name}/dump-db/{os.path.basename(zip_name)}"
                         logger.info(f"Upload file <{zip_name}> to <{bucker_filename}>")
                         upload_file(
-                            bucket_name(org),
+                            org.bucket_name,
                             org,
                             zip_name,
                             bucker_filename,
