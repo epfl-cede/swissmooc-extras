@@ -96,13 +96,13 @@ def run_command(cmd):
     return return_code, stdout, stderr
 
 
-def dump_course(organization, course_id, destination_folder):
+def dump_course(organisation, course_id, destination_folder):
     """
     Creates zip archive of the exported course in the specified folder
     """
 
-    organization_name = organization.name.lower()
-    container_name = 'openedx-%s_cms-worker' % organization_name
+    organisation_name = organisation.name.lower()
+    container_name = 'openedx-%s_cms-worker' % organisation_name
 
     # find swarm server where cms-worker is located
     return_code, stdout, stderr = run_command([
@@ -124,7 +124,7 @@ def dump_course(organization, course_id, destination_folder):
         '/home/ubuntu/.local/bin/docker-run-command', container_name
     ]
     import_folder_container = '/openedx/data/export/course_export/course'
-    import_folder = f"/var/lib/docker/volumes/openedx-{organization_name}_openedx-data/_data/export/course_export"
+    import_folder = f"/var/lib/docker/volumes/openedx-{organisation_name}_openedx-data/_data/export/course_export"
 
     # Export course
     return_code, stdout, stderr = run_command(cmd_container + [

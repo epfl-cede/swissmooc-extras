@@ -1,0 +1,17 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="columns">
+  <div class="column is-8 is-offset-2">
+    <div id="split-logs-app">
+      {% for org in organisation_list %}
+      <a href="{% url 'split-logs:organisation' org.id %}">
+        {{org}}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock content %}

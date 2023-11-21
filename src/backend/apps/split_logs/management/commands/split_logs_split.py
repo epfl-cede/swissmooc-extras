@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 class Command(SMSCommand):
-    help = 'Split tracking logs by organizations'
+    help = 'Split tracking logs by organisations'
 
     def add_arguments(self, parser):
         parser.add_argument('--limit', type=int, default=3)
@@ -121,31 +121,31 @@ class Command(SMSCommand):
                     time = parser.parse(data['time'])
                     date = time.strftime('%Y-%m-%d')
                     # detect orzanization string
-                    organization = self._detect_org(data['context'], dirname)
+                    organisation = self._detect_org(data['context'], dirname)
 
-                    logger.debug(f"line for organization <{organization}>")
+                    logger.debug(f"line for organisation <{organisation}>")
 
                     # create dir
-                    splited_dir = '{}/{}'.format(self.splitted_dir, organization)
+                    splited_dir = '{}/{}'.format(self.splitted_dir, organisation)
                     try:
                         os.mkdir(splited_dir)
                     except FileExistsError:
                         pass
 
                     # put line to corresponding files
-                    if organization not in lines_for_add:
-                        lines_for_add[organization] = {}
-                    if date not in lines_for_add[organization]:
-                        lines_for_add[organization][date] = []
+                    if organisation not in lines_for_add:
+                        lines_for_add[organisation] = {}
+                    if date not in lines_for_add[organisation]:
+                        lines_for_add[organisation][date] = []
 
-                    lines_for_add[organization][date].append(line)
+                    lines_for_add[organisation][date].append(line)
 
         # bunch adding lines, to prevent posibility for duplicates
-        for organization in lines_for_add:
-            for date in lines_for_add[organization]:
-                splited_filename = '{}/{}/{}.log.gz'.format(self.splitted_dir, organization, date)
+        for organisation in lines_for_add:
+            for date in lines_for_add[organisation]:
+                splited_filename = '{}/{}/{}.log.gz'.format(self.splitted_dir, organisation, date)
                 splited_file = gzip.open(splited_filename, 'ab+')
-                splited_file.write(b''.join(lines_for_add[organization][date]))
+                splited_file.write(b''.join(lines_for_add[organisation][date]))
 
         logger.info(f"error lines {lines_error} of {lines_total}")
         return lines_total, lines_error
@@ -154,15 +154,15 @@ class Command(SMSCommand):
         if self.platform == 'old':
             try:
                 if context['org_id']:
-                    organization = context['org_id']
+                    organisation = context['org_id']
                 else:
-                    organization = '_empty'
+                    organisation = '_empty'
             except KeyError:
-                organization = '_none'
+                organisation = '_none'
         else:
-            organization = dirname.split('/')[0]
+            organisation = dirname.split('/')[0]
 
-        return organization
+        return organisation
 
     def _get_list(self):
         dirs = {}

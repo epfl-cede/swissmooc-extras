@@ -1,0 +1,70 @@
+{% extends "layouts/base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="columns">
+  <div class="column is-8 is-offset-2">
+    <div id="split-logs-app">
+      {% for chapter in course.structure.children %}
+      <div class="card mb-3">
+        <header class="card-header">
+          <p class="card-header-title">
+            Chapter: {{ chapter.name }}
+          </p>
+        </header>
+        <div class="card-content">
+          <div class="content">
+            {% for sequential in chapter.children %}
+            <div class="card mb-3">
+              <header class="card-header">
+                <p class="card-header-title">
+                  Sequential: {{ sequential.name }}
+                </p>
+              </header>
+              <div class="card-content">
+                <div class="content">
+                  {% for vertical in sequential.children %}
+                  <div class="card mb-3">
+                    <header class="card-header">
+                      <p class="card-header-title">
+                        Vertical: {{ vertical.name }}
+                      </p>
+                    </header>
+                    <div class="card-content">
+                      <div class="content">
+                        {% for unit in vertical.children %}
+                        <div class="card mb-3">
+                          <header class="card-header">
+                            <p class="card-header-title">
+                              Unit: {{ unit.name }}
+                            </p>
+                          </header>
+                          <div classs="card-content">
+                            <div class="content p-2 pl-4">
+                              {{unit.type}}:
+                              <a href="{% url 'split-logs:unit' course.id unit.id %}">
+                                {{ unit.name }}
+                              </a>
+                              {% if unit.id == unit_id %}
+                              {{unit_id}}
+                              {% endif %}
+                            </div>
+                          </div>
+                        </div>
+                        {% endfor %}
+                      </div>
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock content %}

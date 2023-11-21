@@ -28,7 +28,7 @@ class Command(SMSCommand):
         )
         cnt_deleted = 0
         for org in organisations:
-            self._info(f"Process organization {org}")
+            self._info(f"Process organisation {org}")
             for f in s3_list_files(org.bucket_name):
                 fname = f['Key']
                 fmdate = f['LastModified']

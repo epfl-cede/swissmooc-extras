@@ -35,15 +35,15 @@ class Command(SMSCommand):
         self.remote_dir = 'tracking-logs'
         self.encrypted_dir = settings.TRACKING_LOGS_ENCRYPTED
 
-        self._loop_organizations(limit)
+        self._loop_organisations(limit)
 
     def _handle_new(self, limit):
         self.remote_dir = 'tracking-logs-docker'
         self.encrypted_dir = settings.TRACKING_LOGS_ENCRYPTED_DOCKER
 
-        self._loop_organizations(limit)
+        self._loop_organisations(limit)
 
-    def _loop_organizations(self, limit):
+    def _loop_organisations(self, limit):
         cnt = 0
 
         organisations = Organisation.objects.filter(

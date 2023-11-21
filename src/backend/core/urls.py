@@ -21,6 +21,6 @@ from django.urls import path
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api-auth/', include('rest_framework.urls')),
-    path("app/", include("apps.split_logs.urls")),
-    path("", include("apps.home.urls")),
+    path("app/", include("apps.split_logs.urls", namespace="split-logs")),
+    path("", include("apps.home.urls", namespace="home")),
 ]

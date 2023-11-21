@@ -65,5 +65,5 @@ class Command(SMSCommand):
                         shutil.rmtree(folder_name)
                 else:
                     logger.warning(
-                        f"Not all tables were dumped/encrypted, please check: organization <{org.name}>, date=<{self.now}>"
+                        f"Not all tables were dumped/encrypted, please check: organisation <{org.name}>, date=<{self.now}>"
                     )

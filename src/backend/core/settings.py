@@ -170,6 +170,9 @@ USE_TZ = False
 
 STATIC_URL = "/static/"
 STATIC_ROOT = "/data/static"
+STATICFILES_DIRS = (os.path.join(CORE_DIR, "apps/static"),)  # Django static
+if DEBUG is False:
+    STATICFILES_DIRS += ("/app/static/swissmooc-extras",)
 
 CACHES = {
     "default": {

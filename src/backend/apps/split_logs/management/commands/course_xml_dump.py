@@ -60,7 +60,7 @@ class Command(SMSCommand):
         try:
             Org = Organisation.objects.get(active=True, name=org)
         except ObjectDoesNotExist:
-            raise CourseXmlDumpException(f"Organisation {org=} doesn't exists")
+            raise CourseXmlDumpException(f"Organisation {org=} doesn't exist")
 
         ok, ko = self._process_org(Org)
         self._send_email(ok, ko)
@@ -119,7 +119,7 @@ class Command(SMSCommand):
         except course_structure.OpenEdxCourseStructureException as error:
             raise CourseXmlDumpException(f"Course {course_id=} structure exception {error=}")
         except ObjectDoesNotExist:
-            raise CourseXmlDumpException(f"Course {course_id=} doesn't exists")
+            raise CourseXmlDumpException(f"Course {course_id=} doesn't exist")
 
     def _upload(self, org, fname):
         s3_upload_file(

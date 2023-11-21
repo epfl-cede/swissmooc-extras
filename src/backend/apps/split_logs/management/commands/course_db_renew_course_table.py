@@ -16,7 +16,7 @@ class Command(SMSCommand):
         self.setOptions(**options)
 
         for organisation in Organisation.objects.filter(active=True):
-            logger.info(f"process organization {organisation.name}")
+            logger.info(f"process organisation {organisation.name}")
             Course.objects.filter(organisation=organisation).update(
                 active=False
             )

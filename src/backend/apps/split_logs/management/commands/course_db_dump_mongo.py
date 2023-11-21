@@ -34,7 +34,7 @@ class Command(SMSCommand):
 
         tables = CourseDumpTable.objects.all()
         for o in organisations:
-            logger.info(f"process organization <{o.name}>")
+            logger.info(f"process organisation <{o.name}>")
             self._dump_mongo_tabes(o)
             for course in o.course_set.filter(active=True):
                 for table in tables:

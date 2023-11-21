@@ -9,6 +9,8 @@ from django.urls import path
 from django.urls import re_path
 from django.views.generic.base import RedirectView
 
+app_name = 'home'
+
 favicon_view = RedirectView.as_view(
     url="/static/assets/img/favicon.ico", permanent=True
 )
