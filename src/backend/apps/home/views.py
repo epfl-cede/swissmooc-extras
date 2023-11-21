@@ -14,6 +14,10 @@ logger = logging.getLogger(__name__)
 
 def index(request):
     return redirect(reverse("admin:index"))
+    # if not request.user.is_authenticated:
+    #     return redirect(reverse("admin:index"))
+    # else:
+    #     return redirect(reverse("split-logs:index"))
 
 
 @login_required
