@@ -23,32 +23,32 @@ class Command(SMSCommand):
 
         time = datetime.datetime.now()
         sites = Site.objects.all()
-        logger.info(f"Get {len(sites)} for check")
+        self._info(f"Get {len(sites)} for check")
 
         for site in sites:
             try:
                 expires = self._ssl_expiry_datetime(site.hostname)
             except ssl.CertificateError as e:
                 site.error = "cert error {}".format(e)
-                logger.error(f"{site.hostname}: {site.error}")
+                self._error(f"{site.hostname}: {site.error}")
             except ssl.SSLError as e:
                 site.error = "cert error {}".format(e)
-                logger.error(f"{site.hostname}: {site.error}")
+                self._error(f"{site.hostname}: {site.error}")
             except socket.timeout:
                 site.error = "could not connect"
-                logger.error(f"{site.hostname}: {site.error}")
+                self._error(f"{site.hostname}: {site.error}")
             except socket.gaierror:
                 site.error = "not accessable"
-                logger.error(f"{site.hostname}: {site.error}")
+                self._error(f"{site.hostname}: {site.error}")
             else:
                 site.expires = expires
                 site.error = ""
                 if expires - time < WARNING_DELTA:
-                    logger.info(f"{site.hostname} cert will expire at {expires}, have to update cert")
+                    self._warning(f"{site.hostname} cert will expire at {expires}, have to update cert")
 
             site.save()
 
-        if self.is_error:
+        if self.is_error or self.is_warning:
             self.send_email("Check SSL")
 
         sys.exit(1 if self.is_error else 0)
@@ -62,7 +62,7 @@ class Command(SMSCommand):
         # 3 second timeout because Lambda has runtime limitations
         conn.settimeout(3.0)
 
-        logger.info(f"Connect to {hostname}")
+        self._info(f"Connect to {hostname}")
         conn.connect((hostname, 443))
         ssl_info = conn.getpeercert()
 

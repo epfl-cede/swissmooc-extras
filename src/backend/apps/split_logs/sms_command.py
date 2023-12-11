@@ -14,6 +14,7 @@ class SMSCommand(BaseCommand):
     message = []
     now = datetime.now().date()
     is_error: bool = False
+    is_warning: bool = False
 
     def setOptions(self, **options):
         if "verbosity" in options:
@@ -31,11 +32,18 @@ class SMSCommand(BaseCommand):
         return db.cursor()
 
     def send_email(self, subject):
+        if self.is_error:
+            status = 'ERROR'
+        elif self.is_warning:
+            status = 'WARNING'
+        else:
+            status = 'OK'
+
         send_mail(
-            f"[SMS-extras/{settings.SMS_APP_ENV}] - {subject} - {'OK' if self.is_error == False else 'ERROR'} - {self.now}",
+            f"[SMS-extras/{settings.SMS_APP_ENV}] - {subject} - {status} - {self.now}",
             "\n".join(self.message),
             settings.EMAIL_FROM_ADDRESS,
-            #settings.EMAIL_TO_ADDRESSES,
+            # settings.EMAIL_TO_ADDRESSES,
             ('oleg.demakov@epfl.ch',),
             fail_silently=False,
         )
@@ -49,10 +57,12 @@ class SMSCommand(BaseCommand):
         self._message(message, 'INFO')
 
     def _warning(self, message):
+        self.is_warning = True
         logger.warning(message)
         self._message(message, 'WARNING')
 
     def _error(self, message):
+        self.is_error = True
         logger.error(message)
         self._message(message, 'ERROR')
 
