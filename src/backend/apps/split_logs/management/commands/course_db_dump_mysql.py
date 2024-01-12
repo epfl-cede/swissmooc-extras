@@ -4,7 +4,6 @@ import logging
 import os
 import pathlib
 
-from apps.split_logs.models import Course
 from apps.split_logs.models import CourseDump
 from apps.split_logs.models import CourseDumpTable
 from apps.split_logs.models import DB_TYPE_MYSQL

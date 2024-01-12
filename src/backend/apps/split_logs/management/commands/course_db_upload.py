@@ -9,7 +9,6 @@ from apps.split_logs.models import CourseDumpTable
 from apps.split_logs.models import Organisation
 from apps.split_logs.sms_command import SMSCommand
 from apps.split_logs.utils import s3_upload_file
-from django.conf import settings
 
 logger = logging.getLogger(__name__)
 

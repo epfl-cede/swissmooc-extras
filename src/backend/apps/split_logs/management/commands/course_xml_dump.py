@@ -2,7 +2,6 @@
 import os
 import shutil
 from collections import defaultdict
-from datetime import datetime
 
 import gnupg
 from apps.split_logs.models import Course

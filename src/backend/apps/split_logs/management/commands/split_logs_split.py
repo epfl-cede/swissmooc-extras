@@ -12,7 +12,6 @@ from apps.split_logs.models import PLATFORM_OLD
 from apps.split_logs.sms_command import SMSCommand
 from dateutil import parser
 from django.conf import settings
-from django.db.models import F
 from django.db.models import Value
 from django.db.models.functions import Concat
 

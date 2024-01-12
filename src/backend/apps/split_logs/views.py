@@ -7,8 +7,6 @@ from apps.split_logs.serializers import CourseListSerializer
 from apps.split_logs.serializers import CourseSerializer
 from apps.split_logs.serializers import OrganisationSerializer
 from django.shortcuts import get_object_or_404
-from django.shortcuts import redirect
-from django.urls import reverse
 from django.views.generic import DetailView
 from django.views.generic import ListView
 from rest_framework.response import Response
@@ -23,9 +21,6 @@ class IndexView(ListView):
 
     def get_queryset(self):
         return Organisation.objects.all()
-
-    # if not request.user.is_authenticated:
-    #     return redirect(reverse("home"))
 
 
 class OrganisationDetails(DetailView):
