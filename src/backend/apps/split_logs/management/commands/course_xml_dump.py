@@ -198,13 +198,10 @@ class Command(SMSCommand):
         self.send_email("Course XML dump")
 
     def _get_courses(self, org):
-        return_code, stdout, stderr = run_command([
-            "ssh", "ubuntu@zh-%s-swarm-1" % settings.SMS_APP_ENV,
-            "/home/ubuntu/.local/bin/docker-run-command", "openedx-%s_cms" % org.name.lower(),
-            "python", "manage.py", "cms", "--settings=tutor.production", "dump_course_ids"
-        ])
-        if return_code != 0:
-            self._error(f"get course list error: <{stderr}>")
-            return []
-
-        return stdout.strip("\n").split("\n")[1:]
+        cursor = self.edxapp_cursor()
+        cursor.execute(
+            "SELECT course_id FROM {db_name}.student_courseenrollment GROUP BY course_id".format(
+                db_name=f"docker_{org.name.lower()}_edxapp"
+            )
+        )
+        return map(lambda v: v[0], cursor.fetchall())
