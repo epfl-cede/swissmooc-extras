@@ -74,8 +74,10 @@ def s3_upload_file(bucket, organisation, original_name, upload_name):
                 logger.info("file '%s' uploaded", original_name)
             except botocore.exceptions.ClientError as error:
                 raise SplitLogsUtilsUploadFileException(
-                    f"Upload file exception <{upload_name=}>: {error=}"
+                    f"Upload file client exception <{upload_name=}>: {error=}"
                 )
+            except boto3.exceptions.S3UploadFailedError as error:
+                raise SplitLogsUtilsUploadFileException(f"Upload file failed <{upload_name=}>. {error=}")
         else:
             logger.error("File exists? (%s)", e)
 

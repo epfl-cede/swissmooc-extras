@@ -9,7 +9,6 @@ from apps.split_logs.models import Course
 from apps.split_logs.models import Organisation
 from apps.split_logs.sms_command import SMSCommand
 from apps.split_logs.utils import dump_course
-from apps.split_logs.utils import run_command
 from apps.split_logs.utils import s3_upload_file
 from apps.split_logs.utils import SplitLogsUtilsDumpCourseException
 from apps.split_logs.utils import SplitLogsUtilsUploadFileException
