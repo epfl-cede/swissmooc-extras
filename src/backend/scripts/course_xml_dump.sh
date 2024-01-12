@@ -9,6 +9,7 @@ python /data/swissmooc-extras/src/backend/manage.py course_xml_dump --org ethz -
 python /data/swissmooc-extras/src/backend/manage.py course_xml_dump --org ffhs -v 2
 python /data/swissmooc-extras/src/backend/manage.py course_xml_dump --org implicit_bias -v 2
 python /data/swissmooc-extras/src/backend/manage.py course_xml_dump --org sms -v 2
+python /data/swissmooc-extras/src/backend/manage.py course_xml_dump --org tdr -v 2
 python /data/swissmooc-extras/src/backend/manage.py course_xml_dump --org unige -v 2
 python /data/swissmooc-extras/src/backend/manage.py course_xml_dump --org unili -v 2
 python /data/swissmooc-extras/src/backend/manage.py course_xml_dump --org usi -v 2
