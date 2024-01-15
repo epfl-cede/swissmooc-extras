@@ -12,9 +12,6 @@ DB_TYPE_CHOICES = (
     (DB_TYPE_MONGO, DB_TYPE_MONGO),
 )
 
-PLATFORM_OLD = 'old'
-PLATFORM_NEW = 'new'
-
 
 class DirOriginal(models.Model):
     name = models.CharField(max_length=255, unique=True)

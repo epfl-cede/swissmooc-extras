@@ -6,10 +6,11 @@ import pathlib
 
 import gnupg
 from apps.split_logs.models import Organisation
-from apps.split_logs.models import PLATFORM_NEW
-from apps.split_logs.models import PLATFORM_OLD
 from apps.split_logs.sms_command import SMSCommand
+from apps.split_logs.utils import s3_upload_file
+from apps.split_logs.utils import SplitLogsUtilsUploadFileException
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 
 logger = logging.getLogger(__name__)
 
@@ -22,108 +23,83 @@ class Command(SMSCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--limit', type=int, default=3)
-        parser.add_argument('--platform', type=str, default=PLATFORM_OLD)
+        parser.add_argument('--org', type=str, default="epfl")
 
     def handle(self, *args, **options):
         self.setOptions(**options)
+        self.limit = options['limit']
+        self.org = options['org']
+        self.remote_dir = 'tracking-logs-docker'
+        self.splitted_dir = f"{settings.TRACKING_LOGS_SPLITTED_DOCKER}/{self.org}"
+        self.encrypted_dir = f"{settings.TRACKING_LOGS_ENCRYPTED_DOCKER}/{self.org.upper()}"
 
-        if options['platform'] == PLATFORM_OLD:
-            logger.info("get files for split from old platform")
-            self._handle_old(options['limit'])
-        elif options['platform'] == PLATFORM_NEW:
-            logger.info("get files for split from new platform")
-            self._handle_new(options['limit'])
-        else:
-            logger.warning(f"unknown platform <{options['platform']}>")
-
-    def _handle_old(self, limit):
-        self.splitted_dir = settings.TRACKING_LOGS_SPLITTED
-        self.encrypted_dir = settings.TRACKING_LOGS_ENCRYPTED
-
-        self._loop_organisations(limit)
-
-    def _handle_new(self, limit):
-        self.splitted_dir = settings.TRACKING_LOGS_SPLITTED_DOCKER
-        self.encrypted_dir = settings.TRACKING_LOGS_ENCRYPTED_DOCKER
-
-        self._loop_organisations(limit)
-
-    def _loop_organisations(self, limit):
-        cnt = 0
-        organisations = Organisation.objects.filter(
-            active=True,
-            public_key__isnull=False,
-        )
-        for o in organisations:
-            logger.info(f"process organisation {o.name}")
-
-            files_for_process = self._get_files_for_process(o)
-
-            gpg = gnupg.GPG()
-            gpg.encoding = 'utf-8'
-            gpg.import_keys(o.public_key.value)
-
-            for file_name, alias_list in files_for_process.items():
-                org = alias_list[0][0]
-                aliases = list(map(lambda a: a[1], alias_list))
-                logger.debug(
-                    f"process {file_name=} for {org=} with {aliases=}"
-                )
-
-                # collect data into temporary file
-                buff = b''
-                for org in alias_list:
-                    orig_file_full_path = f"{self.splitted_dir}/{org[1]}/{file_name}"
-                    with open(orig_file_full_path, 'rb') as f:
-                        buff += f.read()
-
-                status = gpg.encrypt(
-                    buff,
-                    armor=True,
-                    recipients=[o.public_key.recipient],
-                    output=self._get_encrypted_file_full_path(o, file_name)
-                )
-                if status.ok:
-                    file_path = self._get_encrypted_file_full_path(o, file_name)
-                    logger.info(f"success encrypt {file_path=}")
-                else:
-                    logger.error(f"error: {status.status}")
-
-                cnt += 1
-                if cnt >= limit: break
-
-    def _get_encrypted_file_full_path(self, organisation, fname):
-        return "{}/{}/{}-courseware-events-{}.gpg".format(
-            self.encrypted_dir,
-            organisation.name,
-            organisation.name.lower(),
-            fname
-        )
-
-    def _get_files_for_process(self, organisation):
-        aliases = organisation.aliases.split(',')
-        result = {}
-        for a in aliases:
-            org = a.strip()
-            filelist = self._get_list(org)
-            for orig_file in filelist:
-                orig_file_full_path = "{}/{}/{}".format(self.splitted_dir, org, orig_file)
-                less_days_ago = datetime.datetime.now() - datetime.timedelta(days=MTIME_LESS_DAYS_AGO)
-                greater_days_ago = datetime.datetime.now() - datetime.timedelta(days=MTIME_GREATER_DAYS_AGO)
-                mtime = os.path.getmtime(orig_file_full_path)
-                # skip files created less then 2 days ago
-                if mtime < less_days_ago.timestamp() and mtime > greater_days_ago.timestamp():
-                    pathlib.Path("{}/{}".format(self.encrypted_dir, organisation.name)).mkdir(parents=True, exist_ok=True)
-                    if not os.path.isfile(self._get_encrypted_file_full_path(organisation, orig_file)):
-                        if orig_file not in result: result[orig_file] = list()
-                        result[orig_file].append((organisation.name, org))
-        return result
-
-    def _get_list(self, org):
-        files = list()
         try:
-            path = "{}/{}".format(self.splitted_dir, org)
-            files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
-        except FileNotFoundError:
-            logger.warning(f"folder for organisation alias <{org}> does not exist")
-        return files
+            self.organisation = Organisation.objects.get(
+                name__iexact=self.org,
+                active=True,
+                public_key__isnull=False,
+            )
+            self._process()
+        except ObjectDoesNotExist:
+            logger.error(f"Organization {self.org=} does not exists")
+
+    def _process(self):
+        logger.info(f"process {self.organisation.name=}")
+        splitted = self._get_list()
+
+        gpg = gnupg.GPG()
+        gpg.encoding = 'utf-8'
+        gpg.import_keys(self.organisation.public_key.value)
+
+        cnt = 0
+        for fname in splitted:
+            # collect data into temporary file
+            splitted_full_path = f"{self.splitted_dir}/{fname}"
+            logger.info(f"Process file {splitted_full_path=}")
+
+            buff = b''
+            with open(splitted_full_path, 'rb') as f:
+                buff += f.read()
+
+            encrypted_file = self._get_encrypted_file_path(fname)
+            status = gpg.encrypt(
+                buff,
+                armor=True,
+                recipients=[self.organisation.public_key.recipient],
+                output=encrypted_file
+            )
+            if status.ok:
+                logger.info(f"Encrypt file ok {encrypted_file=}")
+            else:
+                logger.error(f"Encrypt file error: {status.status=}")
+
+            try:
+                self._upload_file(encrypted_file, fname)
+                logger.info(f"Upload file ok {encrypted_file=}")
+                # os.remove(splitted_full_path)
+            except SplitLogsUtilsUploadFileException as err:
+                logger.error(f"Upload file error {encrypted_file=} {err=}")
+
+            cnt += 1
+            if cnt >= self.limit:
+                break
+
+    def _get_encrypted_file_path(self, fname):
+        return f"{self.encrypted_dir}/{self._get_encrypted_file_name(fname)}"
+
+    def _get_encrypted_file_name(self, fname):
+        return f"{self.organisation.name.lower()}-courseware-events-{fname}.gpg"
+
+    def _get_list(self):
+        return [
+            f for f in os.listdir(self.splitted_dir) if os.path.isfile(os.path.join(self.splitted_dir, f))
+        ]
+
+    def _upload_file(self, encrypted_file, fname):
+        remote_fname = f"{self.organisation.name}/{self.remote_dir}/{self._get_encrypted_file_name(fname)}"
+        s3_upload_file(
+            self.organisation.bucket_name,
+            self.organisation,
+            encrypted_file,
+            remote_fname,
+        )
