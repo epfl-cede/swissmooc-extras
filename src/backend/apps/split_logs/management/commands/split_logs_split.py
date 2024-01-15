@@ -63,18 +63,19 @@ class Command(SMSCommand):
 
         # get list of processed files
         processed = self._get_processed()
+        logger.debug(f"Number of already processed files {len(processed)=}")
 
         # loop through files
         self._loop_files(originals, processed, limit)
 
     def _loop_files(self, originals, processed, limit):
+        logger.debug(f"Start _loop_files")
         cnt = 0
         for dirname, files in originals.items():
             for filename in files:
                 filename_full = "{}/{}".format(dirname, filename)
-                if filename_full in processed:
-                    logger.debug(f"file <{filename_full}> already processed")
-                else:
+                if filename_full not in processed:
+                    logger.debug(f"file <{filename_full}> start to process")
                     # create dir row if not exists
                     dir_original, created = DirOriginal.objects.update_or_create(name=dirname)
 
@@ -122,7 +123,7 @@ class Command(SMSCommand):
                     # detect orzanization string
                     organisation = self._detect_org(data['context'], dirname)
 
-                    logger.debug(f"line for organisation <{organisation}>")
+                    # logger.debug(f"line for organisation <{organisation}>")
 
                     # create dir
                     splited_dir = '{}/{}'.format(self.splitted_dir, organisation)
