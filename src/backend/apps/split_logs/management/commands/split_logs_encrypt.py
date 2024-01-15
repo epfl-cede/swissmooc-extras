@@ -23,12 +23,15 @@ class Command(SMSCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--limit', type=int, default=3)
+        parser.add_argument('-d', '--days', type=int, default=30)
         parser.add_argument('--org', type=str, default="epfl")
 
     def handle(self, *args, **options):
         self.setOptions(**options)
         self.limit = options['limit']
         self.org = options['org']
+        self.days = options['days']
+        self.today = datetime.date.today()
         self.remote_dir = 'tracking-logs-docker'
         self.splitted_dir = f"{settings.TRACKING_LOGS_SPLITTED_DOCKER}/{self.org}"
         self.encrypted_dir = f"{settings.TRACKING_LOGS_ENCRYPTED_DOCKER}/{self.org.upper()}"
@@ -85,15 +88,21 @@ class Command(SMSCommand):
                 break
 
     def _get_encrypted_file_path(self, fname):
-        return f"{self.encrypted_dir}/{self._get_encrypted_file_name(fname)}"
+        return os.path.join(self.encrypted_dir, self._get_encrypted_file_name(fname))
 
     def _get_encrypted_file_name(self, fname):
         return f"{self.organisation.name.lower()}-courseware-events-{fname}.gpg"
 
     def _get_list(self):
-        return [
-            f for f in os.listdir(self.splitted_dir) if os.path.isfile(os.path.join(self.splitted_dir, f))
-        ]
+        def _ok(f):
+            # 2024-01-14.log.gz
+            if os.path.isfile(os.path.join(self.splitted_dir, f)):
+                year, month, day = f.split(".")[0].split("-")
+                fdate = datetime.date(year=int(year), month=int(month), day=int(day))
+                return (self.now - fdate).days < self.days
+            return False
+
+        return [f for f in os.listdir(self.splitted_dir) if _ok(f)]
 
     def _upload_file(self, encrypted_file, fname):
         remote_fname = f"{self.organisation.name}/{self.remote_dir}/{self._get_encrypted_file_name(fname)}"
