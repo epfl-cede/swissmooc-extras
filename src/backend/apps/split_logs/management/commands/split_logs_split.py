@@ -7,8 +7,6 @@ import os
 from apps.split_logs.models import DirOriginal
 from apps.split_logs.models import FileOriginal
 from apps.split_logs.models import FileOriginalDocker
-from apps.split_logs.models import PLATFORM_NEW
-from apps.split_logs.models import PLATFORM_OLD
 from apps.split_logs.sms_command import SMSCommand
 from dateutil import parser
 from django.conf import settings
@@ -19,73 +17,53 @@ logger = logging.getLogger(__name__)
 
 
 class Command(SMSCommand):
-    help = 'Split tracking logs by organisations'
+    help = 'Split tracking logs for organisation by date'
 
     def add_arguments(self, parser):
         parser.add_argument('--limit', type=int, default=3)
-        parser.add_argument('--platform', type=str, default=PLATFORM_OLD)
+        parser.add_argument('--org', type=str, default="epfl")
 
     def handle(self, *args, **options):
         self.setOptions(**options)
+        self.limit = options['limit']
+        self.org = options['org']
 
-        if options['platform'] == PLATFORM_OLD:
-            logger.info("get files for split from old platform")
-            self.platform = 'old'
-            self._handle_old(options['limit'])
-        elif options['platform'] == PLATFORM_NEW:
-            logger.info("get files for split from new platform")
-            self.platform = 'new'
-            self._handle_new(options['limit'])
-        else:
-            logger.warning(f"unknown platform <{options['platform']}>")
-
-    def _handle_old(self, limit):
-        self.original_dir = settings.TRACKING_LOGS_ORIGINAL_DST
-        self.splitted_dir = settings.TRACKING_LOGS_SPLITTED
-        self.file_model = FileOriginal
+        self.original_dir = f"{settings.TRACKING_LOGS_ORIGINAL_DOCKER_DST}/{self.org}"
+        self.splitted_dir = f"{settings.TRACKING_LOGS_SPLITTED_DOCKER}/{self.org}"
 
         # get list of original files
         originals = self._get_list()
+        logger.debug(f"Number of original files {len(originals)=}")
 
         # get list of processed files
         processed = self._get_processed()
+        logger.debug(f"Number of processed files {len(processed)=}")
 
         # loop through files
-        self._loop_files(originals, processed, limit)
+        self._loop_files(originals, processed)
 
-    def _handle_new(self, limit):
-        self.original_dir = settings.TRACKING_LOGS_ORIGINAL_DOCKER_DST
-        self.splitted_dir = settings.TRACKING_LOGS_SPLITTED_DOCKER
-        self.file_model = FileOriginalDocker
-
-        # get list of original files
-        originals = self._get_list()
-
-        # get list of processed files
-        processed = self._get_processed()
-        logger.debug(f"Number of already processed files {len(processed)=}")
-
-        # loop through files
-        self._loop_files(originals, processed, limit)
-
-    def _loop_files(self, originals, processed, limit):
-        logger.debug(f"Start _loop_files")
+    def _loop_files(self, originals, processed):
         cnt = 0
         for dirname, files in originals.items():
             for filename in files:
-                filename_full = "{}/{}".format(dirname, filename)
+                filename_full = "{}/{}/{}".format(self.org, dirname, filename)
                 if filename_full not in processed:
-                    logger.debug(f"file <{filename_full}> start to process")
-                    # create dir row if not exists
-                    dir_original, created = DirOriginal.objects.update_or_create(name=dirname)
+                    # create dir if not exists
+                    dir_original, created = DirOriginal.objects.update_or_create(
+                        name=f"{self.org}/{dirname}"
+                    )
 
                     total, error = self._process_file(dirname, filename)
-                    file_original = self.file_model(dir_original=dir_original, name=filename, lines_total=total, lines_error=error)
-                    file_original.save()
+                    FileOriginalDocker.objects.create(
+                        dir_original=dir_original,
+                        name=filename,
+                        lines_total=total,
+                        lines_error=error
+                    )
                     cnt += 1
                     processed.append(filename_full)
-                if cnt >= limit: break
-            if cnt >= limit: break
+                if cnt >= self.limit: break
+            if cnt >= self.limit: break
         if cnt == 0:
             logger.info("all files were processed before this run")
         else:
@@ -93,7 +71,8 @@ class Command(SMSCommand):
 
     def _get_processed(self):
         return list(
-            self.file_model.objects
+            FileOriginalDocker.objects
+                .filter(dir_original__name__startswith=f"{self.org}/")
                 .annotate(_name=Concat('dir_original__name', Value('/'), 'name'))
                 .values_list('_name', flat=True)
                 .order_by('_name')
@@ -120,49 +99,26 @@ class Command(SMSCommand):
                 else:
                     time = parser.parse(data['time'])
                     date = time.strftime('%Y-%m-%d')
-                    # detect orzanization string
-                    organisation = self._detect_org(data['context'], dirname)
 
-                    # logger.debug(f"line for organisation <{organisation}>")
-
-                    # create dir
-                    splited_dir = '{}/{}'.format(self.splitted_dir, organisation)
                     try:
-                        os.mkdir(splited_dir)
+                        os.mkdir(self.splitted_dir)
                     except FileExistsError:
                         pass
 
-                    # put line to corresponding files
-                    if organisation not in lines_for_add:
-                        lines_for_add[organisation] = {}
-                    if date not in lines_for_add[organisation]:
-                        lines_for_add[organisation][date] = []
+                    if date not in lines_for_add:
+                        lines_for_add[date] = []
 
-                    lines_for_add[organisation][date].append(line)
+                    lines_for_add[date].append(line)
 
         # bunch adding lines, to prevent posibility for duplicates
-        for organisation in lines_for_add:
-            for date in lines_for_add[organisation]:
-                splited_filename = '{}/{}/{}.log.gz'.format(self.splitted_dir, organisation, date)
-                splited_file = gzip.open(splited_filename, 'ab+')
-                splited_file.write(b''.join(lines_for_add[organisation][date]))
+        for date in lines_for_add:
+            fname = f"{self.splitted_dir}/{date}.log.gz"
+            logger.debug(f"Append new lines to file {fname}")
+            splited_file = gzip.open(fname, 'ab+',)
+            splited_file.write(b''.join(lines_for_add[date]))
+            splited_file.close()
 
-        logger.info(f"error lines {lines_error} of {lines_total}")
         return lines_total, lines_error
-
-    def _detect_org(self, context, dirname):
-        if self.platform == 'old':
-            try:
-                if context['org_id']:
-                    organisation = context['org_id']
-                else:
-                    organisation = '_empty'
-            except KeyError:
-                organisation = '_none'
-        else:
-            organisation = dirname.split('/')[0]
-
-        return organisation
 
     def _get_list(self):
         dirs = {}
