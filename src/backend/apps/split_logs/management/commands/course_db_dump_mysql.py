@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
-import datetime
 import logging
 import os
 import pathlib
+from datetime import date
+from datetime import timedelta
 
+from apps.split_logs.models import Course
 from apps.split_logs.models import CourseDump
 from apps.split_logs.models import CourseDumpTable
 from apps.split_logs.models import DB_TYPE_MYSQL
@@ -18,6 +20,7 @@ TABLE_COLUMNS = {}
 
 class Command(SMSCommand):
     help = "Course DB dump tables"
+    today = date.today()
 
     def handle(self, *args, **options):
         self.setOptions(**options)
@@ -37,27 +40,31 @@ class Command(SMSCommand):
                         processed = CourseDump.objects.filter(
                             course=course,
                             table=table,
-                            date=datetime.datetime.now()
+                            date=self.today,
                         ).count()
                         if processed == 0:
                             self._process_mysql_table(o, course, table)
 
+                self._clear_old_records(course, 30)
+
+
+    def _clear_old_records(self, course: Course, days: int) -> None:
+        older = self.today - timedelta(days=days)
+        logger.debug(f"Delete records older than {older=}")
+        CourseDump.objects.filter(
+            course=course,
+            date__lt=older,
+        ).delete()
+
     def _process_mysql_table(self, organisation, course, table):
         users = self._get_mysql_users(organisation, course)
         data = self._dump_mysql_table(organisation, course, table, users)
-        try:
-            cd = CourseDump.objects.get(
-                course=course,
-                table=table,
-                date=datetime.datetime.now()
-            )
-        except CourseDump.DoesNotExist:
-            cd = CourseDump(
-                course=course,
-                table=table,
-                date=datetime.datetime.now()
-            )
-
+        cd, _ = CourseDump.objects.update_or_create(
+            course=course,
+            table=table,
+            date=self.today,
+            is_encypted=False,
+        )
         dump_file_name = cd.dump_file_name()
         pathlib.Path(os.path.dirname(dump_file_name)).mkdir(
             parents=True,

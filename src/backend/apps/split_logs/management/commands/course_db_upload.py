@@ -51,7 +51,7 @@ class Command(SMSCommand):
 
                     if os.path.exists(zip_name):
                         bucker_filename = f"{org.name}/dump-db/{os.path.basename(zip_name)}"
-                        logger.info(f"Upload file <{zip_name}> to <{bucker_filename}>")
+                        logger.info(f"Upload file {zip_name=} to {bucker_filename=}")
                         s3_upload_file(
                             org.bucket_name,
                             org,
@@ -64,5 +64,5 @@ class Command(SMSCommand):
                         shutil.rmtree(folder_name)
                 else:
                     logger.warning(
-                        f"Not all tables were dumped/encrypted, please check: organisation <{org.name}>, date=<{self.now}>"
+                        f"Not all tables were dumped/encrypted, please check: organisation {org.name=} / {self.now=}"
                     )

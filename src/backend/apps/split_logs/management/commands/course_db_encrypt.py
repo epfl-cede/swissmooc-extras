@@ -24,7 +24,7 @@ class Command(SMSCommand):
 
         files = CourseDump.objects.filter(is_encypted=False)
         for cd in files:
-            logger.info(f"encrypt file for course <{cd.course.course_id}> table <{cd.table.name}>")
+            logger.info(f"Encrypt file {cd.course.course_id=} {cd.table.name=}")
 
             if cd.course.organisation.name not in org_processed:
                 gpg.import_keys(cd.course.organisation.public_key.value)
@@ -38,9 +38,8 @@ class Command(SMSCommand):
                     output=cd.encrypred_file_name()
                 )
                 if status.ok:
-                    logger.info("OK")
                     os.remove(cd.dump_file_name())
                     cd.is_encypted = True
                     cd.save()
                 else:
-                    logger.error(f"Encrypt file error: <{status.status}>")
+                    logger.error(f"Encrypt file error: {status.status=}")

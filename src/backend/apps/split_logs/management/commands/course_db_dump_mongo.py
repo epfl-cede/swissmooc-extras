@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
-import datetime
 import json
 import logging
 import os
 import pathlib
 import subprocess
 import tempfile
+from datetime import date
+from datetime import timedelta
 
+from apps.split_logs.models import Course
 from apps.split_logs.models import CourseDump
 from apps.split_logs.models import CourseDumpTable
 from apps.split_logs.models import DB_TYPE_MONGO
@@ -22,6 +24,7 @@ logger = logging.getLogger(__name__)
 class Command(SMSCommand):
     help = "Course DB dump mongo tables"
     data_files = {}
+    today = date.today()
 
     def handle(self, *args, **options):
         self.setOptions(**options)
@@ -43,38 +46,41 @@ class Command(SMSCommand):
                         processed = CourseDump.objects.filter(
                             course=course,
                             table=table,
-                            date=datetime.datetime.now()
+                            date=self.today,
                         ).count()
                         if processed == 0:
                             self._process_mongo_table(course, table)
 
-    def _process_mongo_table(self, course, table):
-        try:
-            cd = CourseDump.objects.get(
-                course=course,
-                table=table,
-                date=datetime.datetime.now()
-            )
-        except CourseDump.DoesNotExist:
-            cd = CourseDump(
-                course=course,
-                table=table,
-                date=datetime.datetime.now()
-            )
+                self._clear_old_records(course, 30)
 
+    def _clear_old_records(self, course: Course, days: int) -> None:
+        older = self.today - timedelta(days=days)
+        logger.debug(f"Delete records older than {older=}")
+        CourseDump.objects.filter(
+            course=course,
+            date__lt=older,
+        ).delete()
+
+    def _process_mongo_table(self, course, table):
+        cd, _ = CourseDump.objects.update_or_create(
+            course=course,
+            table=table,
+            date=self.today,
+            is_encypted=False,
+        )
+        logger.info(f"{cd=}")
         dump_file_name = cd.dump_file_name()
         pathlib.Path(os.path.dirname(dump_file_name)).mkdir(
             parents=True,
             exist_ok=True
         )
-        logger.info(f"dump <{table.name}> table into <{dump_file_name}>")
+        logger.info(f"dump {table.name=} table into {dump_file_name=}")
         with open(dump_file_name, "w") as f:
             with open(self.data_files[table.name], "r") as data:
                 for line in data:
                     json_data = json.loads(line)
                     if json_data["course_id"] == course.course_id:
                         f.write(line)
-            f.close()
 
         cd.save()
 
