@@ -12,6 +12,40 @@ from dateutil.parser import parse
 logger = logging.getLogger(__name__)
 
 
+EVENT_TYPES_VIDEO = [
+    "play_video",
+    "pause_video",
+    "seek_video",
+    "stop_video",
+]
+EVENT_TYPES_PROBLEM = [
+    "problem_graded",
+    "problem_show",
+    "problem_check",
+    "problem_save",
+    "problem_reset",
+]
+USLESS_FIELDS = [
+    "GET",
+    "POST",
+    'source',
+    'container_id',
+    'container_name',
+    'swarm_node',
+    'service_type',
+    'service_name',
+    'instance_type',
+    'ip',
+    'filename',
+    'request_id',
+    'session',
+    'agent',
+    'host',
+    'referer',
+    'accept_language',
+]
+
+
 class Command(SMSCommand):
     help = "Feed ClickHouse database with tracking log files"
     "This command clean the logs and prepare it for inserting"
@@ -23,16 +57,25 @@ class Command(SMSCommand):
 
     def add_arguments(self, parser) -> None:
         parser.add_argument('--instance', type=str, default="epfl")
+        parser.add_argument('--events', type=str, default="video")
 
     def handle(self, *args, **options):
         self.setOptions(**options)
 
         logger.info(f"{options['instance']=}")
 
-        for file_gz in sorted(glob.glob(f"/data/tracking/original-docker/{options['instance']}/*/*.gz")):
-            self.clean_file(file_gz)
+        if options["events"] == "video":
+            event_types = EVENT_TYPES_VIDEO
+        elif options["events"] == "problem":
+            event_types = EVENT_TYPES_PROBLEM
+        else:
+            logger.error("Wrong --events argument")
+            exit(1)
 
-    def clean_file(self, file_gz: str) -> None:
+        for file_gz in sorted(glob.glob(f"/data/tracking/original-docker/{options['instance']}/*/*.gz")):
+            self.clean_file(file_gz, event_types)
+
+    def clean_file(self, file_gz: str, event_types: list) -> None:
         end_time = datetime(2023, 9, 21, 6, 0, 18, 0, tzinfo=timezone.utc)
         errors = 0
         new_f_name = f"{file_gz[:-3]}.cleaned"
@@ -57,6 +100,9 @@ class Command(SMSCommand):
                 if course_id == '' or org_id == '' or username == '':
                     continue
 
+                if j["event_type"] not in event_types:
+                    continue
+
                 # skip garbage course_id field, usually comes with garbage queries from home-made hackers
                 try:
                     course_id.index('course-v1:')
@@ -70,49 +116,14 @@ class Command(SMSCommand):
                 j['time'] = t.replace(tzinfo=None).isoformat()
 
                 # skip recordes already in database
-                if t > end_time: continue
+                # if t > end_time: continue
 
                 if 'event' in j:
-                    if type(j['event']) is list:
-                        j['event_array'] = j['event']
-                    if type(j['event']) is str:
-                        if j['event'][0] == '{':
-                            try:
-                                event_hash = json.loads(j['event'])
-                                if 'POST' in event_hash:
-                                    del event_hash['POST']
-                                if 'GET' in event_hash:
-                                    del event_hash['GET']
-                                j['event_hash'] = event_hash
-                            except json.decoder.JSONDecodeError:
-                                errors += 1
-                        else:
-                            j['event_string'] = j['event']
-
-                    del j['event']
-                    # delete all other usless keys
-                    for k in [
-                            'source',
-                            'container_id',
-                            'container_name',
-                            'swarm_node',
-                            'service_type',
-                            'service_name',
-                            'instance_type',
-                            'ip',
-                            'filename',
-                            'request_id',
-                            'session',
-                            'agent',
-                            'host',
-                            'referer',
-                            'accept_language',
-                    ]:
+                    for k in USLESS_FIELDS:
                         try:
                             del j[k]
                         except KeyError:
                             pass
-
-                new_f.write(json.dumps(j) + "\n")
+                    new_f.write(json.dumps(j) + "\n")
 
         print(f"{new_f_name=} {errors=}")
