@@ -25,122 +25,110 @@ class Command(SMSCommand):
     help = "Course XML dump, save it to S3, extract course structure"
 
     def add_arguments(self, parser):
-        parser.add_argument('--org', type=str, default="")
-        parser.add_argument('--course_id', type=str, default="")
+        parser.add_argument('--org', type=str, required=True)
+        parser.add_argument('--course_id', type=str)
 
     def handle(self, *args, **options):
         self.setOptions(**options)
 
-        if options['org'] and options['course_id']:
-            self.handle_course(options['org'], options['course_id'])
-        elif options['org']:
-            self.handle_org(options['org'])
+        self.org = options['org']
+        self._prepare_organisation()
+        self._create_destination_dir()
+
+        self._info(f"organisation: {self.organisation.name}")
+
+        if options['course_id']:
+            self._process_course(options['course_id'])
         else:
-            self.handle_all_courses()
+            self._process_organisation()
 
-    def handle_course(self, org: str, course_id: str):
-        org = Organisation.objects.get(active=True, name=org)
-        self._info(f"organisation: {org.name}")
-        self._info(f"course: {course_id}")
-
-        # clean/create ogranigation destination directory
-        org_destination_dir = self._dump_dir(org)
-        self._create_org_dir(org_destination_dir)
-
+    def _prepare_organisation(self) -> None:
         try:
-            course_file = dump_course(org, course_id, org_destination_dir)
-            self._updateCourseStructure(org, course_id, course_file)
-            self._info(f"{course_id=} {course_file=}")
-        except SplitLogsUtilsDumpCourseException:
-            self._warning(f"{course_id=} not found")
-
-    def handle_org(self, org: str):
-        try:
-            Org = Organisation.objects.get(active=True, name=org)
+            self.organisation = Organisation.objects.get(
+                active=True,
+                name=self.org,
+            )
+            self.destination_dir = self._dump_dir()
         except ObjectDoesNotExist:
-            raise CourseXmlDumpException(f"Organisation {org=} doesn't exist")
+            raise CourseXmlDumpException(
+                f"Organisation {self.org=} doesn't exist"
+            )
 
-        ok, ko = self._process_org(Org)
+    def _process_organisation(self):
+        ok, ko = [], []
+        for course_id in self._get_courses():
+            if self._process_course(course_id):
+                ok.append(course_id)
+            else:
+                ko.append(course_id)
+
         self._send_email(ok, ko)
 
-    def handle_all_courses(self):
-        course_data_for_email_ok = defaultdict(list)
-        course_data_for_email_ko = defaultdict(list)
-
-        organisations = Organisation.objects.filter(active=True)
-        for org in organisations:
-            ok, ko = self._process_org(org)
-            course_data_for_email_ok.update(ok)
-            course_data_for_email_ko.update(ko)
-
-        self._send_email(course_data_for_email_ok, course_data_for_email_ko)
-
-    def _process_org(self, org: Organisation):
-        self._info(f"organisation: {org.name}")
-
-        # clean/create ogranigation destination directory
-        org_destination_dir = self._dump_dir(org)
-        self._create_org_dir(org_destination_dir)
-
-        ok, ko = defaultdict(list), defaultdict(list)
-        for course_id in self._get_courses(org):
-            self._info(f"course: {course_id}")
-            try:
-                course_file = dump_course(
-                    org,
-                    course_id,
-                    org_destination_dir
-                )
-                self._updateCourseStructure(org, course_id, course_file)
-                if org.public_key:
-                    course_file_encrypted = self._encrypt(org, course_file)
-                    self._upload(org, course_file_encrypted)
-                else:
-                    self._upload(org, course_file)
-                ok[org.name] += (course_id,)
-            except SplitLogsUtilsDumpCourseException as error:
-                self._error(f"dump course: <{error}>")
-                ko[org.name] += (course_id,)
-            except SplitLogsUtilsUploadFileException as error:
-                self._error(f"upload: <{error}>")
-                ko[org.name] += (course_id,)
-            except CourseXmlDumpException as error:
-                self._error(f"script exception: <{error}>")
-                ko[org.name] += (course_id,)
-        return ok, ko
-
-    def _updateCourseStructure(self, org, course_id, course_file):
+    def _process_course(self, course_id: str) -> bool:
+        self._info(f"course: {course_id}")
         try:
-            course = Course.objects.get(organisation=org, course_id=course_id)
+            course_file = dump_course(
+                self.organisation,
+                course_id,
+                self.destination_dir
+            )
+            self._update_course_structure(course_id, course_file)
+            if self.organisation.public_key:
+                course_file_encrypted = self._encrypt(course_file)
+                self._upload(course_file_encrypted)
+            else:
+                self._upload(course_file)
+        except SplitLogsUtilsDumpCourseException as error:
+            self._error(f"dump course {error=}")
+            return False
+        except SplitLogsUtilsUploadFileException as error:
+            self._error(f"upload course {error=}")
+            return False
+        except CourseXmlDumpException as error:
+            self._error(f"script exception: <{error}>")
+            return False
+
+        return True
+
+    def _update_course_structure(self, course_id, course_file):
+        try:
+            course = Course.objects.get(
+                organisation=self.organisation,
+                course_id=course_id
+            )
             course.structure = course_structure.structure(course_file)
             course.save()
         except course_structure.OpenEdxCourseStructureException as error:
-            raise CourseXmlDumpException(f"Course {course_id=} structure exception {error=}")
+            raise CourseXmlDumpException(
+                f"Course {course_id=} structure exception {error=}"
+            )
         except ObjectDoesNotExist:
-            raise CourseXmlDumpException(f"Course {course_id=} doesn't exist")
+            raise CourseXmlDumpException(
+                f"Course {course_id=} doesn't exist"
+            )
 
-    def _upload(self, org, fname):
+    def _upload(self, fname):
         s3_upload_file(
-            org.bucket_name,
-            org,
+            self.organisation.bucket_name,
+            self.organisation,
             fname,
             "{org}/dump-xml/{date}/{name}".format(
-                org=org.name,
+                org=self.organisation.name,
                 date=fname.split("/")[-2],
                 name=os.path.basename(fname)
             )
         )
 
-    def _encrypt(self, org, fname):
+    def _encrypt(self, fname):
         gpg = gnupg.GPG()
         gpg.encoding = "utf-8"
-        gpg.import_keys(org.public_key.value)
+        gpg.import_keys(self.organisation.public_key.value)
         fname_encrypted = "{}.gpg".format(fname)
         with open(fname, "rb") as f:
             status = gpg.encrypt_file(
                 f,
                 armor=True,
-                recipients=[org.public_key.recipient],
+                recipients=[self.organisation.public_key.recipient],
                 output=fname_encrypted,
             )
             if status.ok:
@@ -149,57 +137,55 @@ class Command(SMSCommand):
                 raise CourseXmlDumpException("Encrypt file error")
         return fname_encrypted
 
-    def _dump_dir(self, organisation):
+    def _dump_dir(self):
         return "{}/{}".format(
-            self._organisation_dir(organisation),
+            self._organisation_dir(),
             self.now
         )
 
-    def _structure_dir(self, organisation):
+    def _structure_dir(self):
         return "{}/{}".format(
-            self._organisation_dir(organisation),
+            self._organisation_dir(),
             'structure'
         )
 
-    def _organisation_dir(self, organisation):
+    def _organisation_dir(self):
         return "{}/{}".format(
             settings.DUMP_XML_PATH,
-            organisation.name.lower(),
+            self.organisation.name.lower(),
         )
 
-    def _create_org_dir(self, organisation_dir):
+    def _create_destination_dir(self):
         try:
-            shutil.rmtree(organisation_dir)
+            shutil.rmtree(self.destination_dir)
         except FileNotFoundError:
             pass
 
         # create directory
-        os.makedirs(organisation_dir)
+        os.makedirs(self.destination_dir)
 
     def _send_email(self, ok, ko):
-        nok = sum([len(v) for v in ok.values()])
-        nko = sum([len(v) for v in ko.values()])
+        nok = len(ok)
+        nko = len(ko)
         result_message = []
         result_message.append(f"{nok} courses were dumped out of {nok + nko}")
         if nko > 0:
             result_message.append("There are errors in the courses below:")
-            for org, courses in ko.items():
-                result_message.append(f"{org}")
-                for course in courses:
-                    result_message.append(f"{course}")
+            for course in ko:
+                result_message.append(f"{course}")
 
         result_message.append("")
         result_message.append("Detailed log:")
 
         self.message = result_message + self.message
 
-        self.send_email("Course XML dump")
+        self.send_email(f"Course XML dump {self.organisation.name}")
 
-    def _get_courses(self, org):
+    def _get_courses(self):
         cursor = self.edxapp_cursor()
         cursor.execute(
             "SELECT course_id FROM {db_name}.student_courseenrollment GROUP BY course_id".format(
-                db_name=f"docker_{org.name.lower()}_edxapp"
+                db_name=f"docker_{self.organisation.name.lower()}_edxapp"
             )
         )
         return map(lambda v: v[0], cursor.fetchall())
