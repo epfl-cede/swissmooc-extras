@@ -76,7 +76,7 @@ class Command(SMSCommand):
             self.clean_file(file_gz, event_types)
 
     def clean_file(self, file_gz: str, event_types: list) -> None:
-        end_time = datetime(2023, 9, 21, 6, 0, 18, 0, tzinfo=timezone.utc)
+        # end_time = datetime(2023, 9, 21, 6, 0, 18, 0, tzinfo=timezone.utc)
         errors = 0
         new_f_name = f"{file_gz[:-3]}.cleaned"
         new_f = open(new_f_name, "w")
@@ -85,6 +85,10 @@ class Command(SMSCommand):
                 line = line.decode('utf-8').strip()
                 line = line[line.index('{'):]
                 j = json.loads(line)
+
+                if j["event_type"] not in event_types:
+                    continue
+
                 try:
                     course_id = j['context']['course_id']
                     del j['context']['course_id']
@@ -96,17 +100,11 @@ class Command(SMSCommand):
                     org_id = ''
                     username = ''
 
+                # parse event string
+                j['event'] = json.loads(j['event'])
+
                 # skip rows without org_id, course_id or username
                 if course_id == '' or org_id == '' or username == '':
-                    continue
-
-                if j["event_type"] not in event_types:
-                    continue
-
-                # skip garbage course_id field, usually comes with garbage queries from home-made hackers
-                try:
-                    course_id.index('course-v1:')
-                except ValueError:
                     continue
 
                 j['course_id'] = course_id
@@ -118,12 +116,12 @@ class Command(SMSCommand):
                 # skip recordes already in database
                 # if t > end_time: continue
 
-                if 'event' in j:
-                    for k in USLESS_FIELDS:
-                        try:
-                            del j[k]
-                        except KeyError:
-                            pass
-                    new_f.write(json.dumps(j) + "\n")
+                for k in USLESS_FIELDS:
+                    try:
+                        del j[k]
+                    except KeyError:
+                        pass
+
+                new_f.write(json.dumps(j) + "\n")
 
         print(f"{new_f_name=} {errors=}")
