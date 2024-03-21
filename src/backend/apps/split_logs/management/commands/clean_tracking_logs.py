@@ -12,20 +12,25 @@ from dateutil.parser import parse
 logger = logging.getLogger(__name__)
 
 
-EVENT_TYPES_VIDEO = [
-    "play_video",
-    "pause_video",
-    "seek_video",
-    "stop_video",
-]
-EVENT_TYPES_PROBLEM = [
-    "problem_graded",
-    "problem_show",
-    "problem_check",
-    "problem_save",
-    "problem_reset",
-]
-USLESS_FIELDS = [
+EVENT_TYPE_VIDEO = 'video'
+EVENT_TYPE_PROBLEM = 'problem'
+
+EVENT_TYPES = {
+    EVENT_TYPE_VIDEO: [
+        "play_video",
+        "pause_video",
+        "seek_video",
+        "stop_video",
+    ],
+    EVENT_TYPE_PROBLEM: [
+        "problem_graded",
+        "problem_show",
+        "problem_check",
+        "problem_save",
+        "problem_reset",
+    ]
+}
+_USLESS_FIELDS = [
     "GET",
     "POST",
     'source',
@@ -43,8 +48,23 @@ USLESS_FIELDS = [
     'host',
     'referer',
     'accept_language',
+    'event.POST',
+    'event.GET',
+    'context.enterprise_uuid',
+    'context.course_id',
+    'context.org_id',
 ]
-
+USLESS_FIELDS = {
+    EVENT_TYPE_VIDEO: _USLESS_FIELDS + [],
+    EVENT_TYPE_PROBLEM: _USLESS_FIELDS + [
+        'context.course_user_tags',
+        'context.asides',
+        'event.state',
+        'event.answers',
+        'event.correct_map',
+        'event.submission',
+    ]
+}
 
 class Command(SMSCommand):
     help = "Feed ClickHouse database with tracking log files"
@@ -65,17 +85,17 @@ class Command(SMSCommand):
         logger.info(f"{options['instance']=}")
 
         if options["events"] == "video":
-            event_types = EVENT_TYPES_VIDEO
+            self.event_type = EVENT_TYPE_VIDEO
         elif options["events"] == "problem":
-            event_types = EVENT_TYPES_PROBLEM
+            self.event_type = EVENT_TYPE_PROBLEM
         else:
             logger.error("Wrong --events argument")
             exit(1)
 
         for file_gz in sorted(glob.glob(f"/data/tracking/original-docker/{options['instance']}/*/*.gz")):
-            self.clean_file(file_gz, event_types)
+            self.clean_file(file_gz)
 
-    def clean_file(self, file_gz: str, event_types: list) -> None:
+    def clean_file(self, file_gz: str) -> None:
         # end_time = datetime(2023, 9, 21, 6, 0, 18, 0, tzinfo=timezone.utc)
         errors = 0
         new_f_name = f"{file_gz[:-3]}.cleaned"
@@ -86,8 +106,15 @@ class Command(SMSCommand):
                 line = line[line.index('{'):]
                 j = json.loads(line)
 
-                if j["event_type"] not in event_types:
+                if j["event_type"] not in EVENT_TYPES[self.event_type]:
                     continue
+
+                # in case of problem we skip every row with context.path='/event'
+                if self.event_type == 'problem':
+                    if j['context']['path'] == '/event':
+                        continue
+                elif self.event_type == 'video':
+                    j['event'] = json.loads(j['event'])
 
                 try:
                     course_id = j['context']['course_id']
@@ -99,9 +126,6 @@ class Command(SMSCommand):
                     course_id = ''
                     org_id = ''
                     username = ''
-
-                # parse event string
-                j['event'] = json.loads(j['event'])
 
                 # skip rows without org_id, course_id or username
                 if course_id == '' or org_id == '' or username == '':
@@ -116,9 +140,13 @@ class Command(SMSCommand):
                 # skip recordes already in database
                 # if t > end_time: continue
 
-                for k in USLESS_FIELDS:
+                for k in USLESS_FIELDS[self.event_type]:
                     try:
-                        del j[k]
+                        if '.' in k:
+                            a, b = k.split('.')
+                            del j[a][b]
+                        else:
+                            del j[k]
                     except KeyError:
                         pass
 
