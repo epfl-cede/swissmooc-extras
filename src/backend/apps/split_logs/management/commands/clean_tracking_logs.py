@@ -92,7 +92,7 @@ class Command(SMSCommand):
             logger.error("Wrong --events argument")
             exit(1)
 
-        for file_gz in sorted(glob.glob(f"/data/tracking/original-docker/{options['instance']}/*/*.gz")):
+        for file_gz in sorted(glob.glob(f"{TRACKING_LOGS_ORIGINAL_DOCKER_DST}/{options['instance']}/*/*.gz")):
             self.clean_file(file_gz)
 
     def clean_file(self, file_gz: str) -> None:
