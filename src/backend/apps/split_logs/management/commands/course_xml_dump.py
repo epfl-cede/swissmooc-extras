@@ -72,12 +72,13 @@ class Command(SMSCommand):
                 course_id,
                 self.destination_dir
             )
-            self._update_course_structure(course_id, course_file)
-            if self.organisation.public_key:
-                course_file_encrypted = self._encrypt(course_file)
-                self._upload(course_file_encrypted)
-            else:
-                self._upload(course_file)
+            self._info(f"exported course: {course_file}")
+            #self._update_course_structure(course_id, course_file)
+            #if self.organisation.public_key:
+            #    course_file_encrypted = self._encrypt(course_file)
+            #    self._upload(course_file_encrypted)
+            #else:
+            #    self._upload(course_file)
         except SplitLogsUtilsDumpCourseException as error:
             self._error(f"dump course {error=}")
             return False

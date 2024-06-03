@@ -23,7 +23,7 @@ class Command(SMSCommand):
 
             cursor = self.edxapp_cursor()
             cursor.execute(
-                "SELECT course_id FROM {db_name}.student_courseenrollment GROUP BY course_id".format(
+                "SELECT id FROM {db_name}.course_overviews_courseoverview GROUP BY id".format(
                     db_name="docker_" + organisation.name.lower() + "_edxapp",
                 )
             )
