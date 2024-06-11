@@ -63,6 +63,7 @@ USLESS_FIELDS = {
         'event.answers',
         'event.correct_map',
         'event.submission',
+        'event.permutation',
     ]
 }
 
