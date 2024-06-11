@@ -8,6 +8,7 @@ from datetime import timezone
 
 from apps.split_logs.sms_command import SMSCommand  # type: ignore
 from dateutil.parser import parse
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +94,7 @@ class Command(SMSCommand):
             logger.error("Wrong --events argument")
             exit(1)
 
-        for file_gz in sorted(glob.glob(f"{TRACKING_LOGS_ORIGINAL_DOCKER_DST}/{options['instance']}/*/*.gz")):
+        for file_gz in sorted(glob.glob(f"{settings.TRACKING_LOGS_ORIGINAL_DOCKER_DST}/{options['instance']}/*/*.gz")):
             self.clean_file(file_gz)
 
     def clean_file(self, file_gz: str) -> None:
