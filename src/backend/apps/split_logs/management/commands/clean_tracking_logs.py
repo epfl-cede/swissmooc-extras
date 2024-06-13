@@ -105,8 +105,21 @@ class Command(SMSCommand):
         with gzip.open(file_gz, "rb") as f_in:
             for line in f_in.readlines():
                 line = line.decode('utf-8').strip()
-                line = line[line.index('{'):]
-                j = json.loads(line)
+                try:
+                    line = line[line.index('{'):]
+                except ValueError:
+                    logger.warning(f"Line error, skip it")
+                    logger.debug(f"{file_gz}")
+                    logger.debug(f"{line}")
+                    continue
+
+                try:
+                    j = json.loads(line)
+                except json.decoder.JSONDecodeError:
+                    logger.warning(f"Line error, skip it")
+                    logger.debug(f"{file_gz}")
+                    logger.debug(f"{line}")
+                    continue
 
                 if j["event_type"] not in EVENT_TYPES[self.event_type]:
                     continue
