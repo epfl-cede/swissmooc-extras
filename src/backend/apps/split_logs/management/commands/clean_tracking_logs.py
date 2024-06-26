@@ -15,25 +15,34 @@ logger = logging.getLogger(__name__)
 
 EVENT_TYPE_VIDEO = 'video'
 EVENT_TYPE_PROBLEM = 'problem'
+EVENT_TYPE_ASSESSMENT = 'assessment'
 
 EVENT_TYPES = {
     EVENT_TYPE_VIDEO: [
-        "play_video",
-        "pause_video",
-        "seek_video",
-        "stop_video",
+        'play_video',
+        'pause_video',
+        'seek_video',
+        'stop_video',
     ],
     EVENT_TYPE_PROBLEM: [
-        "problem_graded",
-        "problem_show",
-        "problem_check",
-        "problem_save",
-        "problem_reset",
-    ]
+        'problem_graded',
+        'problem_show',
+        'problem_check',
+        'problem_save',
+        'problem_reset',
+    ],
+    EVENT_TYPE_ASSESSMENT: [
+        'openassessmentblock.remove_uploaded_file',
+        'openassessmentblock.submit_feedback_on_assessments',
+        'openassessmentblock.create_submission',
+        'openassessmentblock.save_files_descriptions',
+        'openassessmentblock.peer_assess',
+        'openassessmentblock.get_peer_submission',
+    ],
 }
 _USLESS_FIELDS = [
-    "GET",
-    "POST",
+    'GET',
+    'POST',
     'source',
     'container_id',
     'container_name',
@@ -65,7 +74,12 @@ USLESS_FIELDS = {
         'event.correct_map',
         'event.submission',
         'event.permutation',
-    ]
+    ],
+    EVENT_TYPE_ASSESSMENT: _USLESS_FIELDS + [
+        'event.parts',
+        'event.answer',
+        'event.saved_response',
+    ],
 }
 
 class Command(SMSCommand):
@@ -90,6 +104,8 @@ class Command(SMSCommand):
             self.event_type = EVENT_TYPE_VIDEO
         elif options["events"] == "problem":
             self.event_type = EVENT_TYPE_PROBLEM
+        elif options["events"] == "assessment":
+            self.event_type = EVENT_TYPE_ASSESSMENT
         else:
             logger.error("Wrong --events argument")
             exit(1)
@@ -100,7 +116,7 @@ class Command(SMSCommand):
     def clean_file(self, file_gz: str) -> None:
         # end_time = datetime(2023, 9, 21, 6, 0, 18, 0, tzinfo=timezone.utc)
         errors = 0
-        new_f_name = f"{file_gz[:-3]}.cleaned"
+        new_f_name = f"{file_gz[:-3]}.{self.event_type}.cleaned"
         new_f = open(new_f_name, "w")
         with gzip.open(file_gz, "rb") as f_in:
             for line in f_in.readlines():
@@ -125,7 +141,7 @@ class Command(SMSCommand):
                     continue
 
                 # in case of problem we skip every row with context.path='/event'
-                if self.event_type == 'problem':
+                if self.event_type in ('problem', 'assessment'):
                     if j['context']['path'] == '/event':
                         continue
                 elif self.event_type == 'video':
